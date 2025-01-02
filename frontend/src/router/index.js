@@ -8,11 +8,6 @@ const routes = [
     component: HomeView
   },
   {
-    path: '/',
-    name: 'Pre-train',
-    component: HomeView
-  },
-  {
     path: '/train',
     name: 'train',
     component: () => import('../views/TrainView.vue')

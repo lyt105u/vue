@@ -67,10 +67,6 @@ export default {
           title: 'Home',
         },
         {
-          href: '/',
-          title: 'Pre-train',
-        },
-        {
           href: '/train',
           title: 'Train',
         },
