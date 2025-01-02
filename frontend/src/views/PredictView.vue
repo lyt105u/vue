@@ -1,29 +1,38 @@
 <template>
   <div class="about">
-    <h1>
-      Predict
-      <button style="border: none; background: none; cursor: pointer;" data-bs-toggle="modal"
-        data-bs-target="#exampleModal">
-        <i class="fa fa-question-circle" style="font-size:24px;color:lightblue"></i>
-      </button>
-    </h1>
+    <h1>Predict</h1>
   </div>
-  <form class="row g-3" @submit.prevent="runPredict">
-    <div class="col-md-6">
-      <label for="inputEmail4" class="form-label">Model</label>
-      <select v-model="arg1" class="form-select" aria-label="Small select example">
-        <option value="model_catboost.pkl">Cat Boost</option>
-        <option value="model_lightgbm.pkl">lightGBM</option>
-        <option value="model_rf.pkl">Random Forest</option>
-        <option value="model_xgb.json">XGB</option>
-      </select>
+
+  <div class="bd-example-snippet bd-code-snippet">
+    <div class="bd-example m-0 border-0">
+      <hr>
     </div>
-    <div class="col-md-6">
-      <label for="inputPassword4" class="form-label">Data</label>
-      <select v-model="arg2" class="form-select" aria-label="Small select example">
-        <option value="cg_test_data.csv">長庚測試</option>
-        <option value="cg_train_data.csv">長庚訓練</option>
-      </select>
+  </div>
+
+  <form class="row g-3" @submit.prevent="runPredict" style="margin-top: 16px">
+    <div class="row mb-3">
+      <label for="inputEmail3" class="col-sm-3 col-form-label">Trained model</label>
+      <div class="col-sm-9">
+        <select class="form-select" aria-label="Small select example" v-model="selected.model">
+          <option v-for="data in modelNames" :key="data" :value="data">{{ data }}</option>
+        </select>
+      </div>
+    </div>
+    <div class="row mb-3">
+      <label for="inputEmail3" class="col-sm-3 col-form-label">Data labeled 1</label>
+      <div class="col-sm-9">
+        <select class="form-select" aria-label="Small select example" v-model="selected.data1">
+          <option v-for="data in xlsxNames" :key="data" :value="data">{{ data }}</option>
+        </select>
+      </div>
+    </div>
+    <div class="row mb-3">
+      <label for="inputEmail3" class="col-sm-3 col-form-label">Data labeled 0</label>
+      <div class="col-sm-9">
+        <select class="form-select" aria-label="Small select example" v-model="selected.data0">
+          <option v-for="data in xlsxNames" :key="data" :value="data">{{ data }}</option>
+        </select>
+      </div>
     </div>
     <div class="col-12">
       <button v-if="!loading" type="submit" class="btn btn-primary">Predict</button>
@@ -32,6 +41,21 @@
       </button>
     </div>
   </form>
+
+  <div v-if="output" class="bd-example-snippet bd-code-snippet">
+    <div class="bd-example m-0 border-0">
+      <hr>
+    </div>
+  </div>
+
+  <div v-if="output" class="about">
+    <h3>
+      Results
+      <button style="border: none; background: none; cursor: pointer;" data-bs-toggle="modal" data-bs-target="#exampleModal">
+        <i class="fa fa-question-circle" style="font-size:24px;color:lightblue"></i>
+      </button>
+    </h3>
+  </div>
 
   <div v-if="output" class="row row-cols-1 row-cols-md-3 mb-3 text-center">
     <div class="col">
@@ -415,24 +439,63 @@
 
 <script>
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
+import axios from 'axios';
 
 export default {
   components: {},
   data() {
     return {
-      arg1: 'option1',
-      arg2: 'optionA',
+      modelNames: '',
+      xlsxNames: '',
+      selected: {
+        model: '',
+        data1: '',
+        data0: '',
+      },
       output: '',
       imageData: null,
       loading: false,
     };
+  },
+  created() {
+    this.fetchData();
   },
   mounted() {
     // Initialize Tooltip
     // const tooltipTrigger = this.$refs.tooltipTrigger;
     // new bootstrap.Tooltip(tooltipTrigger);
   },
+  computed: {},
+  watch: {},
   methods: {
+    async fetchData() {
+      // 拿 trained model names
+      try {
+        const response = await axios.post('http://127.0.0.1:5000/fetch-data', {
+          param: 'model'
+        });
+        if (response.data.status == "success") {
+          this.modelNames = response.data.files
+        }
+      } catch (error) {
+        console.error("fetchData error: " + error)
+        this.modelNames = { status: 'fail', error: '無法連接後端服務' };
+      }
+
+      // 拿 xlsx names
+      try {
+        const response = await axios.post('http://127.0.0.1:5000/fetch-data', {
+          param: 'data'
+        });
+        if (response.data.status == "success") {
+          this.xlsxNames = response.data.files
+        }
+      } catch (error) {
+        console.error("fetchData error: " + error)
+        this.xlsxNames = { status: 'fail', error: '無法連接後端服務' };
+      }
+    },
+
     async runPredict() {
       this.loading = true
       this.output = null
@@ -440,7 +503,7 @@ export default {
         const response = await fetch('http://127.0.0.1:5000/run-predict', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ arg1: this.arg1, arg2: this.arg2 }),
+          body: JSON.stringify({ arg1: this.selected.model, arg2: this.selected.data1, arg3: this.selected.data0 }),
         });
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);

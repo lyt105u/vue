@@ -15,14 +15,15 @@ import json
 import matplotlib.pyplot as plt
 import io
 import base64
+import os
 
 import subprocess
 import sys
 
-subprocess.check_call(
-    [sys.executable, "-m", "pip", "install", "scikit-learn==1.5.2"],
-    stdout=subprocess.DEVNULL
-)
+# subprocess.check_call(
+#     [sys.executable, "-m", "pip", "install", "scikit-learn==1.5.2"],
+#     stdout=subprocess.DEVNULL
+# )
 
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -35,7 +36,7 @@ class NumpyEncoder(json.JSONEncoder):
         return super().default(obj)
 
 def load_model(filepath):
-    if filepath.lower().endswith(".json") and "xgb" in filepath.lower():  # 判斷是否為 XGBoost 模型
+    if filepath.lower().endswith(".json") and "xgb" in filepath.lower():  # .json 結尾，且包含 xgb
         model = XGBClassifier(base_score=0.5, booster='gbtree', colsample_bylevel=1,
                 colsample_bynode=1, colsample_bytree=1, enable_categorical=False,
                 gamma=0, gpu_id=-1, importance_type=None,
@@ -53,6 +54,46 @@ def load_model(filepath):
     else:
         raise ValueError(f"無法識別的模型格式或檔案：{filepath}")
     return model
+
+def prepare_data(data1, data0):
+    pd.options.display.max_columns = None
+
+    # 列印初始資訊
+    # print('川崎症病人(原): ', len(data1))
+    # print('川崎症病人(<=5歲): ', len(data1[data1['年齡(日)'] <= 2191]))
+    # print('川崎症病人(<5歲): ', len(data1[data1['年齡(日)'] < 2191]))
+    # print('發燒病人(原): ', len(data0))
+    # print('發燒病人(<=5歲): ', len(data0[data0['年齡(日)'] <= 2191]))
+    # print('發燒病人(<5歲): ', len(data0[data0['年齡(日)'] < 2191]))
+
+    # 篩選年齡條件
+    data1 = data1[data1['年齡(日)'] <= 1826]
+    data0 = data0[data0['年齡(日)'] <= 1826]
+
+    # 添加月份資訊
+    data1['輸入日期(月)'] = data1['輸入日期'].dt.month
+    data0['輸入日期(月)'] = data0['輸入日期'].dt.month
+
+    # 獲取月份的 One-Hot 編碼
+    data1_month = pd.get_dummies(data1['輸入日期(月)'], prefix='Month')
+    data0_month = pd.get_dummies(data0['輸入日期(月)'], prefix='Month')
+
+    # 合併數據
+    data1 = pd.concat([data1, data1_month], axis=1).drop(columns=['輸入日期(月)', '輸入日期'])
+    data0 = pd.concat([data0, data0_month], axis=1).drop(columns=['輸入日期(月)', '輸入日期'])
+
+    # 添加標籤
+    data1['label'] = 1
+    data0['label'] = 0
+
+    # 合併所有數據
+    all_test_data = pd.concat([data1, data0], ignore_index=True)
+
+    # 分割特徵和標籤
+    x_test = all_test_data.values[:,:-1]
+    y_test = all_test_data.values[:,-1]
+
+    return x_test, y_test
 
 def evaluate_model(y_test, y_pred, model, x_test):
     tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
@@ -165,14 +206,12 @@ def evaluate_model(y_test, y_pred, model, x_test):
     
     return result
 
-def main(model_file, test_file):
-    # 讀取 model
-    model = load_model(model_file)
+def main(model_type, data1_path, data0_path):
+    model = load_model(os.path.join("model", model_type))
+    data1 = pd.read_excel(os.path.join("data", data1_path))
+    data0 = pd.read_excel(os.path.join("data", data0_path))
 
-    # 讀取測試集
-    train_data = pd.read_csv(test_file)
-    x_test = train_data.drop('label', axis=1)
-    y_test = train_data['label']
+    x_test, y_test = prepare_data(data1, data0)
 
     # 預測
     y_pred = model.predict(x_test)
@@ -187,10 +226,10 @@ def main(model_file, test_file):
     print(json.dumps(results, indent=4, cls=NumpyEncoder))
 
 if __name__ == "__main__":
-    # 使用 argparse 處理命令列參數
-    parser = argparse.ArgumentParser(description="Predict using a trained model.")
-    parser.add_argument('model_name', type=str, help="Path to the trained model file.")
-    parser.add_argument('data_name', type=str, help="Path to the testing data CSV file.")
+    parser = argparse.ArgumentParser()
+    parser.add_argument('model_type', type=str, help="Type of model to train (xgb, random_forest, lightgbm)")
+    parser.add_argument('data1_path', type=str, help="Path to data labeled 1")
+    parser.add_argument('data0_path', type=str, help="Path to data labeled 0")
     
     args = parser.parse_args()
-    main(args.model_name, args.data_name)
+    main(args.model_type, args.data1_path, args.data0_path)

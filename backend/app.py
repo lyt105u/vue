@@ -57,11 +57,12 @@ def run_predict():
     data = request.get_json()
     arg1 = data.get('arg1')
     arg2 = data.get('arg2')
+    arg3 = data.get('arg3')
 
     try:
         # result = subprocess.check_output(['python', 'predict.py', arg1, arg2], text=True)
         result = subprocess.check_output(
-            'python predict.py {} {}'.format(arg1, arg2),
+            'python predict.py {} "{}" "{}"'.format(arg1, arg2, arg3),
             shell=True,
             text=True
         )
