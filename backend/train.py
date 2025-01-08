@@ -85,7 +85,7 @@ def prepare_data(data1, data0):
 
     # 分割特徵和標籤
     x = all_train_data.values[:, :-1]
-    y = all_train_data.values[:, -1]
+    y = all_train_data.values[:, -1].astype(float)
 
     # 切分訓練集和測試集
     x_train, x_test, y_train, y_test = train_test_split(x, y, train_size=0.8, shuffle=True, stratify=y, random_state=30)
