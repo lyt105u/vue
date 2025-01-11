@@ -54,7 +54,7 @@
   <div v-if="output" class="about">
     <h3>
       Results
-      <button style="border: none; background: none; cursor: pointer;" data-bs-toggle="modal" data-bs-target="#exampleModal">
+      <button style="border: none; background: none; cursor: pointer;" @click="openFormulaExplainModal">
         <i class="fa fa-question-circle" style="font-size:24px;color:lightblue"></i>
       </button>
     </h3>
@@ -268,203 +268,21 @@
     </div>
   </div>
 
-  <!-- finish training modal -->
-  <div class="modal fade" id="finishTrainingModal" tabindex="-1" aria-labelledby="finishTrainingModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h1 class="modal-title fs-5" id="finishTrainingModalLabel">Modal title</h1>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <div class="bd-example-snippet bd-code-snippet">
-            <div class="bd-example m-0 border-0">
-              Model trained successfully!
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- question mark modal -->
-  <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h1 class="modal-title fs-5" id="exampleModalLabel">Modal title</h1>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <div class="bd-example-snippet bd-code-snippet">
-            <div class="bd-example m-0 border-0">
-              <table class="table table-sm table-bordered">
-                <thead>
-                  <tr>
-                    <th scope="col" colspan="2">Confusion Matrix</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>True Positive</td>
-                    <td>False Negative</td>
-                  </tr>
-                  <tr>
-                    <td>False Positive</td>
-                    <td>True Negative</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-          <div class="text-center">
-            <div class="formula">
-              <div>
-                Recall =
-                <span class="fraction">
-                  <span class="numerator">
-                    TP
-                  </span>
-                  <span class="denominator">
-                    TP + FN
-                  </span>
-                </span>
-              </div>
-            </div>
-          </div>
-          <div class="text-center">
-            <div class="formula">
-              <div>
-                Specificity =
-                <span class="fraction">
-                  <span class="numerator">
-                    TN
-                  </span>
-                  <span class="denominator">
-                    TN + FP
-                  </span>
-                </span>
-              </div>
-            </div>
-          </div>
-          <div class="text-center">
-            <div class="formula">
-              <div>
-                Precision =
-                <span class="fraction">
-                  <span class="numerator">
-                    TP
-                  </span>
-                  <span class="denominator">
-                    TP + FP
-                  </span>
-                </span>
-              </div>
-            </div>
-          </div>
-          <div class="text-center">
-            <div class="formula">
-              <div>
-                NPV =
-                <span class="fraction">
-                  <span class="numerator">
-                    TN
-                  </span>
-                  <span class="denominator">
-                    TN + FN
-                  </span>
-                </span>
-              </div>
-            </div>
-          </div>
-          <div class="text-center">
-            <div class="formula">
-              <div>
-                F1-score =
-                <span class="fraction">
-                  <span class="numerator">
-                    2 × Precision × Recall
-                  </span>
-                  <span class="denominator">
-                    Precision + Recall
-                  </span>
-                </span>
-              </div>
-            </div>
-          </div>
-          <div class="text-center">
-            <div class="formula">
-              <div>
-                F2-score =
-                <span class="fraction">
-                  <span class="numerator">
-                    5 × Precision × Recall
-                  </span>
-                  <span class="denominator">
-                    4 × Precision + Recall
-                  </span>
-                </span>
-              </div>
-            </div>
-          </div>
-          <div class="text-center">
-            <div class="formula">
-              <div>
-                Accuracy =
-                <span class="fraction">
-                  <span class="numerator">
-                    TP + TN
-                  </span>
-                  <span class="denominator">
-                    TP + TN + FP + FN
-                  </span>
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"> <!-- question mark icon -->
+  <ModalNotification ref="modalNotification" title="Training Complete" content="Model trained successfully!" />
+  <ModalFormulaExplain ref="formulaExplainModal" />
 </template>
-
-<style scoped>
-/* 公式用 */
-.formula {
-  display: inline-block;
-  font-size: 1rem;
-}
-
-.fraction {
-  display: inline-block;
-  text-align: center;
-  vertical-align: middle;
-}
-
-.numerator {
-  display: block;
-  border-bottom: 1px solid black;
-  padding-bottom: 0.2rem;
-}
-
-.denominator {
-  display: block;
-  padding-top: 0.2rem;
-}
-</style>
 
 <script>
 import axios from 'axios';
-import { Modal } from 'bootstrap';
+import ModalNotification from "@/components/ModalNotification.vue"
+import ModalFormulaExplain from "@/components/ModalFormulaExplain.vue"
+
 export default {
+  components: {
+    ModalNotification,
+    ModalFormulaExplain,
+  },
   data() {
     return {
       xlsxNames: '',
@@ -519,15 +337,20 @@ export default {
         this.output = null;
       }
       this.loading = false
-      this.openModal()
+      this.openModalNotification()
     },
-    openModal() {
-      const modalElement = document.getElementById('finishTrainingModal');
-      if (modalElement) {
-        const modalInstance = new Modal(modalElement);
-        modalInstance.show();
+    openModalNotification() {
+      if (this.$refs.modalNotification) {
+        this.$refs.modalNotification.openModal();
       } else {
-        console.error('Modal element not found');
+        console.error("ModalNotification component not found.");
+      }
+    },
+    openFormulaExplainModal() {
+      if (this.$refs.formulaExplainModal) {
+        this.$refs.formulaExplainModal.openModal();
+      } else {
+        console.error("ModalFormulaExplain component not found.");
       }
     },
   },
