@@ -1,31 +1,59 @@
+# 列出 data\ 內的 xlsx 和 csv，或列出 model\ 內的所有檔案
+# usage: python fetchData.py <data 或 model>
+
 import os
 import sys
+import json
 
 def list_file_names(param):
     if param == "data":
         folder_path = "data/"
         if not os.path.exists(folder_path):
-            raise FileNotFoundError(f"folder {folder_path} does not exist")
-        # 列出所有 .xlsx 檔案
-        return [file for file in os.listdir(folder_path) if file.endswith('.xlsx')]
+            print(json.dumps({
+                "status": "error",
+                "message": f"Folder '{folder_path}' does not exist.",
+                "files": []
+            }))
+            sys.exit(1)
+
+        files = [file for file in os.listdir(folder_path) if file.endswith(('.xlsx', '.csv'))]
+        print(json.dumps({
+            "status": "success",
+            "files": files
+        }, ensure_ascii=False))
+
     elif param == "model":
         folder_path = "model/"
         if not os.path.exists(folder_path):
-            raise FileNotFoundError(f"folder {folder_path} does not exist")
-        # 列出所有檔案
-        return [file for file in os.listdir(folder_path)]
+            print(json.dumps({
+                "status": "error",
+                "message": f"Folder '{folder_path}' does not exist.",
+                "files": []
+            }, ensure_ascii=False))
+            sys.exit(1)
+
+        files = [file for file in os.listdir(folder_path)]
+        print(json.dumps({
+            "status": "success",
+            "files": files
+        }))
+    
+    else:
+        print(json.dumps({
+            "status": "error",
+            "message": "Invalid parameter. Use 'data' or 'model'.",
+            "files": []
+        }))
+        sys.exit(1)
 
 if __name__ == "__main__":
-    try:
-        if len(sys.argv) != 2:
-            raise ValueError("Invalid number of arguments. Expected exactly one argument.")
+    if len(sys.argv) != 2:
+        print(json.dumps({
+            "status": "error",
+            "message": "Missing or incorrect arguments.",
+            "files": []
+        }))
+        sys.exit(1)
 
-        param = sys.argv[1]
-
-        file_names = list_file_names(param)
-        for file in file_names:
-            print(file)
-
-    except Exception as e:
-        print(f"Error: {e}", file=sys.stderr)
-        exit(1)
+    param = sys.argv[1]
+    list_file_names(param)
