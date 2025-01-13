@@ -9,12 +9,7 @@ def list_file_names(param):
     if param == "data":
         folder_path = "data/"
         if not os.path.exists(folder_path):
-            print(json.dumps({
-                "status": "error",
-                "message": f"Folder '{folder_path}' does not exist.",
-                "files": []
-            }))
-            sys.exit(1)
+            os.makedirs(folder_path)
 
         files = [file for file in os.listdir(folder_path) if file.endswith(('.xlsx', '.csv'))]
         print(json.dumps({
@@ -25,12 +20,7 @@ def list_file_names(param):
     elif param == "model":
         folder_path = "model/"
         if not os.path.exists(folder_path):
-            print(json.dumps({
-                "status": "error",
-                "message": f"Folder '{folder_path}' does not exist.",
-                "files": []
-            }, ensure_ascii=False))
-            sys.exit(1)
+            os.makedirs(folder_path)
 
         files = [file for file in os.listdir(folder_path)]
         print(json.dumps({
