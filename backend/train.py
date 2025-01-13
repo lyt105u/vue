@@ -45,7 +45,7 @@ from sklearn.metrics import f1_score
 import base64
 import io
 
-def prepare_data(file_name, label_column):
+def prepare_data(file_name, label_column, train_size):
     folder_path = "data"
     if not os.path.exists(folder_path):
         print(json.dumps({
@@ -76,7 +76,7 @@ def prepare_data(file_name, label_column):
     x = df.drop(columns=[label_column]).values
     y = df[label_column].values.astype(float)
 
-    x_train, x_test, y_train, y_test = train_test_split(x, y, train_size=0.8, shuffle=True, stratify=y, random_state=30)
+    x_train, x_test, y_train, y_test = train_test_split(x, y, train_size=train_size, shuffle=True, stratify=y, random_state=30)
 
     return x_train, x_test, y_train, y_test
 
@@ -115,7 +115,11 @@ def train_model(model_type, x_train, y_train):
         return lightgbm
 
     else:
-        raise ValueError("Invalid model type")
+        print(json.dumps({
+            "status": "error",
+            "message": "Invalid model type",
+        }))
+        sys.exit(1)
     
 def evaluate_model(y_test, y_pred, model, x_test):
     tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
@@ -238,8 +242,8 @@ class NumpyEncoder(json.JSONEncoder):
             return obj.tolist()
         return super().default(obj)
         
-def main(model_type, file_name, label_column):
-    x_train, x_test, y_train, y_test = prepare_data(file_name, label_column)
+def main(model_type, file_name, label_column, train_size):
+    x_train, x_test, y_train, y_test = prepare_data(file_name, label_column, train_size)
 
     model = train_model(model_type, x_train, y_train)
 
