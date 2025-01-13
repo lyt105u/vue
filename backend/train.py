@@ -45,49 +45,37 @@ from sklearn.metrics import f1_score
 import base64
 import io
 
-def prepare_data(data1, data0):
-    pd.options.display.max_columns = None
+def prepare_data(file_name, label_column):
+    folder_path = "data"
+    if not os.path.exists(folder_path):
+        print(json.dumps({
+            "status": "error",
+            "message": f"Directory '{folder_path}' doesn't exist.",
+        }))
+        sys.exit(1)
+    
+    file_path = os.path.join(folder_path, file_name)
+    if file_name.endswith(".csv"):
+        df = pd.read_csv(file_path)
+    elif file_name.endswith(".xlsx"):
+        df = pd.read_excel(file_path)
+    else:
+        print(json.dumps({
+            "status": "error",
+            "message": "Unsupported file format. Please provide a CSV or Excel file.",
+        }))
+        sys.exit(1)
 
-    # 列印初始資訊
-    # print('川崎症病人(原): ', len(data1))
-    # print('川崎症病人(<=5歲): ', len(data1[data1['年齡(日)'] <= 2191]))
-    # print('川崎症病人(<5歲): ', len(data1[data1['年齡(日)'] < 2191]))
-    # print('發燒病人(原): ', len(data0))
-    # print('發燒病人(<=5歲): ', len(data0[data0['年齡(日)'] <= 2191]))
-    # print('發燒病人(<5歲): ', len(data0[data0['年齡(日)'] < 2191]))
+    if label_column not in df.columns:
+        print(json.dumps({
+            "status": "error",
+            "message": f"Label column '{label_column}' not found in the dataset.",
+        }))
+        sys.exit(1)
+    
+    x = df.drop(columns=[label_column]).values
+    y = df[label_column].values.astype(float)
 
-    # 篩選年齡條件
-    data1 = data1[data1['年齡(日)'] <= 1826]
-    data0 = data0[data0['年齡(日)'] <= 1826]
-
-    # 添加月份資訊
-    data1['輸入日期(月)'] = data1['輸入日期'].dt.month
-    data0['輸入日期(月)'] = data0['輸入日期'].dt.month
-
-    # 獲取月份的 One-Hot 編碼
-    data1_month = pd.get_dummies(data1['輸入日期(月)'], prefix='Month')
-    data0_month = pd.get_dummies(data0['輸入日期(月)'], prefix='Month')
-
-    # 合併數據
-    data1 = pd.concat([data1, data1_month], axis=1).drop(columns=['輸入日期(月)', '輸入日期'])
-    data0 = pd.concat([data0, data0_month], axis=1).drop(columns=['輸入日期(月)', '輸入日期'])
-
-    # 打亂數據
-    data1 = shuffle(data1, random_state=30)
-    data0 = shuffle(data0, random_state=30)
-
-    # 添加標籤
-    data1['label'] = 1
-    data0['label'] = 0
-
-    # 合併所有數據
-    all_train_data = pd.concat([data1, data0], ignore_index=True)
-
-    # 分割特徵和標籤
-    x = all_train_data.values[:, :-1]
-    y = all_train_data.values[:, -1].astype(float)
-
-    # 切分訓練集和測試集
     x_train, x_test, y_train, y_test = train_test_split(x, y, train_size=0.8, shuffle=True, stratify=y, random_state=30)
 
     return x_train, x_test, y_train, y_test
@@ -111,10 +99,10 @@ def train_model(model_type, x_train, y_train):
 
     elif model_type == 'random_forest':
         rf = RandomForestClassifier(
-            n_estimators=900,  # 決策樹的數量
+            n_estimators=900,   # 決策樹的數量
             max_depth=50,       # 最大深度
-            random_state=0,    # 隨機種子
-            n_jobs=-1          # 使用所有可用的 CPU 核心
+            random_state=0,     # 隨機種子
+            n_jobs=-1           # 使用所有可用的 CPU 核心
         )
         rf.fit(x_train, y_train)
         joblib.dump(rf, f"model/rf_{current_time}.pkl")
@@ -250,11 +238,8 @@ class NumpyEncoder(json.JSONEncoder):
             return obj.tolist()
         return super().default(obj)
         
-def main(model_type, data1_path, data0_path):
-    data1 = pd.read_excel(os.path.join("data", data1_path))
-    data0 = pd.read_excel(os.path.join("data", data0_path))
-
-    x_train, x_test, y_train, y_test = prepare_data(data1, data0)
+def main(model_type, file_name, label_column):
+    x_train, x_test, y_train, y_test = prepare_data(file_name, label_column)
 
     model = train_model(model_type, x_train, y_train)
 
@@ -269,8 +254,8 @@ def main(model_type, data1_path, data0_path):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('model_type', type=str, help="Type of model to train (xgb, random_forest, lightgbm)")
-    parser.add_argument('data1_path', type=str, help="Path to data labeled 1")
-    parser.add_argument('data0_path', type=str, help="Path to data labeled 0")
+    parser.add_argument('file_name', type=str, help="File name of the data")
+    parser.add_argument('label_column', type=str, help="The column chosen to be label")
 
     args = parser.parse_args()
-    main(args.model_type, args.data1_path, args.data0_path)
+    main(args.model_type, args.file_name, args.label_column)
