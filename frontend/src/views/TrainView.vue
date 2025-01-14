@@ -12,31 +12,63 @@
   <form class="row g-3" @submit.prevent="runTrain" style="margin-top: 16px">
     <div class="row mb-3">
       <label for="inputEmail3" class="col-sm-3 col-form-label">Model type</label>
-      <div class="col-sm-9">
-        <select class="form-select" aria-label="Small select example" v-model="selected.model">
-          <!-- <option value="catboost">Cat Boost</option> -->
-          <option value="lightgbm">lightGBM</option>
-          <option value="random_forest">Random Forest</option>
-          <option value="xgb">XGB</option>
+      <div class="col-sm-8">
+        <select class="form-select" aria-label="Small select example" v-model="selected.model_type">
+          <option v-for="(label, value) in modelOptions" :key="value" :value="value">
+            {{ label }}
+          </option>
         </select>
       </div>
     </div>
+
     <div class="row mb-3">
-      <label for="inputEmail3" class="col-sm-3 col-form-label">Data labeled 1</label>
-      <div class="col-sm-9">
-        <select class="form-select" aria-label="Small select example" v-model="selected.data1">
-          <option v-for="data in xlsxNames" :key="data" :value="data">{{ data }}</option>
+      <label for="inputEmail3" class="col-sm-3 col-form-label">Form data</label>
+      <div class="col-sm-8">
+        <select class="form-select" aria-label="Small select example" v-model="selected.data">
+          <option v-for="data in dataNames" :key="data" :value="data">{{ data }}</option>
         </select>
       </div>
     </div>
+
     <div class="row mb-3">
-      <label for="inputEmail3" class="col-sm-3 col-form-label">Data labeled 0</label>
-      <div class="col-sm-9">
-        <select class="form-select" aria-label="Small select example" v-model="selected.data0">
-          <option v-for="data in xlsxNames" :key="data" :value="data">{{ data }}</option>
-        </select>
+      <label for="inputEmail3" class="col-sm-3 col-form-label">Label column</label>
+      <div class="col-sm-8">
+        <input v-model="selected.label_column" class="form-control" type="text">
       </div>
     </div>
+
+    <div class="row mb-3">
+      <label for="inputEmail3" class="col-sm-3 col-form-label">Split train and test set</label>
+      <div class="col-sm-4">
+        <div class="form-floating">
+          <select v-model="selected.train_size" class="form-select" id="floatingSelectGrid">
+            <option v-for="size in trainSizeOptions" :key="size" :value="size">
+              {{ size }}
+            </option>
+          </select>
+          <label for="floatingSelectGrid">Training set</label>
+        </div>
+      </div>
+      <div class="col-sm-4">
+        <div class="form-floating">
+          <select v-model="watched.test_size" class="form-select" id="floatingSelectGrid" disabled>
+            <option :value="watched.test_size">{{ watched.test_size }}</option>
+          </select>
+          <label for="floatingSelectGrid">Testing set</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="row mb-3">
+      <label for="inputEmail3" class="col-sm-3 col-form-label">Model saved as</label>
+      <div class="col-sm-8">
+        <div class="input-group">
+          <input v-model="selected.model_name" class="form-control" type="text">
+          <span class="input-group-text">{{ watched.file_extension }}</span>
+        </div>
+      </div>
+    </div>
+
     <div class="col-12">
       <button v-if="!loading" type="submit" class="btn btn-primary">Train</button>
       <button v-if="loading" class="btn btn-primary" type="button" disabled>
@@ -285,11 +317,28 @@ export default {
   },
   data() {
     return {
-      xlsxNames: '',
+      dataNames: '',
+      modelOptions: {
+        lightgbm: "lightGBM",
+        random_forest: "Random Forest",
+        xgb: "XGB"
+      },
+      trainSizeOptions: [
+        1.0,
+        0.9,
+        0.8,
+        0.7,
+      ],
       selected: {
-        model: '',
-        data1: '',
-        data0: '',
+        model_type: '',
+        data: '',
+        label_column: '',
+        train_size: 0.8,
+        model_name: '',
+      },
+      watched: {
+        test_size: '',
+        file_extension: '',
       },
       output: '',
       loading: false,
@@ -297,11 +346,20 @@ export default {
     };
   },
   created() {
-    this.fetchData();
+    this.fetchData()
+    this.updateTestSize()
+    this.updateFileExtension()
   },
   mounted() {},
   computed: {},
-  watch: {},
+  watch: {
+    "selected.train_size"() {
+      this.updateTestSize()
+    },
+    "selected.model_type"() {
+      this.updateFileExtension()
+    }
+  },
   methods: {
     async fetchData() {
       try {
@@ -309,11 +367,21 @@ export default {
           param: 'data'
         });
         if (response.data.status == "success") {
-          this.xlsxNames = response.data.files
+          this.dataNames = response.data.files
         }
       } catch (error) {
         console.error("fetchData error: " + error)
-        this.xlsxNames = { status: 'fail', error: '無法連接後端服務' };
+        this.dataNames = { status: 'fail', error: '無法連接後端服務' };
+      }
+    },
+    updateTestSize() {
+      this.watched.test_size = (1 - parseFloat(this.selected.train_size)).toFixed(1)
+    },
+    updateFileExtension() {
+      if (this.selected.model_type == "xgb") {
+        this.watched.file_extension = ".json"
+      } else {
+        this.watched.file_extension = ".pkl"
       }
     },
     async runTrain() {
@@ -323,7 +391,7 @@ export default {
         const response = await fetch('http://127.0.0.1:5000/run-train', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ arg1: this.selected.model, arg2: this.selected.data1, arg3: this.selected.data0 }),
+          body: JSON.stringify({ arg1: this.selected.model_type, arg2: this.selected.data }),
         });
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
