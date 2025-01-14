@@ -44,6 +44,9 @@ from sklearn.metrics import recall_score
 from sklearn.metrics import f1_score
 import base64
 import io
+from sklearn.model_selection import StratifiedKFold
+from sklearn.metrics import roc_curve
+from sklearn.metrics import auc
 
 def prepare_data(file_name, label_column, train_size):
     folder_path = "data"
@@ -76,13 +79,10 @@ def prepare_data(file_name, label_column, train_size):
     x = df.drop(columns=[label_column]).values
     y = df[label_column].values.astype(float)
 
-    x_train, x_test, y_train, y_test = train_test_split(x, y, train_size=train_size, shuffle=True, stratify=y, random_state=30)
+    return x, y
 
-    return x_train, x_test, y_train, y_test
-
-def train_model(model_type, x_train, y_train):
+def train_model(model_type, model_name, x_train, y_train):
     os.makedirs("model", exist_ok=True) # 確保 model 資料夾存在
-    current_time = datetime.now().strftime("%Y%m%d_%H%M")
     if model_type == 'xgb':
         xgb = XGBClassifier(base_score=0.5, booster='gbtree', colsample_bylevel=1,
                             colsample_bynode=1, colsample_bytree=1, enable_categorical=False,
@@ -94,7 +94,7 @@ def train_model(model_type, x_train, y_train):
                             reg_alpha=0, reg_lambda=1, scale_pos_weight=1, subsample=1,
                             tree_method='exact', validate_parameters=1, verbosity=None)
         xgb.fit(x_train, y_train)
-        xgb.save_model(f"model/xgb_{current_time}.json")
+        xgb.save_model(f"model/{model_name}.json")
         return xgb
 
     elif model_type == 'random_forest':
@@ -105,13 +105,13 @@ def train_model(model_type, x_train, y_train):
             n_jobs=-1           # 使用所有可用的 CPU 核心
         )
         rf.fit(x_train, y_train)
-        joblib.dump(rf, f"model/rf_{current_time}.pkl")
+        joblib.dump(rf, f"model/{model_name}.pkl")
         return rf
 
     elif model_type == 'lightgbm':
         lightgbm = LGBMClassifier(verbose=-1)
         lightgbm.fit(x_train, y_train)
-        joblib.dump(lightgbm, f"model/lightgbm_{current_time}.pkl")
+        joblib.dump(lightgbm, f"model/{model_name}.pkl")
         return lightgbm
 
     else:
@@ -120,10 +120,71 @@ def train_model(model_type, x_train, y_train):
             "message": "Invalid model type",
         }))
         sys.exit(1)
+
+def kfold_evaluation(X, y, model, cv_folds=5):
+    cv = StratifiedKFold(n_splits=cv_folds, shuffle=True, random_state=30)
+    tprs = []
+    aucs = []
+    mean_fpr = np.linspace(0, 1, 100)
+    accuracy_list = []
+    precision_list = []
+    recall_list = []
+    f1_list = []
+
+    for train_idx, test_idx in cv.split(X, y):
+        X_train, X_test = X[train_idx], X[test_idx]
+        y_train, y_test = y[train_idx], y[test_idx]
+
+        model.fit(X_train, y_train)
+        y_pred = model.predict(X_test)
+        y_pred_prob = model.predict_proba(X_test)[:, 1]
+
+        accuracy_list.append(accuracy_score(y_test, y_pred))
+        precision_list.append(precision_score(y_test, y_pred, zero_division=0))
+        recall_list.append(recall_score(y_test, y_pred, zero_division=0))
+        f1_list.append(f1_score(y_test, y_pred, zero_division=0))
+
+        fpr, tpr, _ = roc_curve(y_test, y_pred_prob)
+        roc_auc = auc(fpr, tpr)
+        tprs.append(np.interp(mean_fpr, fpr, tpr))
+        tprs[-1][0] = 0.0
+        aucs.append(roc_auc)
+
+    mean_tpr = np.mean(tprs, axis=0)
+    mean_tpr[-1] = 1.0
+    mean_auc = auc(mean_fpr, mean_tpr)
+    std_auc = np.std(aucs)
+
+    plt.figure(figsize=(8, 6))
+    plt.plot(mean_fpr, mean_tpr, color='m', label=f'Mean ROC (AUC = {mean_auc:.2f} ± {std_auc:.2f})')
+    plt.plot([0, 1], [0, 1], linestyle="-.", color='0')
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.legend()
+    # plt.savefig('roc.png')
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+    image_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+    buf.close()
+
+    return {
+        "status": "success",
+        "metrics": {
+            "accuracy": np.mean(accuracy_list),
+            "precision": np.mean(precision_list),
+            "recall": np.mean(recall_list),
+            "f1_score": np.mean(f1_list),
+        },
+        "roc": image_base64
+    }
     
 def evaluate_model(y_test, y_pred, model, x_test):
+    y_test = y_test.astype(float)
+    y_pred = y_pred.astype(float)
     tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
     result = {
+        "status": "success",
         "confusion_matrix": {
             "true_negative": tn,
             "false_positive": fp,
@@ -242,17 +303,20 @@ class NumpyEncoder(json.JSONEncoder):
             return obj.tolist()
         return super().default(obj)
         
-def main(model_type, file_name, label_column, train_size):
-    x_train, x_test, y_train, y_test = prepare_data(file_name, label_column, train_size)
+def main(model_type, file_name, label_column, train_size, model_name):
+    train_size = float(train_size)
+    x, y = prepare_data(file_name, label_column, train_size)
 
-    model = train_model(model_type, x_train, y_train)
+    if train_size == 1:
+        model = train_model(model_type, model_name, x, y)
+        results = kfold_evaluation(x, y, model)
 
-    y_pred = model.predict(x_test)
-    # 確保型態一致
-    y_test = y_test.astype(float)
-    y_pred = y_pred.astype(float)
+    else:
+        x_train, x_test, y_train, y_test = train_test_split(x, y, train_size=float(train_size), shuffle=True, stratify=y, random_state=30)
+        model = train_model(model_type, model_name, x_train, y_train)
+        y_pred = model.predict(x_test)
+        results = evaluate_model(y_test, y_pred, model, x_test)
 
-    results = evaluate_model(y_test, y_pred, model, x_test)
     print(json.dumps(results, indent=4, cls=NumpyEncoder))
 
 if __name__ == "__main__":
@@ -260,6 +324,8 @@ if __name__ == "__main__":
     parser.add_argument('model_type', type=str, help="Type of model to train (xgb, random_forest, lightgbm)")
     parser.add_argument('file_name', type=str, help="File name of the data")
     parser.add_argument('label_column', type=str, help="The column chosen to be label")
+    parser.add_argument('train_size', type=str, help="The size of training set")
+    parser.add_argument('model_name', type=str, help="The name of the trained model that stored in model\ ")
 
     args = parser.parse_args()
-    main(args.model_type, args.file_name, args.label_column)
+    main(args.model_type, args.file_name, args.label_column, args.train_size, args.model_name)
