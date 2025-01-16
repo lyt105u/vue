@@ -38,24 +38,45 @@
     </div>
 
     <div class="row mb-3">
-      <label for="inputEmail3" class="col-sm-3 col-form-label">Split train and test set</label>
+      <label for="inputEmail3" class="col-sm-3 col-form-label">Data Split</label>
       <div class="col-sm-4">
-        <div class="form-floating">
-          <select v-model="selected.train_size" class="form-select" id="floatingSelectGrid">
-            <option v-for="size in trainSizeOptions" :key="size" :value="size">
-              {{ size }}
-            </option>
-          </select>
-          <label for="floatingSelectGrid">Training set</label>
+        <div class="form-check">
+          <input v-model="selected.split_strategy" class="form-check-input" type="radio" name="gridRadios" id="gridRadios1" value="train_test_split">
+          <label class="form-check-label" for="gridRadios1">
+            Split into Train and Test
+          </label>
         </div>
       </div>
       <div class="col-sm-4">
-        <div class="form-floating">
-          <select v-model="watched.test_size" class="form-select" id="floatingSelectGrid" disabled>
-            <option :value="watched.test_size">{{ watched.test_size }}</option>
-          </select>
-          <label for="floatingSelectGrid">Testing set</label>
+        <div class="form-check">
+          <input v-model="selected.split_strategy" class="form-check-input" type="radio" name="gridRadios" id="gridRadios1" value="k_fold">
+          <label class="form-check-label" for="gridRadios1">
+            K-Fold Cross Validation
+          </label>
         </div>
+      </div>
+    </div>
+
+    <div v-if="selected.split_strategy=='train_test_split'" class="row mb-3">
+      <label for="inputEmail3" class="col-sm-3 col-form-label"></label> <!-- 排版用 -->
+      <div class="col-sm-4 d-flex align-items-center">
+        <input v-model="selected.split_value" type="range" class="form-range" min="0.5" max="0.9" step="0.1">
+      </div>
+      <div class="col-sm-4 d-flex align-items-center">
+        <span id="passwordHelpInline" class="form-text">
+          Train: <strong>{{ selected.split_value}}</strong>, Test: {{ watched.test_size }}
+        </span>
+      </div>
+    </div>
+    <div v-if="selected.split_strategy=='k_fold'" class="row mb-3">
+      <label for="inputEmail3" class="col-sm-3 col-form-label"></label> <!-- 排版用 -->
+      <div class="col-sm-4 d-flex align-items-center">
+        <input v-model="selected.split_value" type="range" class="form-range" min="2" max="10">
+      </div>
+      <div class="col-sm-4 d-flex align-items-center">
+        <span id="passwordHelpInline" class="form-text">
+          cv_folds: <strong>{{ selected.split_value}}</strong>
+        </span>
       </div>
     </div>
 
@@ -129,167 +150,47 @@
         </div>
       </div>
     </div>
-
-    <div class="col">
-      <div class="card mb-4 rounded-3 shadow-sm">
-        <div class="card-header py-3">
-          <h4 class="my-0 fw-normal">Recall > 80%</h4>
-        </div>
-        <div class="card-body">
-          <ul class="list-unstyled mt-3 mb-4">
-            <div class="bd-example-snippet bd-code-snippet">
-              <div class="bd-example m-0 border-0">
-                <table class="table table-sm table-bordered">
-                  <thead>
-                    <tr>
-                      <th scope="col" colspan="2">Confusion Matrix</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>{{ output.recall_80.true_positive }}</td>
-                      <td>{{ output.recall_80.false_negative }}</td>
-                    </tr>
-                    <tr>
-                      <td>{{ output.recall_80.false_positive }}</td>
-                      <td>{{ output.recall_80.true_negative }}</td>
-                    </tr>
-                  </tbody>
-                </table>
+    <template v-if="selected.split_strategy === 'train_test_split'">
+      <div class="col" v-for="recall in recallLevels" :key="recall.level">
+        <div class="card mb-4 rounded-3 shadow-sm">
+          <div class="card-header py-3">
+            <h4 class="my-0 fw-normal">Recall > {{ recall.level }}%</h4>
+          </div>
+          <div class="card-body">
+            <ul class="list-unstyled mt-3 mb-4">
+              <div class="bd-example-snippet bd-code-snippet">
+                <div class="bd-example m-0 border-0">
+                  <table class="table table-sm table-bordered">
+                    <thead>
+                      <tr>
+                        <th scope="col" colspan="2">Confusion Matrix</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>{{ output[recall.key].true_positive }}</td>
+                        <td>{{ output[recall.key].false_negative }}</td>
+                      </tr>
+                      <tr>
+                        <td>{{ output[recall.key].false_positive }}</td>
+                        <td>{{ output[recall.key].true_negative }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
-            <li>Recall: {{ output.recall_80.recall.toFixed(2) }}%</li>
-            <li>Specificity: {{ output.recall_80.specificity.toFixed(2) }}%</li>
-            <li>Precision: {{ output.recall_80.precision.toFixed(2) }}%</li>
-            <li>NPV: {{ output.recall_80.npv.toFixed(2) }}%</li>
-            <li>F1 Score: {{ output.recall_80.f1_score.toFixed(2) }}%</li>
-            <li>F2 Score: {{ output.recall_80.f2_score.toFixed(2) }}%</li>
-            <li>Accuracy: {{ output.recall_80.accuracy.toFixed(2) }}%</li>
-          </ul>
+              <li>Recall: {{ output[recall.key].recall.toFixed(2) }}%</li>
+              <li>Specificity: {{ output[recall.key].specificity.toFixed(2) }}%</li>
+              <li>Precision: {{ output[recall.key].precision.toFixed(2) }}%</li>
+              <li>NPV: {{ output[recall.key].npv.toFixed(2) }}%</li>
+              <li>F1 Score: {{ output[recall.key].f1_score.toFixed(2) }}%</li>
+              <li>F2 Score: {{ output[recall.key].f2_score.toFixed(2) }}%</li>
+              <li>Accuracy: {{ output[recall.key].accuracy.toFixed(2) }}%</li>
+            </ul>
+          </div>
         </div>
       </div>
-    </div>
-
-    <div class="col">
-      <div class="card mb-4 rounded-3 shadow-sm">
-        <div class="card-header py-3">
-          <h4 class="my-0 fw-normal">Recall > 85%</h4>
-        </div>
-        <div class="card-body">
-          <ul class="list-unstyled mt-3 mb-4">
-            <div class="bd-example-snippet bd-code-snippet">
-              <div class="bd-example m-0 border-0">
-                <table class="table table-sm table-bordered">
-                  <thead>
-                    <tr>
-                      <th scope="col" colspan="2">Confusion Matrix</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>{{ output.recall_85.true_positive }}</td>
-                      <td>{{ output.recall_85.false_negative }}</td>
-                    </tr>
-                    <tr>
-                      <td>{{ output.recall_85.false_positive }}</td>
-                      <td>{{ output.recall_85.true_negative }}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            <li>Recall: {{ output.recall_85.recall.toFixed(2) }}%</li>
-            <li>Specificity: {{ output.recall_85.specificity.toFixed(2) }}%</li>
-            <li>Precision: {{ output.recall_85.precision.toFixed(2) }}%</li>
-            <li>NPV: {{ output.recall_85.npv.toFixed(2) }}%</li>
-            <li>F1 Score: {{ output.recall_85.f1_score.toFixed(2) }}%</li>
-            <li>F2 Score: {{ output.recall_85.f2_score.toFixed(2) }}%</li>
-            <li>Accuracy: {{ output.recall_85.accuracy.toFixed(2) }}%</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-
-    <div class="col">
-      <div class="card mb-4 rounded-3 shadow-sm">
-        <div class="card-header py-3">
-          <h4 class="my-0 fw-normal">Recall > 90%</h4>
-        </div>
-        <div class="card-body">
-          <ul class="list-unstyled mt-3 mb-4">
-            <div class="bd-example-snippet bd-code-snippet">
-              <div class="bd-example m-0 border-0">
-                <table class="table table-sm table-bordered">
-                  <thead>
-                    <tr>
-                      <th scope="col" colspan="2">Confusion Matrix</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>{{ output.recall_90.true_positive }}</td>
-                      <td>{{ output.recall_90.false_negative }}</td>
-                    </tr>
-                    <tr>
-                      <td>{{ output.recall_90.false_positive }}</td>
-                      <td>{{ output.recall_90.true_negative }}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            <li>Recall: {{ output.recall_90.recall.toFixed(2) }}%</li>
-            <li>Specificity: {{ output.recall_90.specificity.toFixed(2) }}%</li>
-            <li>Precision: {{ output.recall_90.precision.toFixed(2) }}%</li>
-            <li>NPV: {{ output.recall_90.npv.toFixed(2) }}%</li>
-            <li>F1 Score: {{ output.recall_90.f1_score.toFixed(2) }}%</li>
-            <li>F2 Score: {{ output.recall_90.f2_score.toFixed(2) }}%</li>
-            <li>Accuracy: {{ output.recall_90.accuracy.toFixed(2) }}%</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-
-    <div class="col">
-      <div class="card mb-4 rounded-3 shadow-sm">
-        <div class="card-header py-3">
-          <h4 class="my-0 fw-normal">Recall > 95%</h4>
-        </div>
-        <div class="card-body">
-          <ul class="list-unstyled mt-3 mb-4">
-            <div class="bd-example-snippet bd-code-snippet">
-              <div class="bd-example m-0 border-0">
-                <table class="table table-sm table-bordered">
-                  <thead>
-                    <tr>
-                      <th scope="col" colspan="2">Confusion Matrix</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>{{ output.recall_95.true_positive }}</td>
-                      <td>{{ output.recall_95.false_negative }}</td>
-                    </tr>
-                    <tr>
-                      <td>{{ output.recall_95.false_positive }}</td>
-                      <td>{{ output.recall_95.true_negative }}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            <li>Recall: {{ output.recall_95.recall.toFixed(2) }}%</li>
-            <li>Specificity: {{ output.recall_95.specificity.toFixed(2) }}%</li>
-            <li>Precision: {{ output.recall_95.precision.toFixed(2) }}%</li>
-            <li>NPV: {{ output.recall_95.npv.toFixed(2) }}%</li>
-            <li>F1 Score: {{ output.recall_95.f1_score.toFixed(2) }}%</li>
-            <li>F2 Score: {{ output.recall_95.f2_score.toFixed(2) }}%</li>
-            <li>Accuracy: {{ output.recall_95.accuracy.toFixed(2) }}%</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-
+    </template>
     <div class="col">
       <div class="card mb-4 rounded-3 shadow-sm">
         <div class="card-header py-3">
@@ -319,27 +220,34 @@ export default {
     return {
       dataNames: '',
       modelOptions: {
+        xgb: "XGB",
         lightgbm: "lightGBM",
         random_forest: "Random Forest",
-        xgb: "XGB"
       },
       trainSizeOptions: [
-        1.0,
-        0.9,
-        0.8,
-        0.7,
+        '1.0',
+        '0.9',
+        '0.8',
+        '0.7',
       ],
       selected: {
         model_type: '',
         data: '',
         label_column: '',
-        train_size: 0.8,
+        split_strategy: 'train_test_split',
+        split_value: '0.8',
         model_name: '',
       },
       watched: {
         test_size: '',
         file_extension: '',
       },
+      recallLevels: [
+        { level: 80, key: 'recall_80' },
+        { level: 85, key: 'recall_85' },
+        { level: 90, key: 'recall_90' },
+        { level: 95, key: 'recall_95' }
+      ],
       output: '',
       loading: false,
       imageData: null,
@@ -353,8 +261,19 @@ export default {
   mounted() {},
   computed: {},
   watch: {
-    "selected.train_size"() {
-      this.updateTestSize()
+    "selected.split_strategy"() {
+      if (this.selected.split_strategy == 'train_test_split') {
+        this.selected.split_value = '0.8'
+      } else if (this.selected.split_strategy == 'k_fold') {
+        this.selected.split_value = '5'
+      }
+    },
+    "selected.split_value"() {
+      if (this.selected.split_strategy == 'train_test_split') {
+        this.updateTestSize()
+      } else if (this.selected.split_strategy == 'k_fold') {
+        this.watched.test_size = ''
+      }
     },
     "selected.model_type"() {
       this.updateFileExtension()
@@ -375,7 +294,7 @@ export default {
       }
     },
     updateTestSize() {
-      this.watched.test_size = (1 - parseFloat(this.selected.train_size)).toFixed(1)
+      this.watched.test_size = (1 - parseFloat(this.selected.split_value)).toFixed(1)
     },
     updateFileExtension() {
       if (this.selected.model_type == "xgb") {
@@ -388,21 +307,22 @@ export default {
       this.loading = true
       this.output = null
       try {
-        const response = await fetch('http://127.0.0.1:5000/run-train', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ arg1: this.selected.model_type, arg2: this.selected.data }),
-        });
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        this.output = await response.json();
-
-        this.imageData = `data:image/png;base64,${this.output.roc}`;
-
+        const response = await axios.post('http://127.0.0.1:5000/run-train', {
+          arg1: this.selected.model_type,
+          arg2: this.selected.data,
+          arg3: this.selected.label_column,
+          arg4: this.selected.split_strategy,
+          arg5: this.selected.split_value,
+          arg6: this.selected.model_name,
+        }, {
+          headers: { 'Content-Type': 'application/json' }
+        })
+        
+        this.output = response.data
+        this.imageData = `data:image/png;base64,${this.output.roc}`
       } catch (error) {
-        console.error('Error:', error);
-        this.output = null;
+        console.error('Error:', error)
+        this.output = null
       }
       this.loading = false
       this.openModalNotification()

@@ -48,7 +48,7 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import roc_curve
 from sklearn.metrics import auc
 
-def prepare_data(file_name, label_column, train_size):
+def prepare_data(file_name, label_column):
     folder_path = "data"
     if not os.path.exists(folder_path):
         print(json.dumps({
@@ -82,6 +82,7 @@ def prepare_data(file_name, label_column, train_size):
     return x, y
 
 def train_model(model_type, model_name, x_train, y_train):
+    # 若 model_name 為空，則不儲存
     os.makedirs("model", exist_ok=True) # 確保 model 資料夾存在
     if model_type == 'xgb':
         xgb = XGBClassifier(base_score=0.5, booster='gbtree', colsample_bylevel=1,
@@ -94,7 +95,8 @@ def train_model(model_type, model_name, x_train, y_train):
                             reg_alpha=0, reg_lambda=1, scale_pos_weight=1, subsample=1,
                             tree_method='exact', validate_parameters=1, verbosity=None)
         xgb.fit(x_train, y_train)
-        xgb.save_model(f"model/{model_name}.json")
+        if model_name != '':
+            xgb.save_model(f"model/{model_name}.json")
         return xgb
 
     elif model_type == 'random_forest':
@@ -105,13 +107,15 @@ def train_model(model_type, model_name, x_train, y_train):
             n_jobs=-1           # 使用所有可用的 CPU 核心
         )
         rf.fit(x_train, y_train)
-        joblib.dump(rf, f"model/{model_name}.pkl")
+        if model_name != '':
+            joblib.dump(rf, f"model/{model_name}.pkl")
         return rf
 
     elif model_type == 'lightgbm':
         lightgbm = LGBMClassifier(verbose=-1)
         lightgbm.fit(x_train, y_train)
-        joblib.dump(lightgbm, f"model/{model_name}.pkl")
+        if model_name != '':
+            joblib.dump(lightgbm, f"model/{model_name}.pkl")
         return lightgbm
 
     else:
@@ -121,63 +125,88 @@ def train_model(model_type, model_name, x_train, y_train):
         }))
         sys.exit(1)
 
-def kfold_evaluation(X, y, model, cv_folds=5):
-    cv = StratifiedKFold(n_splits=cv_folds, shuffle=True, random_state=30)
-    tprs = []
-    aucs = []
-    mean_fpr = np.linspace(0, 1, 100)
-    accuracy_list = []
-    precision_list = []
-    recall_list = []
-    f1_list = []
+def kfold_evaluation(X, y, model_type, split_value):
+    cv_folds = int(split_value)
+    skf = StratifiedKFold(n_splits=cv_folds, shuffle=True, random_state=30)
+    # 初始化累加变量
+    total_tn, total_fp, total_fn, total_tp = 0, 0, 0, 0
+    tpr_list = []
+    fpr_list = []
+    auc_list = []
+    y_test_all = []
+    y_pred_proba_all = []
 
-    for train_idx, test_idx in cv.split(X, y):
-        X_train, X_test = X[train_idx], X[test_idx]
-        y_train, y_test = y[train_idx], y[test_idx]
+    for fold, (train_index, test_index) in enumerate(skf.split(X, y), 1):
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
 
-        model.fit(X_train, y_train)
-        y_pred = model.predict(X_test)
-        y_pred_prob = model.predict_proba(X_test)[:, 1]
+        # Train model on the current fold
+        model = train_model(model_type, '', X_train, y_train)
 
-        accuracy_list.append(accuracy_score(y_test, y_pred))
-        precision_list.append(precision_score(y_test, y_pred, zero_division=0))
-        recall_list.append(recall_score(y_test, y_pred, zero_division=0))
-        f1_list.append(f1_score(y_test, y_pred, zero_division=0))
+        # Predict probabilities for ROC curve and labels for confusion matrix
+        y_pred_proba = model.predict_proba(X_test)[:, 1]
+        y_pred = (y_pred_proba >= 0.5).astype(int)
 
-        fpr, tpr, _ = roc_curve(y_test, y_pred_prob)
-        roc_auc = auc(fpr, tpr)
-        tprs.append(np.interp(mean_fpr, fpr, tpr))
-        tprs[-1][0] = 0.0
-        aucs.append(roc_auc)
+        # Confusion matrix
+        tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
+        total_tn += tn
+        total_fp += fp
+        total_fn += fn
+        total_tp += tp
 
-    mean_tpr = np.mean(tprs, axis=0)
-    mean_tpr[-1] = 1.0
-    mean_auc = auc(mean_fpr, mean_tpr)
-    std_auc = np.std(aucs)
+        # ROC Curve
+        fpr, tpr, _ = roc_curve(y_test, y_pred_proba)
+        auc_score = auc(fpr, tpr)
+        tpr_list.append(tpr)
+        fpr_list.append(fpr)
+        auc_list.append(auc_score)
 
-    plt.figure(figsize=(8, 6))
-    plt.plot(mean_fpr, mean_tpr, color='m', label=f'Mean ROC (AUC = {mean_auc:.2f} ± {std_auc:.2f})')
-    plt.plot([0, 1], [0, 1], linestyle="-.", color='0')
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.legend()
-    # plt.savefig('roc.png')
+        # Collect all true labels and predicted probabilities for aggregated ROC
+        y_test_all.extend(y_test)
+        y_pred_proba_all.extend(y_pred_proba)
+
+    # Average metrics
+    avg_accuracy = (total_tp + total_tn) / (total_tp + total_tn + total_fp + total_fn)
+    avg_recall = total_tp / (total_tp + total_fn) if (total_tp + total_fn) > 0 else 0
+    avg_precision = total_tp / (total_tp + total_fp) if (total_tp + total_fp) > 0 else 0
+    avg_f1 = 2 * avg_precision * avg_recall / (avg_precision + avg_recall) if (avg_precision + avg_recall) > 0 else 0
+    avg_auc = np.mean(auc_list)
+
+    # Plot ROC Curve
+    fpr_agg, tpr_agg, _ = roc_curve(y_test_all, y_pred_proba_all)
+    plt.figure()
+    plt.plot(fpr_agg, tpr_agg, color='m', label=f"ROC curve (AUC = {avg_auc:.2f})")
+    plt.plot([0, 1], [0, 1], color='0', linestyle="--")  # Baseline
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
+    plt.legend(loc="lower right")
+
+    # Save ROC Curve as Base64
     buf = io.BytesIO()
     plt.savefig(buf, format='png')
     buf.seek(0)
-    image_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+    roc_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
     buf.close()
 
-    return {
+    # Return results
+    result = {
         "status": "success",
         "metrics": {
-            "accuracy": np.mean(accuracy_list),
-            "precision": np.mean(precision_list),
-            "recall": np.mean(recall_list),
-            "f1_score": np.mean(f1_list),
+            "accuracy": avg_accuracy * 100,
+            "recall": avg_recall * 100,
+            "precision": avg_precision * 100,
+            "f1_score": avg_f1 * 100,
+            "auc": avg_auc * 100
         },
-        "roc": image_base64
+        "confusion_matrix": {
+            "true_negative": total_tn,
+            "false_positive": total_fp,
+            "false_negative": total_fn,
+            "true_positive": total_tp,
+        },
+        "roc": roc_base64
     }
+    return result
     
 def evaluate_model(y_test, y_pred, model, x_test):
     y_test = y_test.astype(float)
@@ -246,16 +275,28 @@ def evaluate_model(y_test, y_pred, model, x_test):
                 high_recall_confusion_matrix.append(confusion_matrix_list[index])
                 f2_score = (5 * precision * recall) / (4 * precision + recall)
                 high_recall_f2score.append(f2_score)
-        high_recall_best_f1_score_index = np.argmax(high_recall_f1score)
-
-        best_recall = high_recall_recall[high_recall_best_f1_score_index]
-        best_specificity = high_recall_specificity[high_recall_best_f1_score_index]
-        best_precision = high_recall_precision[high_recall_best_f1_score_index]
-        best_npv = high_recall_npv[high_recall_best_f1_score_index]
-        best_f1 = high_recall_f1score[high_recall_best_f1_score_index]
-        best_f2 = high_recall_f2score[high_recall_best_f1_score_index]
-        best_accuracy = high_recall_accuracy[high_recall_best_f1_score_index]
-        best_confusion_matrix = high_recall_confusion_matrix[high_recall_best_f1_score_index]
+        
+        if high_recall_f1score:
+            # 檢查是否有符合的 Recall 值
+            high_recall_best_f1_score_index = np.argmax(high_recall_f1score)
+            best_recall = high_recall_recall[high_recall_best_f1_score_index]
+            best_specificity = high_recall_specificity[high_recall_best_f1_score_index]
+            best_precision = high_recall_precision[high_recall_best_f1_score_index]
+            best_npv = high_recall_npv[high_recall_best_f1_score_index]
+            best_f1 = high_recall_f1score[high_recall_best_f1_score_index]
+            best_f2 = high_recall_f2score[high_recall_best_f1_score_index]
+            best_accuracy = high_recall_accuracy[high_recall_best_f1_score_index]
+            best_confusion_matrix = high_recall_confusion_matrix[high_recall_best_f1_score_index]
+        else:
+            # 如果沒有符合 Recall ≥ 80, 85, 90, 95，填入 0
+            best_recall = 0
+            best_specificity = 0
+            best_precision = 0
+            best_npv = 0
+            best_f1 = 0
+            best_f2 = 0
+            best_accuracy = 0
+            best_confusion_matrix = [0, 0, 0, 0]
 
         key_name = f"recall_{recall_standard}"
         result[key_name] = {
@@ -303,16 +344,16 @@ class NumpyEncoder(json.JSONEncoder):
             return obj.tolist()
         return super().default(obj)
         
-def main(model_type, file_name, label_column, train_size, model_name):
-    train_size = float(train_size)
-    x, y = prepare_data(file_name, label_column, train_size)
+def main(model_type, file_name, label_column, split_strategy, split_value, model_name):
+    x, y = prepare_data(file_name, label_column)
 
-    if train_size == 1:
+    if split_strategy == "k_fold":
+        results = kfold_evaluation(x, y, model_type, split_value)
         model = train_model(model_type, model_name, x, y)
-        results = kfold_evaluation(x, y, model)
 
-    else:
-        x_train, x_test, y_train, y_test = train_test_split(x, y, train_size=float(train_size), shuffle=True, stratify=y, random_state=30)
+    elif split_strategy == "train_test_split":
+        split_value = float(split_value)
+        x_train, x_test, y_train, y_test = train_test_split(x, y, train_size=split_value, shuffle=True, stratify=y, random_state=30)
         model = train_model(model_type, model_name, x_train, y_train)
         y_pred = model.predict(x_test)
         results = evaluate_model(y_test, y_pred, model, x_test)
@@ -324,8 +365,9 @@ if __name__ == "__main__":
     parser.add_argument('model_type', type=str, help="Type of model to train (xgb, random_forest, lightgbm)")
     parser.add_argument('file_name', type=str, help="File name of the data")
     parser.add_argument('label_column', type=str, help="The column chosen to be label")
-    parser.add_argument('train_size', type=str, help="The size of training set")
+    parser.add_argument('split_strategy', type=str, help="train_test_split or k_fold")
+    parser.add_argument('split_value', type=str, help="The train_size or cv_folds depends on split_strategy")
     parser.add_argument('model_name', type=str, help="The name of the trained model that stored in model\ ")
 
     args = parser.parse_args()
-    main(args.model_type, args.file_name, args.label_column, args.train_size, args.model_name)
+    main(args.model_type, args.file_name, args.label_column, args.split_strategy, args.split_value, args.model_name)

@@ -72,17 +72,33 @@ def run_train():
     arg1 = data.get('arg1')
     arg2 = data.get('arg2')
     arg3 = data.get('arg3')
+    arg4 = data.get('arg4')
+    arg5 = data.get('arg5')
+    arg6 = data.get('arg6')
 
     try:
-        result = subprocess.check_output(
-            'python train.py {} "{}" "{}"'.format(arg1, arg2, arg3),
-            shell=True,
-            text=True
+        result = subprocess.run(
+            ['python', 'train.py', arg1, arg2, arg3, arg4, arg5, arg6],
+            # capture_output=True,        # 捕獲標準輸出和標準錯誤
+            stdout=subprocess.PIPE,     # 只捕獲標準輸出
+            stderr=subprocess.DEVNULL,  # 忽略標準錯誤
+            text=True                   # 將輸出轉換為字符串
         )
-        # 將 JSON 結果返回給前端
-        return jsonify(json.loads(result))
-    except subprocess.CalledProcessError as e:
-        return jsonify({"error": e.output}), 500
+        
+        if result.returncode != 0:
+            return jsonify({
+                "status": "error",
+                "message": "Error occurred while executing train.py.",
+                "output": result.stderr
+            }), 500
+        
+        return jsonify(json.loads(result.stdout))
+    
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
