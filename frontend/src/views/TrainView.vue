@@ -223,6 +223,7 @@ export default {
         xgb: "XGB",
         lightgbm: "lightGBM",
         random_forest: "Random Forest",
+        logistic_regression: "Logistic Regression",
       },
       trainSizeOptions: [
         '1.0',

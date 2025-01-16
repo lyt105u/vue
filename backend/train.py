@@ -47,6 +47,9 @@ import io
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import roc_curve
 from sklearn.metrics import auc
+from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import make_pipeline
 
 def prepare_data(file_name, label_column):
     folder_path = "data"
@@ -117,6 +120,16 @@ def train_model(model_type, model_name, x_train, y_train):
         if model_name != '':
             joblib.dump(lightgbm, f"model/{model_name}.pkl")
         return lightgbm
+    
+    elif model_type == 'logistic_regression':
+        logistic_reg = make_pipeline(
+            StandardScaler(),
+            LogisticRegression(max_iter=5000, solver='lbfgs', C=0.1)
+        )
+        logistic_reg.fit(x_train, y_train)
+        if model_name != '':
+            joblib.dump(logistic_reg, f"model/{model_name}.pkl")
+        return logistic_reg
 
     else:
         print(json.dumps({
@@ -367,7 +380,7 @@ if __name__ == "__main__":
     parser.add_argument('label_column', type=str, help="The column chosen to be label")
     parser.add_argument('split_strategy', type=str, help="train_test_split or k_fold")
     parser.add_argument('split_value', type=str, help="The train_size or cv_folds depends on split_strategy")
-    parser.add_argument('model_name', type=str, help="The name of the trained model that stored in model\ ")
+    parser.add_argument('model_name', type=str, help="The name of the trained model that stored in directory model")
 
     args = parser.parse_args()
     main(args.model_type, args.file_name, args.label_column, args.split_strategy, args.split_value, args.model_name)
