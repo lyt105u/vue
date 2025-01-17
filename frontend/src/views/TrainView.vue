@@ -11,7 +11,7 @@
 
   <form class="row g-3" @submit.prevent="runTrain" style="margin-top: 16px">
     <div class="row mb-3">
-      <label for="inputEmail3" class="col-sm-3 col-form-label">Model type</label>
+      <label for="inputEmail3" class="col-sm-3 col-form-label">Model Type</label>
       <div class="col-sm-8">
         <select class="form-select" aria-label="Small select example" v-model="selected.model_type">
           <option v-for="(label, value) in modelOptions" :key="value" :value="value">
@@ -22,7 +22,7 @@
     </div>
 
     <div class="row mb-3">
-      <label for="inputEmail3" class="col-sm-3 col-form-label">Form data</label>
+      <label for="inputEmail3" class="col-sm-3 col-form-label">Form Data</label>
       <div class="col-sm-8">
         <select class="form-select" aria-label="Small select example" v-model="selected.data">
           <option v-for="data in dataNames" :key="data" :value="data">{{ data }}</option>
@@ -31,7 +31,7 @@
     </div>
 
     <div class="row mb-3">
-      <label for="inputEmail3" class="col-sm-3 col-form-label">Label column</label>
+      <label for="inputEmail3" class="col-sm-3 col-form-label">Label Column</label>
       <div class="col-sm-8">
         <input v-model="selected.label_column" class="form-control" type="text">
       </div>
@@ -81,7 +81,7 @@
     </div>
 
     <div class="row mb-3">
-      <label for="inputEmail3" class="col-sm-3 col-form-label">Model saved as</label>
+      <label for="inputEmail3" class="col-sm-3 col-form-label">Model Saved as</label>
       <div class="col-sm-8">
         <div class="input-group">
           <input v-model="selected.model_name" class="form-control" type="text">
@@ -142,10 +142,10 @@
                 </table>
               </div>
             </div>
-            <li>accuracy : {{ output.metrics.accuracy.toFixed(2) }}%</li>
-            <li>recall : {{ output.metrics.recall.toFixed(2) }}%</li>
-            <li>precision : {{ output.metrics.precision.toFixed(2) }}%</li>
-            <li>f1_score : {{ output.metrics.f1_score.toFixed(2) }}%</li>
+            <li>Accuracy : {{ output.metrics.accuracy.toFixed(2) }}%</li>
+            <li>Recall : {{ output.metrics.recall.toFixed(2) }}%</li>
+            <li>Precision : {{ output.metrics.precision.toFixed(2) }}%</li>
+            <li>F1_score : {{ output.metrics.f1_score.toFixed(2) }}%</li>
           </ul>
         </div>
       </div>
@@ -194,7 +194,7 @@
     <div class="col">
       <div class="card mb-4 rounded-3 shadow-sm">
         <div class="card-header py-3">
-          <h4 class="my-0 fw-normal">ROC curve</h4>
+          <h4 class="my-0 fw-normal">ROC Curve</h4>
         </div>
         <img :src="imageData" alt="ROC Curve" />
       </div>
@@ -265,8 +265,10 @@ export default {
     "selected.split_strategy"() {
       if (this.selected.split_strategy == 'train_test_split') {
         this.selected.split_value = '0.8'
+        this.output = null
       } else if (this.selected.split_strategy == 'k_fold') {
         this.selected.split_value = '5'
+        this.output = null
       }
     },
     "selected.split_value"() {
