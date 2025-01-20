@@ -52,7 +52,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import make_pipeline
 
 def prepare_data(file_name, label_column):
-    folder_path = "data"
+    folder_path = "data/train"
     if not os.path.exists(folder_path):
         print(json.dumps({
             "status": "error",

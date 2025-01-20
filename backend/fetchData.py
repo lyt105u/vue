@@ -6,8 +6,19 @@ import sys
 import json
 
 def list_file_names(param):
-    if param == "data":
-        folder_path = "data/"
+    if param == "data/train":
+        folder_path = "data/train/"
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+
+        files = [file for file in os.listdir(folder_path) if file.endswith(('.xlsx', '.csv'))]
+        print(json.dumps({
+            "status": "success",
+            "files": files
+        }, ensure_ascii=False))
+
+    elif param == "data/predict":
+        folder_path = "data/predict/"
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
 

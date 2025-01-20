@@ -286,7 +286,7 @@ export default {
     async fetchData() {
       try {
         const response = await axios.post('http://127.0.0.1:5000/fetch-data', {
-          param: 'data'
+          param: 'data/train'
         });
         if (response.data.status == "success") {
           this.dataNames = response.data.files
