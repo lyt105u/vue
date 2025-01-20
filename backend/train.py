@@ -87,6 +87,15 @@ def prepare_data(file_name, label_column):
 def train_model(model_type, model_name, x_train, y_train):
     # 若 model_name 為空，則不儲存
     os.makedirs("model", exist_ok=True) # 確保 model 資料夾存在
+
+    field_count = x_train.shape[1]
+    field_count_file = "model/field_counts.json"
+    if os.path.exists(field_count_file):
+        with open(field_count_file, "r") as f:
+            field_counts = json.load(f)
+    else:
+        field_counts = {}
+
     if model_type == 'xgb':
         xgb = XGBClassifier(base_score=0.5, booster='gbtree', colsample_bylevel=1,
                             colsample_bynode=1, colsample_bytree=1, enable_categorical=False,
@@ -100,6 +109,9 @@ def train_model(model_type, model_name, x_train, y_train):
         xgb.fit(x_train, y_train)
         if model_name != '':
             xgb.save_model(f"model/{model_name}.json")
+            field_counts[model_name + ".json"] = field_count
+            with open(field_count_file, "w") as f:
+                json.dump(field_counts, f, indent=4)
         return xgb
 
     elif model_type == 'random_forest':
@@ -112,6 +124,9 @@ def train_model(model_type, model_name, x_train, y_train):
         rf.fit(x_train, y_train)
         if model_name != '':
             joblib.dump(rf, f"model/{model_name}.pkl")
+            field_counts[model_name + ".pkl"] = field_count
+            with open(field_count_file, "w") as f:
+                json.dump(field_counts, f, indent=4)
         return rf
 
     elif model_type == 'lightgbm':
@@ -119,6 +134,9 @@ def train_model(model_type, model_name, x_train, y_train):
         lightgbm.fit(x_train, y_train)
         if model_name != '':
             joblib.dump(lightgbm, f"model/{model_name}.pkl")
+            field_counts[model_name + ".pkl"] = field_count
+            with open(field_count_file, "w") as f:
+                json.dump(field_counts, f, indent=4)
         return lightgbm
     
     elif model_type == 'logistic_regression':
@@ -129,6 +147,9 @@ def train_model(model_type, model_name, x_train, y_train):
         logistic_reg.fit(x_train, y_train)
         if model_name != '':
             joblib.dump(logistic_reg, f"model/{model_name}.pkl")
+            field_counts[model_name + ".pkl"] = field_count
+            with open(field_count_file, "w") as f:
+                json.dump(field_counts, f, indent=4)
         return logistic_reg
 
     else:

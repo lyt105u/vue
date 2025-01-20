@@ -33,7 +33,7 @@ def list_file_names(param):
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
 
-        files = [file for file in os.listdir(folder_path)]
+        files = [file for file in os.listdir(folder_path) if file != "field_counts.json"]
         print(json.dumps({
             "status": "success",
             "files": files
