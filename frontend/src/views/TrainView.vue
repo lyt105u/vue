@@ -22,7 +22,7 @@
     </div>
 
     <div class="row mb-3">
-      <label for="inputEmail3" class="col-sm-3 col-form-label">Form Data</label>
+      <label for="inputEmail3" class="col-sm-3 col-form-label">File Selection</label>
       <div class="col-sm-8">
         <select class="form-select" aria-label="Small select example" v-model="selected.data">
           <option v-for="data in dataNames" :key="data" :value="data">{{ data }}</option>
