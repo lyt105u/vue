@@ -47,6 +47,43 @@ def run_fetch_data():
             "message": str(e)
         }), 500
 
+@app.route('/get-fieldNumber', methods=['POST'])
+def run_get_fieldNumber():
+    param = request.json.get('param', None)
+    if not param:
+        return jsonify({
+            "status": "error",
+            "message": "Missing 'param' in request."
+        }), 400
+    
+    try:
+        fetch_result = subprocess.run(
+            ['python', 'getFieldNumber.py', param],
+            # capture_output=True,  # 捕獲標準輸出和標準錯誤
+            stdout=subprocess.PIPE,     # 只捕獲標準輸出
+            stderr=subprocess.DEVNULL,  # 忽略標準錯誤
+            text=True                   # 將輸出轉換為字符串
+        )
+        
+        # debug 用
+        # print("STDOUT:", result.stdout)  # 打印标准输出
+        # print("STDERR:", result.stderr)  # 打印标准错误
+        
+        if fetch_result.returncode != 0:
+            return jsonify({
+                "status": "error",
+                "message": "Script execution failed.",
+                "output": fetch_result.stderr
+            }), 500
+
+        return jsonify(json.loads(fetch_result.stdout))
+    
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
 @app.route('/run-predict', methods=['POST'])
 def run_predict():
     data = request.get_json()
