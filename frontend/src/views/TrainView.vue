@@ -31,7 +31,7 @@
     </div>
 
     <div class="row mb-3">
-      <label for="inputEmail3" class="col-sm-3 col-form-label">Label Column</label>
+      <label for="inputEmail3" class="col-sm-3 col-form-label">Outcome Column</label>
       <div class="col-sm-8">
         <input v-model="selected.label_column" class="form-control" type="text">
       </div>
