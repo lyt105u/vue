@@ -83,25 +83,6 @@ def run_get_fieldNumber():
             "status": "error",
             "message": str(e)
         }), 500
-
-@app.route('/run-predict', methods=['POST'])
-def run_predict():
-    data = request.get_json()
-    arg1 = data.get('arg1')
-    arg2 = data.get('arg2')
-    arg3 = data.get('arg3')
-
-    try:
-        # result = subprocess.check_output(['python', 'predict.py', arg1, arg2], text=True)
-        result = subprocess.check_output(
-            'python predict.py {} "{}" "{}"'.format(arg1, arg2, arg3),
-            shell=True,
-            text=True
-        )
-        # 將 JSON 結果返回給前端
-        return jsonify(json.loads(result))
-    except subprocess.CalledProcessError as e:
-        return jsonify({"error": e.output}), 500
     
 @app.route('/run-train', methods=['POST'])
 def run_train():
@@ -121,12 +102,64 @@ def run_train():
             stderr=subprocess.DEVNULL,  # 忽略標準錯誤
             text=True                   # 將輸出轉換為字符串
         )
+
+        # print("STDOUT:", result.stdout)  # 打印标准输出
+        # print("STDERR:", result.stderr)  # 打印标准错误
         
         if result.returncode != 0:
             return jsonify({
                 "status": "error",
                 "message": "Error occurred while executing train.py.",
                 "output": result.stderr
+            }), 500
+        
+        return jsonify(json.loads(result.stdout))
+    
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+@app.route('/run-predict', methods=['POST'])
+def run_predict():
+    data = request.get_json()
+    model_path = data.get('model_path')  # 模型路徑
+    mode = data.get('mode')             # 模式：file 或 input
+    data_path = data.get('data_path')   # 輸入檔案路徑（file 模式）
+    output_name = data.get('output_name')  # 輸出檔案名稱（file 模式）
+    input_values = data.get('input_values')  # 特徵值陣列（input 模式）
+
+    if not model_path or not mode:
+        return jsonify({"status": "error", "message": "model_path and mode are necessary args"}), 400
+
+    command = ['python', 'predict.py', model_path, mode]
+    if mode == 'file':
+        if not data_path or not output_name:
+            return jsonify({"status": "error", "message": "data_path 和 output_name 是 file 模式下的必要參數"}), 400
+        command.extend(['--data_path', data_path, '--output_name', output_name])
+    elif mode == 'input':
+        if not input_values or not isinstance(input_values, list):
+            return jsonify({"status": "error", "message": "input_values 是 input 模式下的必要參數，且必須為陣列格式"}), 400
+        command.extend(['--input_values'] + list(map(str, input_values)))
+
+    try:
+        # 呼叫子進程執行腳本
+        result = subprocess.run(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+
+        # print("STDOUT:", result.stdout)  # 打印标准输出
+        # print("STDERR:", result.stderr)  # 打印标准错误
+
+        if result.returncode != 0:
+            return jsonify({
+                "status": "error",
+                "message": "Error occurred while executing predict.py.",
+                "stderr": result.stderr
             }), 500
         
         return jsonify(json.loads(result.stdout))

@@ -13,7 +13,7 @@
     <div class="row mb-3">
       <label for="inputEmail3" class="col-sm-3 col-form-label">Trained model</label>
       <div class="col-sm-8">
-        <select class="form-select" aria-label="Small select example" v-model="selected.model">
+        <select class="form-select" aria-label="Small select example" v-model="selected.model_path">
           <option v-for="data in modelNames" :key="data" :value="data">{{ data }}</option>
         </select>
       </div>
@@ -23,7 +23,7 @@
       <label for="inputEmail3" class="col-sm-3 col-form-label">Prediction Type</label>
       <div class="col-sm-4">
         <div class="form-check">
-          <input v-model="selected.method" class="form-check-input" type="radio" name="gridRadios" id="gridRadios1" value="file">
+          <input v-model="selected.mode" class="form-check-input" type="radio" name="gridRadios" id="gridRadios1" value="file">
           <label class="form-check-label" for="gridRadios1">
             File Prediction
           </label>
@@ -31,7 +31,7 @@
       </div>
       <div class="col-sm-4">
         <div class="form-check">
-          <input v-model="selected.method" class="form-check-input" type="radio" name="gridRadios" id="gridRadios1" value="input">
+          <input v-model="selected.mode" class="form-check-input" type="radio" name="gridRadios" id="gridRadios1" value="input">
           <label class="form-check-label" for="gridRadios1">
             Manual Input
           </label>
@@ -39,11 +39,11 @@
       </div>
     </div>
 
-    <template v-if="selected.method=='file'">
+    <template v-if="selected.mode=='file'">
       <div class="row mb-3">
         <label for="inputEmail3" class="col-sm-3 col-form-label">File Selection</label>
         <div class="col-sm-8">
-          <select class="form-select" aria-label="Small select example" v-model="selected.file">
+          <select class="form-select" aria-label="Small select example" v-model="selected.data_path">
             <option v-for="data in xlsxNames" :key="data" :value="data">{{ data }}</option>
           </select>
         </div>
@@ -53,14 +53,14 @@
         <label for="inputEmail3" class="col-sm-3 col-form-label">Results Saved as</label>
         <div class="col-sm-8">
           <div class="input-group">
-            <input v-model="selected.model_name" class="form-control" type="text">
+            <input v-model="selected.output_name" class="form-control" type="text">
             <span class="input-group-text">{{ watched.file_extension }}</span>
           </div>
         </div>
       </div>
     </template>
 
-    <template v-if="selected.method=='input'">
+    <template v-if="selected.mode=='input'">
       <div class="row mb-3" v-for="(row, rowIndex) in rows" :key="rowIndex">
         <!-- 第一行顯示，其他行保持空白，排版用 -->
         <label for="inputEmail3" class="col-sm-3 col-form-label">
@@ -70,7 +70,7 @@
         <div v-for="(field, fieldIndex) in row" :key="`${rowIndex}-${fieldIndex}`" class="col-sm-2">
           <div class="form-floating">
             <input
-              v-model="fields[rowIndex * 4 + fieldIndex]"
+              v-model="selected.input_values[rowIndex * 4 + fieldIndex]"
               type="text" 
               class="form-control" 
               :id="`floatingInput-${rowIndex}-${fieldIndex}`" 
@@ -102,65 +102,73 @@
     <h3>
       Results
     </h3>
+    {{ notificationMsg }}
   </div>
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-
+  <ModalNotification ref="modalNotification" title="Training Complete" :content="notificationMsg" />
 </template>
 
 <script>
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import axios from 'axios';
+import ModalNotification from "@/components/ModalNotification.vue"
 
 export default {
-  components: {},
+  components: {
+    ModalNotification,
+  },
   data() {
     return {
       modelNames: '',
       xlsxNames: '',
       selected: {
-        model: '',
-        method: 'file',
-        file: '',
+        model_path: '',
+        mode: 'file',
+        data_path: '',
+        output_name: '',
+        input_values: [],
       },
       watched: {
         file_extension: '',
       },
-      fields: [],
       output: '',
-      imageData: null,
+      notificationMsg: '',
       loading: false,
     };
   },
   created() {
     this.fetchData();
   },
-  mounted() {
-    // Initialize Tooltip
-    // const tooltipTrigger = this.$refs.tooltipTrigger;
-    // new bootstrap.Tooltip(tooltipTrigger);
-  },
+  mounted() {},
   computed: {
     rows() {
       const result = [];
-      for (let i = 0; i < this.fields.length; i += 4) {
-        result.push(this.fields.slice(i, i + 4));
+      for (let i = 0; i < this.selected.input_values.length; i += 4) {
+        result.push(this.selected.input_values.slice(i, i + 4));
       }
       return result;
     },
   },
   watch: {
-    "selected.model"() {
+    "selected.model_path"() {
+      this.selected.data_path = ''
+      this.selected.output_name = ''
+      this.selected.input_name = []
+      this.output = ''
       this.getFieldNumber()
     },
-    "selected.file"() {
-        if (this .selected.file.endsWith(".csv")) {
+    "selected.data_path"() {
+        if (this .selected.data_path.endsWith(".csv")) {
           this.watched.file_extension = ".csv"
-        } else if (this.selected.file.endsWith(".xlsx")) {
+        } else if (this.selected.data_path.endsWith(".xlsx")) {
           this.watched.file_extension = ".xlsx"
         } else {
           this.watched.file_extension = ""
         }
+    },
+    "selected.mode"() {
+      this.output = ''
     }
   },
   methods: {
@@ -193,13 +201,13 @@ export default {
     },
 
     async getFieldNumber() {
-      if (this.selected.model) {
+      if (this.selected.model_path) {
         try {
           const response = await axios.post('http://127.0.0.1:5000/get-fieldNumber', {
-            param: this.selected.model
+            param: this.selected.model_path
           });
           if (response.data.status == "success") {
-            this.fields = Array(response.data.field_count).fill("");
+            this.selected.input_values = Array(response.data.field_count).fill("");
           }
         } catch (error) {
           console.error("fetchData error: " + error)
@@ -211,24 +219,33 @@ export default {
     async runPredict() {
       this.loading = true
       this.output = null
+
       try {
-        const response = await fetch('http://127.0.0.1:5000/run-predict', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ arg1: this.selected.model, arg2: this.selected.file }),
-        });
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        this.output = await response.json();
-
-        this.imageData = `data:image/png;base64,${this.output.roc}`;
-
+        const response = await axios.post('http://127.0.0.1:5000/run-predict', this.selected)
+        this.output = response.data
+        this.openModalNotification()
       } catch (error) {
         console.error('Error:', error);
-        this.output = null;
+        this.output = {
+          status: 'error',
+          message: error.response?.data?.message || error.message,
+        };
       }
-      this.loading = false;
+
+      this.loading = false
+    },
+
+    openModalNotification() {
+      if (this.$refs.modalNotification) {
+        if (this.selected.mode == 'file') {
+          this.notificationMsg = this.output.message
+        } else if (this.selected.mode == 'input') {
+          this.notificationMsg = this.output.message[0]
+        }
+        this.$refs.modalNotification.openModal();
+      } else {
+        console.error("ModalNotification component not found.");
+      }
     },
   },
 };
