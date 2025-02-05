@@ -23,8 +23,18 @@ packages = {
     "scikit-learn": "1.5.2",
     "lightgbm": "4.5.0",
     "joblib": "1.4.2",
-    "matplotlib": "3.10.0"
+    "matplotlib": "3.10.0",
+    "openpyxl": "3.1.5",
 }
 
 for package, version in packages.items():
     check_and_install(package, version)
+
+# subprocess.check_call(
+#     [sys.executable, "-m", "pip", "install", "scikit-learn==1.5.2"],
+#     stdout=subprocess.DEVNULL
+# )
+# subprocess.check_call(
+#     [sys.executable, "-m", "pip", "install", "--upgrade", "xgboost"],
+#     stdout=subprocess.DEVNULL
+# )
