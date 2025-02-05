@@ -19,6 +19,11 @@ import sys
 #     [sys.executable, "-m", "pip", "install", "--upgrade", "xgboost"],
 #     stdout=subprocess.DEVNULL
 # )
+subprocess.check_call(
+    [sys.executable, "-m", "pip", "install", "openpyxl==3.1.5"],
+    stdout=subprocess.DEVNULL,  # 忽略標準輸出
+    stderr=subprocess.DEVNULL   # 忽略標準錯誤
+)
 # scikit-learn 1.5.2
 # pip 23.2.1
 
