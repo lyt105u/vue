@@ -25,7 +25,7 @@ def prepare_data(file_name, label_column):
         raise ValueError("Unsupported file format. Please provide a CSV or Excel file.")
 
     if label_column not in df.columns:
-        raise ValueError(f"Label column '{label_column}' not found in the dataset.")
+        raise ValueError(f"Outcome column '{label_column}' not found in the dataset.")
     
     x = df.drop(columns=[label_column]).values
     y = df[label_column].values.astype(float)
