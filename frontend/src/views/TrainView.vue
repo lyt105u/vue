@@ -225,12 +225,6 @@ export default {
         random_forest: "Random Forest",
         logistic_regression: "Logistic Regression",
       },
-      trainSizeOptions: [
-        '1.0',
-        '0.9',
-        '0.8',
-        '0.7',
-      ],
       selected: {
         model_type: '',
         data: '',
@@ -309,23 +303,40 @@ export default {
     async runTrain() {
       this.loading = true
       this.output = null
-      try {
-        const response = await axios.post('http://127.0.0.1:5000/run-train', {
-          arg1: this.selected.model_type,
-          arg2: this.selected.data,
-          arg3: this.selected.label_column,
-          arg4: this.selected.split_strategy,
-          arg5: this.selected.split_value,
-          arg6: this.selected.model_name,
-        }, {
-          headers: { 'Content-Type': 'application/json' }
-        })
-        
-        this.output = response.data
-        this.imageData = `data:image/png;base64,${this.output.roc}`
-      } catch (error) {
-        console.error('Error:', error)
-        this.output = null
+      if (this.selected.model_type == "xgb") {
+        try {
+          const response = await axios.post('http://127.0.0.1:5000/run-train-xgb', {
+            file_name: this.selected.data,
+            label_column: this.selected.label_column,
+            split_strategy: this.selected.split_strategy,
+            split_value: this.selected.split_value,
+            model_name: this.selected.model_name,
+          })
+          this.output = response.data
+          this.imageData = `data:image/png;base64,${this.output.roc}`
+        } catch (error) {
+          console.error('Error:', error)
+          this.output = null
+        }
+      } else {
+        try {
+          const response = await axios.post('http://127.0.0.1:5000/run-train', {
+            arg1: this.selected.model_type,
+            arg2: this.selected.data,
+            arg3: this.selected.label_column,
+            arg4: this.selected.split_strategy,
+            arg5: this.selected.split_value,
+            arg6: this.selected.model_name,
+          }, {
+            headers: { 'Content-Type': 'application/json' }
+          })
+          
+          this.output = response.data
+          this.imageData = `data:image/png;base64,${this.output.roc}`
+        } catch (error) {
+          console.error('Error:', error)
+          this.output = null
+        }
       }
       this.loading = false
       this.openModalNotification()
