@@ -1,6 +1,6 @@
 # Tool
-# 用來 xlsx 和 csv 的 label 欄位 （不給看答案）
-# 用於 predict
+# 用來 xlsx 和 csv 的 label 欄位 （不給看答案），用於 predict 頁面
+# 先將有 label 的 xlsx 和 csv 移到 predict 資料夾，再下指令：python tool_removeLabelColumn.py
 
 import os
 import pandas as pd
