@@ -202,7 +202,7 @@
   </div>
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"> <!-- question mark icon -->
-  <ModalNotification ref="modalNotification" title="Training Complete" content="Model trained successfully!" />
+  <ModalNotification ref="modalNotification" :title="modal.title" :content="modal.content" />
   <ModalFormulaExplain ref="formulaExplainModal" />
 </template>
 
@@ -244,6 +244,10 @@ export default {
         { level: 95, key: 'recall_95' }
       ],
       output: '',
+      modal: {
+        title: '',
+        content: '',
+      },
       loading: false,
       imageData: null,
     };
@@ -315,8 +319,10 @@ export default {
           this.output = response.data
           this.imageData = `data:image/png;base64,${this.output.roc}`
         } catch (error) {
-          console.error('Error:', error)
-          this.output = null
+          this.output = {
+            "status": "error",
+            "message": error,
+          }
         }
       } else {
         try {
@@ -334,13 +340,25 @@ export default {
           this.output = response.data
           this.imageData = `data:image/png;base64,${this.output.roc}`
         } catch (error) {
-          console.error('Error:', error)
-          this.output = null
+          this.output = {
+            "status": "error",
+            "message": error,
+          }
         }
+      }
+      
+      if (this.output.status == 'success') {
+        this.modal.title = 'Training Complete'
+        this.modal.content = 'Model trained successfully!'
+      } else if (this.output.status == 'error') {
+        this.modal.title = 'Error'
+        this.modal.content = this.output.message
+        this.output = null
       }
       this.loading = false
       this.openModalNotification()
     },
+
     openModalNotification() {
       if (this.$refs.modalNotification) {
         this.$refs.modalNotification.openModal();
@@ -348,6 +366,7 @@ export default {
         console.error("ModalNotification component not found.");
       }
     },
+
     openFormulaExplainModal() {
       if (this.$refs.formulaExplainModal) {
         this.$refs.formulaExplainModal.openModal();
