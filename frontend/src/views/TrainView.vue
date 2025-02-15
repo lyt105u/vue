@@ -358,6 +358,23 @@ export default {
             "message": error,
           }
         }
+      } else if (this.selected.model_type == "logistic_regression") {
+        try {
+          const response = await axios.post('http://127.0.0.1:5000/run-train-rf', {
+            file_name: this.selected.data,
+            label_column: this.selected.label_column,
+            split_strategy: this.selected.split_strategy,
+            split_value: this.selected.split_value,
+            model_name: this.selected.model_name,
+          })
+          this.output = response.data
+          this.imageData = `data:image/png;base64,${this.output.roc}`
+        } catch (error) {
+          this.output = {
+            "status": "error",
+            "message": error,
+          }
+        }
       } else {
         try {
           const response = await axios.post('http://127.0.0.1:5000/run-train', {
