@@ -291,12 +291,14 @@ export default {
         }
       } catch (error) {
         console.error("fetchData error: " + error)
-        this.dataNames = { status: 'fail', error: '無法連接後端服務' };
+        this.dataNames = { status: 'error', error: '無法連接後端服務' };
       }
     },
+
     updateTestSize() {
       this.watched.test_size = (1 - parseFloat(this.selected.split_value)).toFixed(1)
     },
+
     updateFileExtension() {
       if (this.selected.model_type == "xgb") {
         this.watched.file_extension = ".json"
@@ -304,89 +306,58 @@ export default {
         this.watched.file_extension = ".pkl"
       }
     },
+    
     async runTrain() {
-      this.loading = true
-      this.output = null
-      if (this.selected.model_type == "xgb") {
-        try {
-          const response = await axios.post('http://127.0.0.1:5000/run-train-xgb', {
-            file_name: this.selected.data,
-            label_column: this.selected.label_column,
-            split_strategy: this.selected.split_strategy,
-            split_value: this.selected.split_value,
-            model_name: this.selected.model_name,
-          })
-          this.output = response.data
-          this.imageData = `data:image/png;base64,${this.output.roc}`
-        } catch (error) {
-          this.output = {
-            "status": "error",
-            "message": error,
-          }
-        }
-      } else if (this.selected.model_type == "lightgbm") {
-        try {
-          const response = await axios.post('http://127.0.0.1:5000/run-train-lgbm', {
-            file_name: this.selected.data,
-            label_column: this.selected.label_column,
-            split_strategy: this.selected.split_strategy,
-            split_value: this.selected.split_value,
-            model_name: this.selected.model_name,
-          })
-          this.output = response.data
-          this.imageData = `data:image/png;base64,${this.output.roc}`
-        } catch (error) {
-          this.output = {
-            "status": "error",
-            "message": error,
-          }
-        }
-      } else if (this.selected.model_type == "random_forest") {
-        try {
-          const response = await axios.post('http://127.0.0.1:5000/run-train-rf', {
-            file_name: this.selected.data,
-            label_column: this.selected.label_column,
-            split_strategy: this.selected.split_strategy,
-            split_value: this.selected.split_value,
-            model_name: this.selected.model_name,
-          })
-          this.output = response.data
-          this.imageData = `data:image/png;base64,${this.output.roc}`
-        } catch (error) {
-          this.output = {
-            "status": "error",
-            "message": error,
-          }
-        }
-      } else if (this.selected.model_type == "logistic_regression") {
-        try {
-          const response = await axios.post('http://127.0.0.1:5000/run-train-lr', {
-            file_name: this.selected.data,
-            label_column: this.selected.label_column,
-            split_strategy: this.selected.split_strategy,
-            split_value: this.selected.split_value,
-            model_name: this.selected.model_name,
-          })
-          this.output = response.data
-          this.imageData = `data:image/png;base64,${this.output.roc}`
-        } catch (error) {
-          this.output = {
-            "status": "error",
-            "message": error,
-          }
-        }
-      }
-      
-      if (this.output.status == 'success') {
-        this.modal.title = 'Training Complete'
-        this.modal.content = 'Model trained successfully!'
-      } else if (this.output.status == 'error') {
-        this.modal.title = 'Error'
-        this.modal.content = this.output.message
+      try {
+        this.loading = true
         this.output = null
+        let api = ''
+        let payload = {
+          file_name: this.selected.data,
+          label_column: this.selected.label_column,
+          split_strategy: this.selected.split_strategy,
+          split_value: this.selected.split_value,
+          model_name: this.selected.model_name,
+        }
+
+        if (this.selected.model_type == "xgb") {
+          api = "run-train-xgb"
+          // payload["tree_method"] = "hist"; // XGBoost 特定參數
+        } else if (this.selected.model_type == "lightgbm") {
+          api = "run-train-lgbm"
+        } else if (this.selected.model_type == "random_forest") {
+          api = "run-train-rf"
+        } else if (this.selected.model_type == "logistic_regression") {
+          api = "run-train-lr"
+        } else {
+          this.output = {
+            "status": "error",
+            "message": "Unsupported model type"
+          }
+          return
+        }
+
+        const response = await axios.post(`http://127.0.0.1:5000/${api}`, payload)
+        this.output = response.data
+        this.imageData = `data:image/png;base64,${this.output.roc}`
+
+      } catch (error) {
+        this.output = {
+          "status": "error",
+          "message": error,
+        }
+      } finally {
+        if (this.output.status == 'success') {
+          this.modal.title = 'Training Complete'
+          this.modal.content = 'Model trained successfully!'
+        } else if (this.output.status == 'error') {
+          this.modal.title = 'Error'
+          this.modal.content = this.output.message
+          this.output = null
+        }
+        this.loading = false
+        this.openModalNotification()
       }
-      this.loading = false
-      this.openModalNotification()
     },
 
     openModalNotification() {
