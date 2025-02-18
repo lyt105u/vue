@@ -5,15 +5,28 @@ import numpy as np
 from pytorch_tabnet.tab_model import TabNetClassifier
 from sklearn.model_selection import train_test_split
 from tool_train import prepare_data, NumpyEncoder, evaluate_model, kfold_evaluation
+from contextlib import contextmanager
+import sys
+
+@contextmanager
+def suppress_stdout():
+    # 暫時關閉標準輸出來隱藏 `save_model()` 的訊息
+    with open(os.devnull, 'w') as fnull:
+        old_stdout = sys.stdout
+        sys.stdout = fnull
+        try:
+            yield
+        finally:
+            sys.stdout = old_stdout
 
 def train_tabnet(x_train, y_train, model_name):
-    tabnet = TabNetClassifier()
-    x_train_np = np.array(x_train)
-    y_train_np = np.array(y_train)
+    tabnet = TabNetClassifier(verbose=0)    # verbose 隱藏輸出
+    x_train_np = np.array(x_train, dtype=np.float32)    # 確保 x_train 和 y_train 是 numpy.ndarray，而非 object
+    y_train_np = np.array(y_train, dtype=np.int64)
 
     tabnet.fit(
         x_train_np, y_train_np,
-        max_epochs=10,
+        max_epochs=2,
         patience=10,
         batch_size=256,
         virtual_batch_size=128,
@@ -23,7 +36,9 @@ def train_tabnet(x_train, y_train, model_name):
     
     if model_name:
         os.makedirs("model", exist_ok=True)
-        tabnet.save_model(f"model/{model_name}.zip")
+        # 使用 suppress_stdout() 來隱藏 `save_model()` 的輸出
+        with suppress_stdout():
+            tabnet.save_model(f"model/{model_name}")
 
     return tabnet
 
@@ -42,10 +57,10 @@ def main(file_name, label_column, split_strategy, split_value, model_name):
             x, y, train_size=float(split_value), stratify=y, random_state=30
         )
         model = train_tabnet(x_train, y_train, model_name)
-        y_pred = model.predict(x_test)
-        results = evaluate_model(y_test, y_pred, model, x_test)
+        y_pred = model.predict(np.array(x_test, dtype=np.float32))  # 確保 x_test 在傳入前轉換為 numpy.float32
+        results = evaluate_model(y_test, y_pred, model, np.array(x_test, dtype=np.float32))
     elif split_strategy == "k_fold":
-        results = kfold_evaluation(x, y, split_value, train_tabnet)
+        results = kfold_evaluation(np.array(x, dtype=np.float32), y, split_value, train_tabnet)
     else:
         print(json.dumps({
             "status": "error",

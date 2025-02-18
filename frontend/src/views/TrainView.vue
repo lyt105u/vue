@@ -224,6 +224,7 @@ export default {
         lightgbm: "lightGBM",
         random_forest: "Random Forest",
         logistic_regression: "Logistic Regression",
+        tabnet: "TabNet",
       },
       selected: {
         model_type: '',
@@ -302,6 +303,8 @@ export default {
     updateFileExtension() {
       if (this.selected.model_type == "xgb") {
         this.watched.file_extension = ".json"
+      } else if (this.selected.model_type == "tabnet") {
+        this.watched.file_extension = ".zip"
       } else {
         this.watched.file_extension = ".pkl"
       }
@@ -329,6 +332,8 @@ export default {
           api = "run-train-rf"
         } else if (this.selected.model_type == "logistic_regression") {
           api = "run-train-lr"
+        } else if (this.selected.model_type == "tabnet") {
+          api = "run-train-tabnet"
         } else {
           this.output = {
             "status": "error",
