@@ -225,6 +225,7 @@ export default {
         random_forest: "Random Forest",
         logistic_regression: "Logistic Regression",
         tabnet: "TabNet",
+        mlp: "Multi-layer Perceptron"
       },
       selected: {
         model_type: '',
@@ -334,6 +335,8 @@ export default {
           api = "run-train-lr"
         } else if (this.selected.model_type == "tabnet") {
           api = "run-train-tabnet"
+        } else if (this.selected.model_type == "mlp") {
+          api = "run-train-mlp"
         } else {
           this.output = {
             "status": "error",

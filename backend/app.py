@@ -263,6 +263,42 @@ def run_train_tabnet():
             "status": "error",
             "message": str(e)
         }), 500
+    
+@app.route('/run-train-mlp', methods=['POST'])
+def run_train_mlp():
+    data = request.get_json()
+    file_name = data.get('file_name')
+    label_column = data.get('label_column')
+    split_strategy = data.get('split_strategy') 
+    split_value = data.get('split_value')
+    model_name = data.get('model_name')
+
+    try:
+        result = subprocess.run(
+            ['python', 'train_mlp.py', file_name, label_column, split_strategy, split_value, model_name],
+            # capture_output=True,        # 捕獲標準輸出和標準錯誤
+            stdout=subprocess.PIPE,     # 只捕獲標準輸出
+            stderr=subprocess.DEVNULL,  # 忽略標準錯誤
+            text=True                   # 將輸出轉換為字符串
+        )
+
+        # print("STDOUT:", result.stdout)  # 印出標準輸出
+        # print("STDERR:", result.stderr)  # 印出標準錯誤
+
+        if result.returncode != 0:
+            return jsonify({
+                "status": "error",
+                "message": "Error occurred while executing train_mlp.py.",
+                "stderr": result.stderr
+            }), 500
+        
+        return jsonify(json.loads(result.stdout))
+    
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
 
 @app.route('/run-predict', methods=['POST'])
 def run_predict():
