@@ -1,5 +1,5 @@
 # usage:
-# python predict.py model.json file --file_path input.xlsx --output_name result.xlsx
+# python predict.py model.json file --data_path input.xlsx --output_name result
 # python predict.py model.json input --input_values 1.0 TRUE 3.0 FALSE
 # read_csv 和 read_excel 會自行轉換數值型 (int 或 float)和布林型 (bool)
 
@@ -21,26 +21,23 @@ import joblib
 import os
 import json
 import numpy as np
+from pytorch_tabnet.tab_model import TabNetClassifier
 
 def load_model(model_path):
     filepath = os.path.join("model", model_path)
     if filepath.lower().endswith(".json"):  # .json 結尾
-        model = XGBClassifier(base_score=0.5, booster='gbtree', colsample_bylevel=1,
-                colsample_bynode=1, colsample_bytree=1, enable_categorical=False,
-                gamma=0, gpu_id=-1, importance_type=None,
-                interaction_constraints='', learning_rate=0.300000012,
-                max_delta_step=0, max_depth=6, min_child_weight=1,
-                monotone_constraints='()', n_estimators=100, n_jobs=72,
-                num_parallel_tree=1, predictor='auto', random_state=0,
-                reg_alpha=0, reg_lambda=1, scale_pos_weight=1, subsample=1,
-                tree_method='exact', validate_parameters=1, verbosity=None)
+        model = XGBClassifier()
         model.load_model(filepath)
         # print(f"XGBoost 模型已從 {filepath} 載入")
     elif filepath.lower().endswith(".pkl"):
         model = joblib.load(filepath)
         # print(f"模型已從 {filepath} 載入")
+    elif filepath.lower().endswith(".zip"):
+        model = TabNetClassifier()
+        model.load_model(filepath)
+        # print(f"模型已從 {filepath} 載入")
     else:
-        raise ValueError(f"無法識別的模型格式或檔案：{filepath}")
+        raise ValueError(f"Unsupported model format: {filepath}")
     return model
 
 def load_data(data_path):
@@ -52,11 +49,12 @@ def load_data(data_path):
     # print(f"Data loaded from {full_path}")
     return data
 
-def predict_labels(model, data):
+def predict_labels(model, model_path, data):
     x_test = data.values
+    if model_path.lower().endswith(".zip"): # tabnet 只吃 numpy array，不吃 object
+        x_test = np.array(x_test, dtype=np.float32)
     y_pred = model.predict(x_test)
     data['label'] = y_pred
-    # print("Predictions added to the dataset")
     return data
 
 def save_predictions(data, data_path, output_name):
@@ -76,7 +74,7 @@ def save_predictions(data, data_path, output_name):
         "message": f"Predictions saved to {output_path}",
     }))
 
-def predict_input(model, input_values):
+def predict_input(model, model_path, input_values):
     # 將輸入值解析為適當的型態
     parsed_values = []
     for value in input_values:
@@ -94,7 +92,11 @@ def predict_input(model, input_values):
             parsed_values.append(float(value))
 
     # 預測結果
-    prediction = model.predict([parsed_values])
+    if model_path.lower().endswith(".zip"): # tabnet 只吃 numpy array，不吃 object
+        prediction = model.predict(np.array([parsed_values], dtype=np.float32))
+    else:
+        prediction = model.predict([parsed_values])
+
     if isinstance(prediction, np.ndarray):
         prediction = prediction.tolist()
     print(json.dumps({
@@ -103,16 +105,21 @@ def predict_input(model, input_values):
     }))
 
 def main(model_path, mode, data_path=None, output_name=None, input_values=None):
-    model = load_model(model_path)
+    try:
+        model = load_model(model_path)
 
-    if mode == "file":
-        data = load_data(data_path)
-        data_with_predictions = predict_labels(model, data)
-        save_predictions(data_with_predictions, data_path, output_name)
-    elif mode == "input":
-        if not input_values:
-            raise ValueError("在輸入模式下，必須提供特徵數值作為參數！")
-        predict_input(model, input_values)
+        if mode == "file":
+            data = load_data(data_path)
+            data_with_predictions = predict_labels(model, model_path, data)
+            save_predictions(data_with_predictions, data_path, output_name)
+        elif mode == "input":
+            predict_input(model, model_path, input_values)
+    except Exception as e:
+        print(json.dumps({
+            "status": "error",
+            "message": f"{e}",
+        }))
+        return
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
