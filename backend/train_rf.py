@@ -71,7 +71,7 @@ if __name__ == "__main__":
     parser.add_argument("split_value", type=str)
     parser.add_argument("model_name", type=str)
     parser.add_argument("n_estimators", type=int)
-    parser.add_argument("max_depth", type=float)
+    parser.add_argument("max_depth", type=int)
     parser.add_argument("random_state", type=int)
     parser.add_argument("n_jobs", type=int)
 
