@@ -21,6 +21,29 @@
       </div>
     </div>
 
+    <!-- XGB 參數 -->
+    <div v-if="selected.model_type=='xgb'" class="row mb-3">
+      <div class="col-sm-3">Parameters</div>
+      <div class="col-sm-2">
+        <div class="form-floating">
+          <input v-mdel="selected.xgb.n_estimators" type="text" class="form-control" id="floatingEstimators" :value="selected.xgb.n_estimators"> <!-- 移除 place holder，讓文字直接浮在左上角 -->
+          <label for="floatingEstimators">n_estimators</label>
+        </div>
+      </div>
+      <div class="col-sm-2">
+        <div class="form-floating">
+          <input v-mdel="selected.xgb.learning_rate" type="text" class="form-control" id="floatingLearningRate" :value="selected.xgb.learning_rate">
+          <label for="floatingLearningRate">learning_rate</label>
+        </div>
+      </div>
+      <div class="col-sm-2">
+        <div class="form-floating">
+          <input v-mdel="selected.xgb.max_depth" type="text" class="form-control" id="floatingMaxDepth" :value="selected.xgb.max_depth">
+          <label for="floatingMaxDepth">max_depth</label>
+        </div>
+      </div>
+    </div>
+
     <div class="row mb-3">
       <label for="inputEmail3" class="col-sm-3 col-form-label">File Selection</label>
       <div class="col-sm-8">
@@ -234,6 +257,11 @@ export default {
         split_strategy: 'train_test_split',
         split_value: '0.8',
         model_name: '',
+        xgb: {
+          n_estimators: '100',
+          learning_rate: '0.300000012',
+          max_depth: '6'
+        }
       },
       watched: {
         test_size: '',
@@ -326,7 +354,9 @@ export default {
 
         if (this.selected.model_type == "xgb") {
           api = "run-train-xgb"
-          // payload["tree_method"] = "hist"; // XGBoost 特定參數
+          payload["n_estimators"] = this.selected.xgb.n_estimators
+          payload["learning_rate"] = this.selected.xgb.learning_rate
+          payload["max_depth"] = this.selected.xgb.max_depth
         } else if (this.selected.model_type == "lightgbm") {
           api = "run-train-lgbm"
         } else if (this.selected.model_type == "random_forest") {
