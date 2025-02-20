@@ -217,6 +217,68 @@
       </div>
     </template>
 
+    <!-- MLP 參數 -->
+    <template v-if="selected.model_type=='mlp'">
+      <div class="row mb-3">
+        <label for="inputEmail3" class="col-sm-3 col-form-label"> Parameters </label>
+        <div class="col-sm-2 form-floating">
+          <input v-model="selected.mlp.hidden_layer_1"
+            type="text" 
+            class="form-control" 
+            id="floatingMlpHiddenLayer1" 
+          />
+          <label for="floatingMlpHiddenLayer1" style="margin-left:9px;"> hidden_layer_1 </label>
+        </div>
+        <div class="col-sm-2 form-floating">
+          <input v-model="selected.mlp.hidden_layer_2"
+            type="text" 
+            class="form-control" 
+            id="floatingMlpHiddenLayer2" 
+          />
+          <label for="floatingMlpHiddenLayer2" style="margin-left:9px;"> hidden_layer_2 </label>
+        </div>
+        <div class="col-sm-2 form-floating">
+          <input v-model="selected.mlp.hidden_layer_3"
+            type="text" 
+            class="form-control" 
+            id="floatingMlpHiddenLayer3" 
+          />
+          <label for="floatingMlpHiddenLayer3" style="margin-left:9px;"> hidden_layer_3 </label>
+        </div>
+        <div class="col-sm-3 form-text"> Leave hidden layer 2 or 3 blank if not needed. </div>
+      </div>
+
+      <div class="row mb-3">
+        <label for="inputEmail3" class="col-sm-3 col-form-label"></label> <!-- 排版用 -->
+        <div class="col-sm-2 form-floating">
+          <select v-model="selected.mlp.activation" class="form-select" id="floatingMlpActivation">
+            <option v-for="(label, value) in mlpActivactionOptions" :key="value" :value="value">
+              {{ label }}
+            </option>
+          </select>
+          <label for="floatingMlpActivation" style="margin-left:9px;"> activation </label>
+        </div>
+        <div class="col-sm-2 form-floating">
+          <input v-model="selected.mlp.learning_rate_init"
+            type="text" 
+            class="form-control" 
+            id="floatingMlpLearningRateInit" 
+            placeholder="floatingMlpLearningRateInit" 
+          />
+          <label for="floatingMlpLearningRateInit" style="margin-left:9px;"> learning_rate </label>
+        </div>
+        <div class="col-sm-2 form-floating">
+          <input v-model="selected.mlp.max_iter"
+            type="text" 
+            class="form-control" 
+            id="floatingMlpMaxIter" 
+            placeholder="floatingMlpMaxIter" 
+          />
+          <label for="floatingMlpMaxIter" style="margin-left:9px;"> max_iter </label>
+        </div>
+      </div>
+    </template>
+
     <!-- 訓練資料 -->
     <div class="row mb-3">
       <label for="inputEmail3" class="col-sm-3 col-form-label">File Selection</label>
@@ -434,7 +496,7 @@ export default {
         random_forest: "Random Forest",
         logistic_regression: "Logistic Regression",
         tabnet: "TabNet",
-        mlp: "Multi-layer Perceptron"
+        mlp: "Multi-Layer Perceptron"
       },
       rfPenaltyOptions: {
         l1: 'l1',
@@ -448,6 +510,11 @@ export default {
         newton_cg: 'newton-cg',
         sag: 'sag',
         saga: 'saga'
+      },
+      mlpActivactionOptions: {
+        relu: 'relu',
+        tanh: 'tanh',
+        logistic: 'logistic'
       },
       selected: {
         model_type: '',
@@ -483,6 +550,14 @@ export default {
           batch_size: '256',
           max_epochs: '2',
           patience: '10',
+        },
+        mlp: {
+          hidden_layer_1: '128',
+          hidden_layer_2: '64',
+          hidden_layer_3: '',
+          activation: 'relu',
+          learning_rate_init: '0.001',
+          max_iter: '300',
         }
       },
       watched: {
@@ -604,6 +679,12 @@ export default {
           payload["patience"] = this.selected.tabnet.patience
         } else if (this.selected.model_type == "mlp") {
           api = "run-train-mlp"
+          payload["hidden_layer_1"] = this.selected.mlp.hidden_layer_1
+          payload["hidden_layer_2"] = this.selected.mlp.hidden_layer_2
+          payload["hidden_layer_3"] = this.selected.mlp.hidden_layer_3
+          payload["activation"] = this.selected.mlp.activation
+          payload["learning_rate_init"] = this.selected.mlp.learning_rate_init
+          payload["max_iter"] = this.selected.mlp.max_iter
         } else {
           this.output = {
             "status": "error",
@@ -611,6 +692,8 @@ export default {
           }
           return
         }
+
+        console.log(payload)
 
         const response = await axios.post(`http://127.0.0.1:5000/${api}`, payload)
         this.output = response.data

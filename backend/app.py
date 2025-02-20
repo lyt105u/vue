@@ -290,10 +290,16 @@ def run_train_mlp():
     split_strategy = data.get('split_strategy') 
     split_value = data.get('split_value')
     model_name = data.get('model_name')
+    hidden_layer_1 = data.get('hidden_layer_1')
+    hidden_layer_2 = data.get('hidden_layer_2')
+    hidden_layer_3 = data.get('hidden_layer_3')
+    activation = data.get('activation')
+    learning_rate_init = data.get('learning_rate_init')
+    max_iter = data.get('max_iter')
 
     try:
         result = subprocess.run(
-            ['python', 'train_mlp.py', file_name, label_column, split_strategy, split_value, model_name],
+            ['python', 'train_mlp.py', file_name, label_column, split_strategy, split_value, model_name, hidden_layer_1, hidden_layer_2, hidden_layer_3, activation, learning_rate_init, max_iter],
             # capture_output=True,        # 捕獲標準輸出和標準錯誤
             stdout=subprocess.PIPE,     # 只捕獲標準輸出
             stderr=subprocess.DEVNULL,  # 忽略標準錯誤

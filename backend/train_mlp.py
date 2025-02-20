@@ -6,14 +6,15 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import train_test_split
 from tool_train import prepare_data, NumpyEncoder, evaluate_model, kfold_evaluation
 
-def train_mlp(x_train, y_train, model_name):
+def train_mlp(x_train, y_train, model_name, hidden_layer_1, hidden_layer_2, hidden_layer_3, activation, learning_rate_init, max_iter):
+    hidden_layer_sizes = tuple(filter(lambda x: x is not None, [hidden_layer_1, hidden_layer_2, hidden_layer_3]))
     mlp = MLPClassifier(
-        hidden_layer_sizes=(128, 64),  # 設定兩層隱藏層，節點數為 128 和 64
-        activation='relu',            # 使用 ReLU 激活函數
-        solver='adam',                # 使用 Adam 優化器
-        alpha=0.0001,                 # L2 正則化參數
-        learning_rate_init=0.001,     # 初始學習率
-        max_iter=500,                 # 最大訓練次數
+        hidden_layer_sizes=hidden_layer_sizes,
+        activation=activation,
+        learning_rate_init=learning_rate_init,
+        max_iter=max_iter,
+        solver='adam',
+        alpha=0.0001,
         random_state=0
     )
     mlp.fit(x_train, y_train)
@@ -24,7 +25,14 @@ def train_mlp(x_train, y_train, model_name):
 
     return mlp
 
-def main(file_name, label_column, split_strategy, split_value, model_name):
+def main(file_name, label_column, split_strategy, split_value, model_name, hidden_layer_1, hidden_layer_2, hidden_layer_3, activation, learning_rate_init, max_iter):
+    # 處理空白的 layer
+    def convert_arg(value):
+        return None if value.lower() in ["null", "none", ""] else int(value)
+    hidden_layer_1 = convert_arg(args.hidden_layer_1)
+    hidden_layer_2 = convert_arg(args.hidden_layer_2)
+    hidden_layer_3 = convert_arg(args.hidden_layer_3)
+
     try:
         x, y = prepare_data(file_name, label_column)
     except ValueError as e:
@@ -38,11 +46,25 @@ def main(file_name, label_column, split_strategy, split_value, model_name):
         x_train, x_test, y_train, y_test = train_test_split(
             x, y, train_size=float(split_value), stratify=y, random_state=30
         )
-        model = train_mlp(x_train, y_train, model_name)
+        model = train_mlp(x_train, y_train, model_name, hidden_layer_1, hidden_layer_2, hidden_layer_3, activation, learning_rate_init, max_iter)
         y_pred = model.predict(x_test)
         results = evaluate_model(y_test, y_pred, model, x_test)
     elif split_strategy == "k_fold":
-        results = kfold_evaluation(x, y, split_value, train_mlp)
+        def train_mlp_wrapped(x_train, y_train, model_name):
+            hidden_layer_sizes = tuple(filter(lambda x: x is not None, [hidden_layer_1, hidden_layer_2, hidden_layer_3]))
+            mlp = MLPClassifier(
+                hidden_layer_sizes=hidden_layer_sizes,
+                activation=activation,
+                learning_rate_init=learning_rate_init,
+                max_iter=max_iter
+            )
+            mlp.fit(x_train, y_train)
+            if model_name:
+                os.makedirs("model", exist_ok=True)
+                joblib.dump(mlp, f"model/{model_name}.pkl")
+            return mlp
+
+        results = kfold_evaluation(x, y, split_value, train_mlp_wrapped)
     else:
         print(json.dumps({
             "status": "error",
@@ -59,6 +81,12 @@ if __name__ == "__main__":
     parser.add_argument("split_strategy", type=str)
     parser.add_argument("split_value", type=str)
     parser.add_argument("model_name", type=str)
+    parser.add_argument("hidden_layer_1", type=str)
+    parser.add_argument("hidden_layer_2", type=str)
+    parser.add_argument("hidden_layer_3", type=str)
+    parser.add_argument("activation", type=str)
+    parser.add_argument("learning_rate_init", type=float)
+    parser.add_argument("max_iter", type=int)
 
     args = parser.parse_args()
-    main(args.file_name, args.label_column, args.split_strategy, args.split_value, args.model_name)
+    main(args.file_name, args.label_column, args.split_strategy, args.split_value, args.model_name, args.hidden_layer_1, args.hidden_layer_2, args.hidden_layer_3, args.activation, args.learning_rate_init, args.max_iter)
