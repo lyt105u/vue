@@ -211,10 +211,14 @@ def run_train_lr():
     split_strategy = data.get('split_strategy') 
     split_value = data.get('split_value')
     model_name = data.get('model_name')
+    penalty = data.get('penalty')
+    C = data.get('C')
+    solver = data.get('solver')
+    max_iter = data.get('max_iter')
 
     try:
         result = subprocess.run(
-            ['python', 'train_lr.py', file_name, label_column, split_strategy, split_value, model_name],
+            ['python', 'train_lr.py', file_name, label_column, split_strategy, split_value, model_name, penalty, C, solver, max_iter],
             # capture_output=True,        # 捕獲標準輸出和標準錯誤
             stdout=subprocess.PIPE,     # 只捕獲標準輸出
             stderr=subprocess.DEVNULL,  # 忽略標準錯誤

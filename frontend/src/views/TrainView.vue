@@ -32,7 +32,7 @@
             id="floatingXgbEstimators" 
             placeholder="floatingXgbEstimators" 
           />
-          <label for="floatingXgbEstimators"> n_estimators </label>
+          <label for="floatingXgbEstimators" style="margin-left:9px;"> n_estimators </label>
         </div>
         <div class="col-sm-2 form-floating">
           <input v-model="selected.xgb.learning_rate"
@@ -41,7 +41,7 @@
             id="floatingXgbLearningRate" 
             placeholder="floatingXgbLearningRate" 
           />
-          <label for="floatingXgbLearningRate"> learning_rate </label>
+          <label for="floatingXgbLearningRate" style="margin-left:9px;"> learning_rate </label>
         </div>
         <div class="col-sm-2 form-floating">
           <input v-model="selected.xgb.max_depth"
@@ -50,7 +50,7 @@
             id="floatingXgbMaxDepth" 
             placeholder="floatingXgbMaxDepth" 
           />
-          <label for="floatingXgbMaxDepth"> max_depth </label>
+          <label for="floatingXgbMaxDepth" style="margin-left:9px;"> max_depth </label>
         </div>
       </div>
     </template>
@@ -66,7 +66,7 @@
             id="floatingEstimators" 
             placeholder="floatingEstimators" 
           />
-          <label for="floatingEstimators"> n_estimators </label>
+          <label for="floatingEstimators" style="margin-left:9px;"> n_estimators </label>
         </div>
         <div class="col-sm-2 form-floating">
           <input v-model="selected.lgbm.learning_rate"
@@ -75,7 +75,7 @@
             id="floatingLearningRate" 
             placeholder="floatingLearningRate" 
           />
-          <label for="floatingLearningRate"> learning_rate </label>
+          <label for="floatingLearningRate" style="margin-left:9px;"> learning_rate </label>
         </div>
         <div class="col-sm-2 form-floating">
           <input v-model="selected.lgbm.max_depth"
@@ -84,7 +84,7 @@
             id="floatingMaxDepth" 
             placeholder="floatingMaxDepth" 
           />
-          <label for="floatingMaxDepth"> max_depth </label>
+          <label for="floatingMaxDepth" style="margin-left:9px;"> max_depth </label>
         </div>
         <div class="col-sm-2 form-floating">
           <input v-model="selected.lgbm.num_leaves"
@@ -93,16 +93,12 @@
             id="floatingNumLeaves" 
             placeholder="floatingNumLeaves" 
           />
-          <label for="floatingNumLeaves"> num_leaves </label>
+          <label for="floatingNumLeaves" style="margin-left:9px;"> num_leaves </label>
         </div>
       </div>
     </template>
 
     <!-- Random Forest 參數 -->
-     <!-- // n_estimators: '900',
-          // max_depth: '50',
-          // random_state: '0',
-          // n_jobs: '-1' -->
     <template v-if="selected.model_type=='random_forest'">
       <div class="row mb-3">
         <label for="inputEmail3" class="col-sm-3 col-form-label"> Parameters </label>
@@ -113,7 +109,7 @@
             id="floatingRfEstimators" 
             placeholder="floatingRfEstimators" 
           />
-          <label for="floatingRfEstimators"> n_estimators </label>
+          <label for="floatingRfEstimators" style="margin-left:9px;"> n_estimators </label>
         </div>
         <div class="col-sm-2 form-floating">
           <input v-model="selected.rf.max_depth"
@@ -122,7 +118,7 @@
             id="floatingRfMaxDepth" 
             placeholder="floatingRfMaxDepth" 
           />
-          <label for="floatingRfMaxDepth"> max_depth </label>
+          <label for="floatingRfMaxDepth" style="margin-left:9px;"> max_depth </label>
         </div>
         <div class="col-sm-2 form-floating">
           <input v-model="selected.rf.random_state"
@@ -131,7 +127,7 @@
             id="floatingRfRandomState" 
             placeholder="floatingRfRandomState" 
           />
-          <label for="floatingRfRandomState"> random_state </label>
+          <label for="floatingRfRandomState" style="margin-left:9px;"> random_state </label>
         </div>
         <div class="col-sm-2 form-floating">
           <input v-model="selected.rf.n_jobs"
@@ -140,7 +136,48 @@
             id="floatingRfNJobs" 
             placeholder="floatingRfNJobs" 
           />
-          <label for="floatingRfNJobs"> n_jobs </label>
+          <label for="floatingRfNJobs" style="margin-left:9px;"> n_jobs </label>
+        </div>
+      </div>
+    </template>
+
+    <!-- Logistic Regression 參數 -->
+    <template v-if="selected.model_type=='logistic_regression'">
+      <div class="row mb-3">
+        <label for="inputEmail3" class="col-sm-3 col-form-label"> Parameters </label>
+        <div class="col-sm-2 form-floating">
+          <select v-model="selected.lr.penalty" class="form-select" id="floatingLrPenalty">
+            <option v-for="(label, value) in rfPenaltyOptions" :key="value" :value="value">
+              {{ label }}
+            </option>
+          </select>
+          <label for="floatingLrPenalty" style="margin-left:9px;"> penalty </label>
+        </div>
+        <div class="col-sm-2 form-floating">
+          <input v-model="selected.lr.C"
+            type="text" 
+            class="form-control" 
+            id="floatingLrC" 
+            placeholder="floatingLrC" 
+          />
+          <label for="floatingLrC" style="margin-left:9px;"> C </label>
+        </div>
+        <div class="col-sm-2 form-floating">
+          <select v-model="selected.lr.solver" class="form-select" id="floatingLrSolver">
+            <option v-for="(label, value) in rfSolverOptions" :key="value" :value="value">
+              {{ label }}
+            </option>
+          </select>
+          <label for="floatingLrSolver" style="margin-left:9px;"> solver </label>
+        </div>
+        <div class="col-sm-2 form-floating">
+          <input v-model="selected.lr.max_iter"
+            type="text" 
+            class="form-control" 
+            id="floatingLrMaxIter" 
+            placeholder="floatingLrMaxIter" 
+          />
+          <label for="floatingLrMaxIter" style="margin-left:9px;"> max_iter </label>
         </div>
       </div>
     </template>
@@ -351,6 +388,19 @@ export default {
         tabnet: "TabNet",
         mlp: "Multi-layer Perceptron"
       },
+      rfPenaltyOptions: {
+        l1: 'l1',
+        l2: 'l2',
+        elasticnet: 'elasticnet',
+        none: 'none'
+      },
+      rfSolverOptions: {
+        lbfgs: 'lbfgs',
+        liblinear: 'liblinear',
+        newton_cg: 'newton-cg',
+        sag: 'sag',
+        saga: 'saga'
+      },
       selected: {
         model_type: '',
         data: '',
@@ -374,6 +424,12 @@ export default {
           max_depth: '50',
           random_state: '0',
           n_jobs: '-1'
+        },
+        lr: {
+          penalty: 'l2',    // L2 正歸化
+          C: '1.0',         // 正歸化強度
+          solver: 'lbfgs',
+          max_iter: '500', 
         }
       },
       watched: {
@@ -484,6 +540,10 @@ export default {
           payload["n_jobs"] = this.selected.rf.n_jobs
         } else if (this.selected.model_type == "logistic_regression") {
           api = "run-train-lr"
+          payload["penalty"] = this.selected.lr.penalty
+          payload["C"] = this.selected.lr.C
+          payload["solver"] = this.selected.lr.solver
+          payload["max_iter"] = this.selected.lr.max_iter
         } else if (this.selected.model_type == "tabnet") {
           api = "run-train-tabnet"
         } else if (this.selected.model_type == "mlp") {

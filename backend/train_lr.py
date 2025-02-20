@@ -8,10 +8,15 @@ import joblib
 from sklearn.model_selection import train_test_split
 from tool_train import prepare_data, NumpyEncoder, evaluate_model, kfold_evaluation
 
-def train_lr(x_train, y_train, model_name):
+def train_lr(x_train, y_train, model_name, penalty, C, solver, max_iter):
     logistic_reg = make_pipeline(
         StandardScaler(),
-        LogisticRegression(max_iter=5000, solver='lbfgs', C=0.1)
+        LogisticRegression(
+            penalty=penalty,
+            C=C,
+            solver=solver,
+            max_iter=max_iter,
+        )
     )
     logistic_reg.fit(x_train, y_train)
     
@@ -21,7 +26,7 @@ def train_lr(x_train, y_train, model_name):
 
     return logistic_reg
 
-def main(file_name, label_column, split_strategy, split_value, model_name):
+def main(file_name, label_column, split_strategy, split_value, model_name, penalty, C, solver, max_iter):
     try:
         x, y = prepare_data(file_name, label_column)
     except ValueError as e:
@@ -35,11 +40,28 @@ def main(file_name, label_column, split_strategy, split_value, model_name):
         x_train, x_test, y_train, y_test = train_test_split(
             x, y, train_size=float(split_value), stratify=y, random_state=30
         )
-        model = train_lr(x_train, y_train, model_name)
+        model = train_lr(x_train, y_train, model_name, penalty, C, solver, max_iter)
         y_pred = model.predict(x_test)
         results = evaluate_model(y_test, y_pred, model, x_test)
     elif split_strategy == "k_fold":
-        results = kfold_evaluation(x, y, split_value, train_lr)
+        def train_lr_wrapped(x_train, y_train, model_name):
+            logistic_reg = make_pipeline(
+                StandardScaler(),
+                LogisticRegression(
+                    penalty=penalty,
+                    C=C,
+                    solver=solver,
+                    max_iter=max_iter,
+                )
+            )
+            logistic_reg.fit(x_train, y_train)
+            
+            if model_name:
+                os.makedirs("model", exist_ok=True)
+                joblib.dump(logistic_reg, f"model/{model_name}.pkl")
+
+            return logistic_reg
+        results = kfold_evaluation(x, y, split_value, train_lr_wrapped)
     else:
         print(json.dumps({
             "status": "error",
@@ -56,6 +78,10 @@ if __name__ == "__main__":
     parser.add_argument("split_strategy", type=str)
     parser.add_argument("split_value", type=str)
     parser.add_argument("model_name", type=str)
+    parser.add_argument("penalty", type=str)
+    parser.add_argument("C", type=float)
+    parser.add_argument("solver", type=str)
+    parser.add_argument("max_iter", type=int)
 
     args = parser.parse_args()
-    main(args.file_name, args.label_column, args.split_strategy, args.split_value, args.model_name)
+    main(args.file_name, args.label_column, args.split_strategy, args.split_value, args.model_name, args.penalty, args.C, args.solver, args.max_iter)
