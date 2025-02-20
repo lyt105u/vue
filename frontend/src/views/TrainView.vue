@@ -9,8 +9,8 @@
     </div>
   </div>
 
-  <!-- Model 種類 -->
   <form class="row g-3" @submit.prevent="runTrain" style="margin-top: 16px">
+    <!-- Model 種類 -->
     <div class="row mb-3">
       <label for="inputEmail3" class="col-sm-3 col-form-label">Model Type</label>
       <div class="col-sm-8">
@@ -179,6 +179,40 @@
             placeholder="floatingLrMaxIter" 
           />
           <label for="floatingLrMaxIter" style="margin-left:9px;"> max_iter </label>
+        </div>
+      </div>
+    </template>
+
+    <!-- TabNet 參數 -->
+    <template v-if="selected.model_type=='tabnet'">
+      <div class="row mb-3">
+        <label for="inputEmail3" class="col-sm-3 col-form-label"> Parameters </label>
+        <div class="col-sm-2 form-floating">
+          <input v-model="selected.tabnet.batch_size"
+            type="text" 
+            class="form-control" 
+            id="floatingTabnetBatchSize" 
+            placeholder="floatingTabnetBatchSize" 
+          />
+          <label for="floatingTabnetBatchSize" style="margin-left:9px;"> batch_size </label>
+        </div>
+        <div class="col-sm-2 form-floating">
+          <input v-model="selected.tabnet.max_epochs"
+            type="text" 
+            class="form-control" 
+            id="floatingTabnetMaxEpochs" 
+            placeholder="floatingTabnetMaxEpochs" 
+          />
+          <label for="floatingTabnetMaxEpochs" style="margin-left:9px;"> max_epochs </label>
+        </div>
+        <div class="col-sm-2 form-floating">
+          <input v-model="selected.tabnet.patience"
+            type="text" 
+            class="form-control" 
+            id="floatingTabnetPatience" 
+            placeholder="floatingTabnetPatience" 
+          />
+          <label for="floatingTabnetPatience" style="margin-left:9px;"> patience </label>
         </div>
       </div>
     </template>
@@ -444,6 +478,11 @@ export default {
           C: '1.0',         // 正歸化強度
           solver: 'lbfgs',
           max_iter: '500', 
+        },
+        tabnet: {
+          batch_size: '256',
+          max_epochs: '2',
+          patience: '10',
         }
       },
       watched: {
@@ -560,6 +599,9 @@ export default {
           payload["max_iter"] = this.selected.lr.max_iter
         } else if (this.selected.model_type == "tabnet") {
           api = "run-train-tabnet"
+          payload["batch_size"] = this.selected.tabnet.batch_size
+          payload["max_epochs"] = this.selected.tabnet.max_epochs
+          payload["patience"] = this.selected.tabnet.patience
         } else if (this.selected.model_type == "mlp") {
           api = "run-train-mlp"
         } else {
@@ -569,8 +611,6 @@ export default {
           }
           return
         }
-
-        console.log(payload)
 
         const response = await axios.post(`http://127.0.0.1:5000/${api}`, payload)
         this.output = response.data

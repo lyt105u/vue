@@ -251,10 +251,13 @@ def run_train_tabnet():
     split_strategy = data.get('split_strategy') 
     split_value = data.get('split_value')
     model_name = data.get('model_name')
+    batch_size = data.get('batch_size')
+    max_epochs = data.get('max_epochs')
+    patience = data.get('patience')
 
     try:
         result = subprocess.run(
-            ['python', 'train_tabnet.py', file_name, label_column, split_strategy, split_value, model_name],
+            ['python', 'train_tabnet.py', file_name, label_column, split_strategy, split_value, model_name, batch_size, max_epochs, patience],
             # capture_output=True,        # 捕獲標準輸出和標準錯誤
             stdout=subprocess.PIPE,     # 只捕獲標準輸出
             stderr=subprocess.DEVNULL,  # 忽略標準錯誤
