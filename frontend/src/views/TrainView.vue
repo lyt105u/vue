@@ -98,6 +98,53 @@
       </div>
     </template>
 
+    <!-- Random Forest 參數 -->
+     <!-- // n_estimators: '900',
+          // max_depth: '50',
+          // random_state: '0',
+          // n_jobs: '-1' -->
+    <template v-if="selected.model_type=='random_forest'">
+      <div class="row mb-3">
+        <label for="inputEmail3" class="col-sm-3 col-form-label"> Parameters </label>
+        <div class="col-sm-2 form-floating">
+          <input v-model="selected.rf.n_estimators"
+            type="text" 
+            class="form-control" 
+            id="floatingRfEstimators" 
+            placeholder="floatingRfEstimators" 
+          />
+          <label for="floatingRfEstimators"> n_estimators </label>
+        </div>
+        <div class="col-sm-2 form-floating">
+          <input v-model="selected.rf.max_depth"
+            type="text" 
+            class="form-control" 
+            id="floatingRfMaxDepth" 
+            placeholder="floatingRfMaxDepth" 
+          />
+          <label for="floatingRfMaxDepth"> max_depth </label>
+        </div>
+        <div class="col-sm-2 form-floating">
+          <input v-model="selected.rf.random_state"
+            type="text" 
+            class="form-control" 
+            id="floatingRfRandomState" 
+            placeholder="floatingRfRandomState" 
+          />
+          <label for="floatingRfRandomState"> random_state </label>
+        </div>
+        <div class="col-sm-2 form-floating">
+          <input v-model="selected.rf.n_jobs"
+            type="text" 
+            class="form-control" 
+            id="floatingRfNJobs" 
+            placeholder="floatingRfNJobs" 
+          />
+          <label for="floatingRfNJobs"> n_jobs </label>
+        </div>
+      </div>
+    </template>
+
     <div class="row mb-3">
       <label for="inputEmail3" class="col-sm-3 col-form-label">File Selection</label>
       <div class="col-sm-8">
@@ -322,6 +369,12 @@ export default {
           max_depth: '-1',
           num_leaves: '31'
         },
+        rf: {
+          n_estimators: '900',
+          max_depth: '50',
+          random_state: '0',
+          n_jobs: '-1'
+        }
       },
       watched: {
         test_size: '',
@@ -425,6 +478,10 @@ export default {
           payload["num_leaves"] = this.selected.lgbm.num_leaves
         } else if (this.selected.model_type == "random_forest") {
           api = "run-train-rf"
+          payload["n_estimators"] = this.selected.rf.n_estimators
+          payload["max_depth"] = this.selected.rf.max_depth
+          payload["random_state"] = this.selected.rf.random_state
+          payload["n_jobs"] = this.selected.rf.n_jobs
         } else if (this.selected.model_type == "logistic_regression") {
           api = "run-train-lr"
         } else if (this.selected.model_type == "tabnet") {
