@@ -42,7 +42,25 @@ def main(file_name, label_column, split_strategy, split_value, model_name, n_est
         y_pred = model.predict(x_test)
         results = evaluate_model(y_test, y_pred, model, x_test)
     elif split_strategy == "k_fold":
-        results = kfold_evaluation(x, y, split_value, train_xgb)
+        # 重新打包 train function，這樣就不用傳遞超參數
+        def train_xgb_wrapped(x_train, y_train, model_name):
+            xgb = XGBClassifier(base_score=0.5, booster='gbtree', colsample_bylevel=1,
+                                colsample_bynode=1, colsample_bytree=1, enable_categorical=False,
+                                gamma=0, device='cpu', importance_type=None,
+                                interaction_constraints='', learning_rate=learning_rate,
+                                max_delta_step=0, max_depth=max_depth, min_child_weight=1,
+                                monotone_constraints='()', n_estimators=n_estimators, n_jobs=72,
+                                num_parallel_tree=1, random_state=0,
+                                reg_alpha=0, reg_lambda=1, scale_pos_weight=1, subsample=1,
+                                tree_method='exact', validate_parameters=1, verbosity=None)
+            xgb.fit(x_train, y_train)
+            
+            if model_name:
+                os.makedirs("model", exist_ok=True)
+                xgb.save_model(f"model/{model_name}.json")
+
+            return xgb
+        results = kfold_evaluation(x, y, split_value, train_xgb_wrapped)
     else:
         print(json.dumps({
             "status": "error",
