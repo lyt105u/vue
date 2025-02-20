@@ -9,6 +9,7 @@
     </div>
   </div>
 
+  <!-- Model 種類 -->
   <form class="row g-3" @submit.prevent="runTrain" style="margin-top: 16px">
     <div class="row mb-3">
       <label for="inputEmail3" class="col-sm-3 col-form-label">Model Type</label>
@@ -182,6 +183,7 @@
       </div>
     </template>
 
+    <!-- 訓練資料 -->
     <div class="row mb-3">
       <label for="inputEmail3" class="col-sm-3 col-form-label">File Selection</label>
       <div class="col-sm-8">
@@ -191,6 +193,7 @@
       </div>
     </div>
 
+    <!-- Outcome 欄位 -->
     <div class="row mb-3">
       <label for="inputEmail3" class="col-sm-3 col-form-label">Outcome Column</label>
       <div class="col-sm-8">
@@ -198,6 +201,7 @@
       </div>
     </div>
 
+    <!-- 切分訓練集 -->
     <div class="row mb-3">
       <label for="inputEmail3" class="col-sm-3 col-form-label">Data Split</label>
       <div class="col-sm-4">
@@ -218,6 +222,7 @@
       </div>
     </div>
 
+    <!-- Range 拉桿 -->
     <div v-if="selected.split_strategy=='train_test_split'" class="row mb-3">
       <label for="inputEmail3" class="col-sm-3 col-form-label"></label> <!-- 排版用 -->
       <div class="col-sm-4 d-flex align-items-center">
@@ -241,6 +246,7 @@
       </div>
     </div>
 
+    <!-- Model 儲存檔名 -->
     <div class="row mb-3">
       <label for="inputEmail3" class="col-sm-3 col-form-label">Model Saved as</label>
       <div class="col-sm-8">
@@ -251,6 +257,7 @@
       </div>
     </div>
 
+    <!-- button -->
     <div class="col-12">
       <button v-if="!loading" type="submit" class="btn btn-primary">Train</button>
       <button v-if="loading" class="btn btn-primary" type="button" disabled>
@@ -259,12 +266,14 @@
     </div>
   </form>
 
+  <!-- 橫線 -->
   <div v-if="output" class="bd-example-snippet bd-code-snippet">
     <div class="bd-example m-0 border-0">
       <hr>
     </div>
   </div>
 
+  <!-- Results 標題 -->
   <div v-if="output" class="about">
     <h3>
       Results
@@ -274,6 +283,7 @@
     </h3>
   </div>
   
+  <!-- 訓練結果 -->
   <div v-if="output" class="row row-cols-1 row-cols-md-3 mb-3 text-center">
     <div class="col">
       <div class="card mb-4 rounded-3 shadow-sm">
@@ -311,6 +321,8 @@
         </div>
       </div>
     </div>
+
+    <!-- Recall 列表 -->
     <template v-if="selected.split_strategy === 'train_test_split'">
       <div class="col" v-for="recall in recallLevels" :key="recall.level">
         <div class="card mb-4 rounded-3 shadow-sm">
@@ -352,6 +364,8 @@
         </div>
       </div>
     </template>
+
+    <!-- ROC 曲線 -->
     <div class="col">
       <div class="card mb-4 rounded-3 shadow-sm">
         <div class="card-header py-3">
