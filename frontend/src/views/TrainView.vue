@@ -507,7 +507,7 @@ export default {
       rfSolverOptions: {
         lbfgs: 'lbfgs',
         liblinear: 'liblinear',
-        newton_cg: 'newton-cg',
+        'newton-cg': 'newton-cg',
         sag: 'sag',
         saga: 'saga'
       },
