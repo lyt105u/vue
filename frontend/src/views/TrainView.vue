@@ -14,7 +14,7 @@
     <div class="row mb-3">
       <label for="inputEmail3" class="col-sm-3 col-form-label">Model Type</label>
       <div class="col-sm-8">
-        <select class="form-select" aria-label="Small select example" v-model="selected.model_type">
+        <select class="form-select" aria-label="Small select example" v-model="selected.model_type" :disabled="loading">
           <option v-for="(label, value) in modelOptions" :key="value" :value="value">
             {{ label }}
           </option>
@@ -31,7 +31,8 @@
             type="text" 
             class="form-control" 
             id="floatingXgbEstimators" 
-            placeholder="floatingXgbEstimators" 
+            placeholder="floatingXgbEstimators"
+            :disabled="loading"
           />
           <label for="floatingXgbEstimators" style="margin-left:9px;"> n_estimators </label>
         </div>
@@ -40,7 +41,8 @@
             type="text" 
             class="form-control" 
             id="floatingXgbLearningRate" 
-            placeholder="floatingXgbLearningRate" 
+            placeholder="floatingXgbLearningRate"
+            :disabled="loading"
           />
           <label for="floatingXgbLearningRate" style="margin-left:9px;"> learning_rate </label>
         </div>
@@ -49,7 +51,8 @@
             type="text" 
             class="form-control" 
             id="floatingXgbMaxDepth" 
-            placeholder="floatingXgbMaxDepth" 
+            placeholder="floatingXgbMaxDepth"
+            :disabled="loading"
           />
           <label for="floatingXgbMaxDepth" style="margin-left:9px;"> max_depth </label>
         </div>
@@ -65,7 +68,8 @@
             type="text" 
             class="form-control" 
             id="floatingEstimators" 
-            placeholder="floatingEstimators" 
+            placeholder="floatingEstimators"
+            :disabled="loading"
           />
           <label for="floatingEstimators" style="margin-left:9px;"> n_estimators </label>
         </div>
@@ -74,7 +78,8 @@
             type="text" 
             class="form-control" 
             id="floatingLearningRate" 
-            placeholder="floatingLearningRate" 
+            placeholder="floatingLearningRate"
+            :disabled="loading"
           />
           <label for="floatingLearningRate" style="margin-left:9px;"> learning_rate </label>
         </div>
@@ -83,7 +88,8 @@
             type="text" 
             class="form-control" 
             id="floatingMaxDepth" 
-            placeholder="floatingMaxDepth" 
+            placeholder="floatingMaxDepth"
+            :disabled="loading"
           />
           <label for="floatingMaxDepth" style="margin-left:9px;"> max_depth </label>
         </div>
@@ -92,7 +98,8 @@
             type="text" 
             class="form-control" 
             id="floatingNumLeaves" 
-            placeholder="floatingNumLeaves" 
+            placeholder="floatingNumLeaves"
+            :disabled="loading"
           />
           <label for="floatingNumLeaves" style="margin-left:9px;"> num_leaves </label>
         </div>
@@ -108,7 +115,8 @@
             type="text" 
             class="form-control" 
             id="floatingRfEstimators" 
-            placeholder="floatingRfEstimators" 
+            placeholder="floatingRfEstimators"
+            :disabled="loading"
           />
           <label for="floatingRfEstimators" style="margin-left:9px;"> n_estimators </label>
         </div>
@@ -117,7 +125,8 @@
             type="text" 
             class="form-control" 
             id="floatingRfMaxDepth" 
-            placeholder="floatingRfMaxDepth" 
+            placeholder="floatingRfMaxDepth"
+            :disabled="loading"
           />
           <label for="floatingRfMaxDepth" style="margin-left:9px;"> max_depth </label>
         </div>
@@ -126,7 +135,8 @@
             type="text" 
             class="form-control" 
             id="floatingRfRandomState" 
-            placeholder="floatingRfRandomState" 
+            placeholder="floatingRfRandomState"
+            :disabled="loading"
           />
           <label for="floatingRfRandomState" style="margin-left:9px;"> random_state </label>
         </div>
@@ -135,7 +145,8 @@
             type="text" 
             class="form-control" 
             id="floatingRfNJobs" 
-            placeholder="floatingRfNJobs" 
+            placeholder="floatingRfNJobs"
+            :disabled="loading"
           />
           <label for="floatingRfNJobs" style="margin-left:9px;"> n_jobs </label>
         </div>
@@ -147,7 +158,7 @@
       <div class="row mb-3">
         <label for="inputEmail3" class="col-sm-3 col-form-label"> Parameters </label>
         <div class="col-sm-2 form-floating">
-          <select v-model="selected.lr.penalty" class="form-select" id="floatingLrPenalty">
+          <select v-model="selected.lr.penalty" class="form-select" id="floatingLrPenalty" :disabled="loading">
             <option v-for="(label, value) in rfPenaltyOptions" :key="value" :value="value">
               {{ label }}
             </option>
@@ -159,12 +170,13 @@
             type="text" 
             class="form-control" 
             id="floatingLrC" 
-            placeholder="floatingLrC" 
+            placeholder="floatingLrC"
+            :disabled="loading"
           />
           <label for="floatingLrC" style="margin-left:9px;"> C </label>
         </div>
         <div class="col-sm-2 form-floating">
-          <select v-model="selected.lr.solver" class="form-select" id="floatingLrSolver">
+          <select v-model="selected.lr.solver" class="form-select" id="floatingLrSolver" :disabled="loading">
             <option v-for="(label, value) in rfSolverOptions" :key="value" :value="value">
               {{ label }}
             </option>
@@ -176,7 +188,8 @@
             type="text" 
             class="form-control" 
             id="floatingLrMaxIter" 
-            placeholder="floatingLrMaxIter" 
+            placeholder="floatingLrMaxIter"
+            :disabled="loading"
           />
           <label for="floatingLrMaxIter" style="margin-left:9px;"> max_iter </label>
         </div>
@@ -192,7 +205,8 @@
             type="text" 
             class="form-control" 
             id="floatingTabnetBatchSize" 
-            placeholder="floatingTabnetBatchSize" 
+            placeholder="floatingTabnetBatchSize"
+            :disabled="loading"
           />
           <label for="floatingTabnetBatchSize" style="margin-left:9px;"> batch_size </label>
         </div>
@@ -201,7 +215,8 @@
             type="text" 
             class="form-control" 
             id="floatingTabnetMaxEpochs" 
-            placeholder="floatingTabnetMaxEpochs" 
+            placeholder="floatingTabnetMaxEpochs"
+            :disabled="loading"
           />
           <label for="floatingTabnetMaxEpochs" style="margin-left:9px;"> max_epochs </label>
         </div>
@@ -210,7 +225,8 @@
             type="text" 
             class="form-control" 
             id="floatingTabnetPatience" 
-            placeholder="floatingTabnetPatience" 
+            placeholder="floatingTabnetPatience"
+            :disabled="loading"
           />
           <label for="floatingTabnetPatience" style="margin-left:9px;"> patience </label>
         </div>
@@ -225,7 +241,8 @@
           <input v-model="selected.mlp.hidden_layer_1"
             type="text" 
             class="form-control" 
-            id="floatingMlpHiddenLayer1" 
+            id="floatingMlpHiddenLayer1"
+            :disabled="loading"
           />
           <label for="floatingMlpHiddenLayer1" style="margin-left:9px;"> hidden_layer_1 </label>
         </div>
@@ -233,7 +250,8 @@
           <input v-model="selected.mlp.hidden_layer_2"
             type="text" 
             class="form-control" 
-            id="floatingMlpHiddenLayer2" 
+            id="floatingMlpHiddenLayer2"
+            :disabled="loading"
           />
           <label for="floatingMlpHiddenLayer2" style="margin-left:9px;"> hidden_layer_2 </label>
         </div>
@@ -241,7 +259,8 @@
           <input v-model="selected.mlp.hidden_layer_3"
             type="text" 
             class="form-control" 
-            id="floatingMlpHiddenLayer3" 
+            id="floatingMlpHiddenLayer3"
+            :disabled="loading"
           />
           <label for="floatingMlpHiddenLayer3" style="margin-left:9px;"> hidden_layer_3 </label>
         </div>
@@ -251,7 +270,7 @@
       <div class="row mb-3">
         <label for="inputEmail3" class="col-sm-3 col-form-label"></label> <!-- 排版用 -->
         <div class="col-sm-2 form-floating">
-          <select v-model="selected.mlp.activation" class="form-select" id="floatingMlpActivation">
+          <select v-model="selected.mlp.activation" class="form-select" id="floatingMlpActivation" :disabled="loading">
             <option v-for="(label, value) in mlpActivactionOptions" :key="value" :value="value">
               {{ label }}
             </option>
@@ -263,7 +282,8 @@
             type="text" 
             class="form-control" 
             id="floatingMlpLearningRateInit" 
-            placeholder="floatingMlpLearningRateInit" 
+            placeholder="floatingMlpLearningRateInit"
+            :disabled="loading"
           />
           <label for="floatingMlpLearningRateInit" style="margin-left:9px;"> learning_rate </label>
         </div>
@@ -272,7 +292,8 @@
             type="text" 
             class="form-control" 
             id="floatingMlpMaxIter" 
-            placeholder="floatingMlpMaxIter" 
+            placeholder="floatingMlpMaxIter"
+            :disabled="loading"
           />
           <label for="floatingMlpMaxIter" style="margin-left:9px;"> max_iter </label>
         </div>
@@ -283,7 +304,7 @@
     <div class="row mb-3">
       <label for="inputEmail3" class="col-sm-3 col-form-label">File Selection</label>
       <div class="col-sm-8">
-        <select class="form-select" aria-label="Small select example" v-model="selected.data">
+        <select class="form-select" aria-label="Small select example" v-model="selected.data" :disabled="loading">
           <option v-for="data in dataNames" :key="data" :value="data">{{ data }}</option>
         </select>
       </div>
@@ -293,7 +314,7 @@
     <div class="row mb-3">
       <label for="inputEmail3" class="col-sm-3 col-form-label">Outcome Column</label>
       <div class="col-sm-8">
-        <input v-model="selected.label_column" class="form-control" type="text">
+        <input v-model="selected.label_column" class="form-control" type="text" :disabled="loading">
       </div>
     </div>
 
@@ -302,7 +323,7 @@
       <label for="inputEmail3" class="col-sm-3 col-form-label">Data Split</label>
       <div class="col-sm-4">
         <div class="form-check">
-          <input v-model="selected.split_strategy" class="form-check-input" type="radio" name="gridRadios" id="gridRadios1" value="train_test_split">
+          <input v-model="selected.split_strategy" class="form-check-input" type="radio" name="gridRadios" id="gridRadios1" value="train_test_split" :disabled="loading">
           <label class="form-check-label" for="gridRadios1">
             Split into Train and Test
           </label>
@@ -310,7 +331,7 @@
       </div>
       <div class="col-sm-4">
         <div class="form-check">
-          <input v-model="selected.split_strategy" class="form-check-input" type="radio" name="gridRadios" id="gridRadios1" value="k_fold">
+          <input v-model="selected.split_strategy" class="form-check-input" type="radio" name="gridRadios" id="gridRadios1" value="k_fold" :disabled="loading">
           <label class="form-check-label" for="gridRadios1">
             K-Fold Cross Validation
           </label>
@@ -322,7 +343,7 @@
     <div v-if="selected.split_strategy=='train_test_split'" class="row mb-3">
       <label for="inputEmail3" class="col-sm-3 col-form-label"></label> <!-- 排版用 -->
       <div class="col-sm-4 d-flex align-items-center">
-        <input v-model="selected.split_value" type="range" class="form-range" min="0.5" max="0.9" step="0.1">
+        <input v-model="selected.split_value" type="range" class="form-range" min="0.5" max="0.9" step="0.1" :disabled="loading">
       </div>
       <div class="col-sm-4 d-flex align-items-center">
         <span id="passwordHelpInline" class="form-text">
@@ -333,7 +354,7 @@
     <div v-if="selected.split_strategy=='k_fold'" class="row mb-3">
       <label for="inputEmail3" class="col-sm-3 col-form-label"></label> <!-- 排版用 -->
       <div class="col-sm-4 d-flex align-items-center">
-        <input v-model="selected.split_value" type="range" class="form-range" min="2" max="10">
+        <input v-model="selected.split_value" type="range" class="form-range" min="2" max="10" :disabled="loading">
       </div>
       <div class="col-sm-4 d-flex align-items-center">
         <span id="passwordHelpInline" class="form-text">
@@ -343,11 +364,11 @@
     </div>
 
     <!-- Model 儲存檔名 -->
-    <div class="row mb-3">
+    <div v-if="selected.split_strategy=='train_test_split'" class="row mb-3">
       <label for="inputEmail3" class="col-sm-3 col-form-label">Model Saved as</label>
       <div class="col-sm-8">
         <div class="input-group">
-          <input v-model="selected.model_name" class="form-control" type="text">
+          <input v-model="selected.model_name" class="form-control" type="text" :disabled="loading">
           <span class="input-group-text">{{ watched.file_extension }}</span>
         </div>
       </div>
@@ -609,6 +630,7 @@ export default {
   },
   methods: {
     async fetchData() {
+      this.loading = true
       try {
         const response = await axios.post('http://127.0.0.1:5000/fetch-data', {
           param: 'data/train'
@@ -620,6 +642,7 @@ export default {
         console.error("fetchData error: " + error)
         this.dataNames = { status: 'error', error: '無法連接後端服務' };
       }
+      this.loading = false
     },
 
     updateTestSize() {
