@@ -49,12 +49,12 @@ def load_data(data_path):
     # print(f"Data loaded from {full_path}")
     return data
 
-def predict_labels(model, model_path, data):
+def predict_labels(model, model_path, data, label_column):
     x_test = data.values
     if model_path.lower().endswith(".zip"): # tabnet 只吃 numpy array，不吃 object
         x_test = np.array(x_test, dtype=np.float32)
     y_pred = model.predict(x_test)
-    data['label'] = y_pred
+    data[label_column] = y_pred
     return data
 
 def save_predictions(data, data_path, output_name):
@@ -104,13 +104,13 @@ def predict_input(model, model_path, input_values):
         "message": prediction,
     }))
 
-def main(model_path, mode, data_path=None, output_name=None, input_values=None):
+def main(model_path, mode, data_path=None, output_name=None, input_values=None, label_column="label"):
     try:
         model = load_model(model_path)
 
         if mode == "file":
             data = load_data(data_path)
-            data_with_predictions = predict_labels(model, model_path, data)
+            data_with_predictions = predict_labels(model, model_path, data, label_column)
             save_predictions(data_with_predictions, data_path, output_name)
         elif mode == "input":
             predict_input(model, model_path, input_values)
@@ -128,6 +128,7 @@ if __name__ == "__main__":
     parser.add_argument('--data_path', type=str, help="輸入檔案路徑（僅 file 模式需要）")
     parser.add_argument('--output_name', type=str, help="輸出檔案名稱（僅 file 模式需要）")
     parser.add_argument('--input_values', type=str, nargs='+', help="輸入特徵數值（僅 input 模式需要，數值間以空格分隔）")
+    parser.add_argument('--label_column', type=str, help="自訂標籤欄位名稱")
     
     args = parser.parse_args()
-    main(args.model_path, args.mode, args.data_path, args.output_name, args.input_values)
+    main(args.model_path, args.mode, args.data_path, args.output_name, args.input_values, args.label_column)

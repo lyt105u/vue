@@ -13,7 +13,7 @@
     <div class="row mb-3">
       <label for="inputEmail3" class="col-sm-3 col-form-label">Trained model</label>
       <div class="col-sm-8">
-        <select class="form-select" aria-label="Small select example" v-model="selected.model_path">
+        <select class="form-select" aria-label="Small select example" v-model="selected.model_path" :disabled="loading">
           <option v-for="data in modelNames" :key="data" :value="data">{{ data }}</option>
         </select>
       </div>
@@ -23,7 +23,7 @@
       <label for="inputEmail3" class="col-sm-3 col-form-label">Prediction Type</label>
       <div class="col-sm-4">
         <div class="form-check">
-          <input v-model="selected.mode" class="form-check-input" type="radio" name="gridRadios" id="gridRadios1" value="file">
+          <input v-model="selected.mode" class="form-check-input" type="radio" name="gridRadios" id="gridRadios1" value="file"  :disabled="loading">
           <label class="form-check-label" for="gridRadios1">
             File Prediction
           </label>
@@ -31,7 +31,7 @@
       </div>
       <div class="col-sm-4">
         <div class="form-check">
-          <input v-model="selected.mode" class="form-check-input" type="radio" name="gridRadios" id="gridRadios1" value="input">
+          <input v-model="selected.mode" class="form-check-input" type="radio" name="gridRadios" id="gridRadios1" value="input"  :disabled="loading">
           <label class="form-check-label" for="gridRadios1">
             Manual Input
           </label>
@@ -43,7 +43,7 @@
       <div class="row mb-3">
         <label for="inputEmail3" class="col-sm-3 col-form-label">File Selection</label>
         <div class="col-sm-8">
-          <select class="form-select" aria-label="Small select example" v-model="selected.data_path">
+          <select class="form-select" aria-label="Small select example" v-model="selected.data_path" :disabled="loading">
             <option v-for="data in xlsxNames" :key="data" :value="data">{{ data }}</option>
           </select>
         </div>
@@ -53,9 +53,16 @@
         <label for="inputEmail3" class="col-sm-3 col-form-label">Results Saved as</label>
         <div class="col-sm-8">
           <div class="input-group">
-            <input v-model="selected.output_name" class="form-control" type="text">
+            <input v-model="selected.output_name" class="form-control" type="text" :disabled="loading">
             <span class="input-group-text">{{ watched.file_extension }}</span>
           </div>
+        </div>
+      </div>
+      
+      <div class="row mb-3">
+        <label for="inputEmail3" class="col-sm-3 col-form-label">Outcome Column</label>
+        <div class="col-sm-8">
+          <input v-model="selected.label_column" class="form-control" type="text" :disabled="loading">
         </div>
       </div>
     </template>
@@ -74,7 +81,8 @@
               type="text" 
               class="form-control" 
               :id="`floatingInput-${rowIndex}-${fieldIndex}`" 
-              :placeholder="`Field ${rowIndex * 4 + fieldIndex + 1}`" 
+              :placeholder="`Field ${rowIndex * 4 + fieldIndex + 1}`"
+              :disabled="loading"
             />
             <label :for="`floatingInput-${rowIndex}-${fieldIndex}`">
               {{ rowIndex * 4 + fieldIndex + 1 }}
@@ -128,6 +136,7 @@ export default {
         data_path: '',
         output_name: '',
         input_values: [],
+        label_column: ''
       },
       watched: {
         file_extension: '',
@@ -173,6 +182,7 @@ export default {
   },
   methods: {
     async fetchData() {
+      this.loading = true
       // 拿 trained model names
       try {
         const response = await axios.post('http://127.0.0.1:5000/fetch-data', {
@@ -198,9 +208,12 @@ export default {
         console.error("fetchData error: " + error)
         this.xlsxNames = { status: 'fail', error: '無法連接後端服務' };
       }
+      this.loading = false
     },
 
     async getFieldNumber() {
+      this.loading = true
+      this.selected.input_values = []
       if (this.selected.model_path) {
         try {
           const response = await axios.post('http://127.0.0.1:5000/get-fieldNumber', {
@@ -214,6 +227,7 @@ export default {
           this.modelNames = { status: 'fail', error: '無法連接後端服務' };
         }
       }
+      this.loading = false
     },
 
     async runPredict() {

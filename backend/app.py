@@ -332,6 +332,7 @@ def run_predict():
     data_path = data.get('data_path')   # 輸入檔案路徑（file 模式）
     output_name = data.get('output_name')  # 輸出檔案名稱（file 模式）
     input_values = data.get('input_values')  # 特徵值陣列（input 模式）
+    label_column = data.get('label_column')
 
     if not model_path or not mode:
         return jsonify({"status": "error", "message": "model_path and mode are necessary args"}), 400
@@ -340,7 +341,7 @@ def run_predict():
     if mode == 'file':
         if not data_path or not output_name:
             return jsonify({"status": "error", "message": "data_path 和 output_name 是 file 模式下的必要參數"}), 400
-        command.extend(['--data_path', data_path, '--output_name', output_name])
+        command.extend(['--data_path', data_path, '--output_name', output_name, '--label_column', label_column])
     elif mode == 'input':
         if not input_values or not isinstance(input_values, list):
             return jsonify({"status": "error", "message": "input_values 是 input 模式下的必要參數，且必須為陣列格式"}), 400
