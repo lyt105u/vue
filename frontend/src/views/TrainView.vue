@@ -9,7 +9,7 @@
     </div>
   </div>
 
-  <form class="row g-3" @submit.prevent="runTrain" style="margin-top: 16px">
+  <form class="row g-3 needs-validation" @submit.prevent="runTrain" style="margin-top: 16px">
     <!-- Model 種類 -->
     <div class="row mb-3">
       <label for="inputEmail3" class="col-sm-3 col-form-label">Model Type</label>
@@ -19,6 +19,7 @@
             {{ label }}
           </option>
         </select>
+        <div v-if="errors.model_type" class="text-danger small">{{ errors.model_type }}</div>
       </div>
     </div>
 
@@ -27,34 +28,35 @@
       <div class="row mb-3">
         <label for="inputEmail3" class="col-sm-3 col-form-label"> Parameters </label>
         <div class="col-sm-2 form-floating">
+          <!-- remove placeholder to cancel floating animation -->
           <input v-model="selected.xgb.n_estimators"
             type="text" 
             class="form-control" 
             id="floatingXgbEstimators" 
-            placeholder="floatingXgbEstimators"
             :disabled="loading"
           />
           <label for="floatingXgbEstimators" style="margin-left:9px;"> n_estimators </label>
+          <div v-if="errors.n_estimators" class="text-danger small">{{ errors.n_estimators }}</div>
         </div>
         <div class="col-sm-2 form-floating">
           <input v-model="selected.xgb.learning_rate"
             type="text" 
             class="form-control" 
             id="floatingXgbLearningRate" 
-            placeholder="floatingXgbLearningRate"
             :disabled="loading"
           />
           <label for="floatingXgbLearningRate" style="margin-left:9px;"> learning_rate </label>
+          <div v-if="errors.learning_rate" class="text-danger small">{{ errors.learning_rate }}</div>
         </div>
         <div class="col-sm-2 form-floating">
           <input v-model="selected.xgb.max_depth"
             type="text" 
             class="form-control" 
             id="floatingXgbMaxDepth" 
-            placeholder="floatingXgbMaxDepth"
             :disabled="loading"
           />
           <label for="floatingXgbMaxDepth" style="margin-left:9px;"> max_depth </label>
+          <div v-if="errors.max_depth" class="text-danger small">{{ errors.max_depth }}</div>
         </div>
       </div>
     </template>
@@ -68,7 +70,6 @@
             type="text" 
             class="form-control" 
             id="floatingEstimators" 
-            placeholder="floatingEstimators"
             :disabled="loading"
           />
           <label for="floatingEstimators" style="margin-left:9px;"> n_estimators </label>
@@ -78,7 +79,6 @@
             type="text" 
             class="form-control" 
             id="floatingLearningRate" 
-            placeholder="floatingLearningRate"
             :disabled="loading"
           />
           <label for="floatingLearningRate" style="margin-left:9px;"> learning_rate </label>
@@ -88,7 +88,6 @@
             type="text" 
             class="form-control" 
             id="floatingMaxDepth" 
-            placeholder="floatingMaxDepth"
             :disabled="loading"
           />
           <label for="floatingMaxDepth" style="margin-left:9px;"> max_depth </label>
@@ -98,7 +97,6 @@
             type="text" 
             class="form-control" 
             id="floatingNumLeaves" 
-            placeholder="floatingNumLeaves"
             :disabled="loading"
           />
           <label for="floatingNumLeaves" style="margin-left:9px;"> num_leaves </label>
@@ -115,7 +113,6 @@
             type="text" 
             class="form-control" 
             id="floatingRfEstimators" 
-            placeholder="floatingRfEstimators"
             :disabled="loading"
           />
           <label for="floatingRfEstimators" style="margin-left:9px;"> n_estimators </label>
@@ -125,7 +122,6 @@
             type="text" 
             class="form-control" 
             id="floatingRfMaxDepth" 
-            placeholder="floatingRfMaxDepth"
             :disabled="loading"
           />
           <label for="floatingRfMaxDepth" style="margin-left:9px;"> max_depth </label>
@@ -135,7 +131,6 @@
             type="text" 
             class="form-control" 
             id="floatingRfRandomState" 
-            placeholder="floatingRfRandomState"
             :disabled="loading"
           />
           <label for="floatingRfRandomState" style="margin-left:9px;"> random_state </label>
@@ -145,7 +140,6 @@
             type="text" 
             class="form-control" 
             id="floatingRfNJobs" 
-            placeholder="floatingRfNJobs"
             :disabled="loading"
           />
           <label for="floatingRfNJobs" style="margin-left:9px;"> n_jobs </label>
@@ -170,7 +164,6 @@
             type="text" 
             class="form-control" 
             id="floatingLrC" 
-            placeholder="floatingLrC"
             :disabled="loading"
           />
           <label for="floatingLrC" style="margin-left:9px;"> C </label>
@@ -188,7 +181,6 @@
             type="text" 
             class="form-control" 
             id="floatingLrMaxIter" 
-            placeholder="floatingLrMaxIter"
             :disabled="loading"
           />
           <label for="floatingLrMaxIter" style="margin-left:9px;"> max_iter </label>
@@ -205,7 +197,6 @@
             type="text" 
             class="form-control" 
             id="floatingTabnetBatchSize" 
-            placeholder="floatingTabnetBatchSize"
             :disabled="loading"
           />
           <label for="floatingTabnetBatchSize" style="margin-left:9px;"> batch_size </label>
@@ -215,7 +206,6 @@
             type="text" 
             class="form-control" 
             id="floatingTabnetMaxEpochs" 
-            placeholder="floatingTabnetMaxEpochs"
             :disabled="loading"
           />
           <label for="floatingTabnetMaxEpochs" style="margin-left:9px;"> max_epochs </label>
@@ -225,7 +215,6 @@
             type="text" 
             class="form-control" 
             id="floatingTabnetPatience" 
-            placeholder="floatingTabnetPatience"
             :disabled="loading"
           />
           <label for="floatingTabnetPatience" style="margin-left:9px;"> patience </label>
@@ -282,7 +271,6 @@
             type="text" 
             class="form-control" 
             id="floatingMlpLearningRateInit" 
-            placeholder="floatingMlpLearningRateInit"
             :disabled="loading"
           />
           <label for="floatingMlpLearningRateInit" style="margin-left:9px;"> learning_rate </label>
@@ -292,7 +280,6 @@
             type="text" 
             class="form-control" 
             id="floatingMlpMaxIter" 
-            placeholder="floatingMlpMaxIter"
             :disabled="loading"
           />
           <label for="floatingMlpMaxIter" style="margin-left:9px;"> max_iter </label>
@@ -598,6 +585,7 @@ export default {
       },
       loading: false,
       imageData: null,
+      errors: {}, // for validation
     };
   },
   created() {
@@ -658,8 +646,45 @@ export default {
         this.watched.file_extension = ".pkl"
       }
     },
+
+    isFloat(value) {
+      return /^[0-9]*\.?[0-9]+$/.test(value); // 檢查數字是否為浮點數格式
+    },
+
+    validateForm() {
+      this.errors = {}
+      let isValid = true
+
+      // Model Type
+      if (!this.selected.model_type) {
+        this.errors.model_type = "Choose a model"
+        isValid = false
+      }
+
+      // Parameters
+      if (this.selected.model_type === "xgb") {
+        if (!this.selected.xgb.n_estimators || isNaN(this.selected.xgb.n_estimators) || !Number.isInteger(Number(this.selected.xgb.n_estimators))) {
+          this.errors.n_estimators = "Integer only."
+          isValid = false
+        }
+        if (!this.selected.xgb.learning_rate || !this.isFloat(this.selected.xgb.learning_rate) || Number(this.selected.xgb.learning_rate) <= 0) {
+          this.errors.learning_rate = "Floating point only."
+          isValid = false
+        }
+        if (!this.selected.xgb.max_depth || isNaN(this.selected.xgb.max_depth) || !Number.isInteger(Number(this.selected.xgb.max_depth))) {
+          this.errors.max_depth = "Integer only."
+          isValid = false
+        }
+      }
+
+      return isValid
+    },
     
     async runTrain() {
+      if (!this.validateForm()) {
+        return
+      }
+
       try {
         this.loading = true
         this.output = null
