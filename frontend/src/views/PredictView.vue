@@ -11,11 +11,12 @@
 
   <form class="row g-3" @submit.prevent="runPredict" style="margin-top: 16px">
     <div class="row mb-3">
-      <label for="inputEmail3" class="col-sm-3 col-form-label">Trained model</label>
+      <label for="inputEmail3" class="col-sm-3 col-form-label">Trained Model</label>
       <div class="col-sm-8">
         <select class="form-select" aria-label="Small select example" v-model="selected.model_path" :disabled="loading">
           <option v-for="data in modelNames" :key="data" :value="data">{{ data }}</option>
         </select>
+        <div v-if="errors.model_path" class="text-danger small">{{ errors.model_path }}</div>
       </div>
     </div>
 
@@ -46,6 +47,7 @@
           <select class="form-select" aria-label="Small select example" v-model="selected.data_path" :disabled="loading">
             <option v-for="data in xlsxNames" :key="data" :value="data">{{ data }}</option>
           </select>
+          <div v-if="errors.data_path" class="text-danger small">{{ errors.data_path }}</div>
         </div>
       </div>
 
@@ -56,6 +58,7 @@
             <input v-model="selected.output_name" class="form-control" type="text" :disabled="loading">
             <span class="input-group-text">{{ watched.file_extension }}</span>
           </div>
+          <div v-if="errors.output_name" class="text-danger small">{{ errors.output_name }}</div>
         </div>
       </div>
       
@@ -63,6 +66,7 @@
         <label for="inputEmail3" class="col-sm-3 col-form-label">Outcome Column</label>
         <div class="col-sm-8">
           <input v-model="selected.label_column" class="form-control" type="text" :disabled="loading">
+          <div v-if="errors.label_column" class="text-danger small">{{ errors.label_column }}</div>
         </div>
       </div>
     </template>
@@ -87,6 +91,9 @@
             <label :for="`floatingInput-${rowIndex}-${fieldIndex}`">
               {{ rowIndex * 4 + fieldIndex + 1 }}
             </label>
+          </div>
+          <div v-if="errors.input_values && errors.input_values[rowIndex * 4 + fieldIndex]" class="text-danger small">
+            {{ errors.input_values[rowIndex * 4 + fieldIndex] }}
           </div>
         </div>
       </div>
@@ -144,6 +151,7 @@ export default {
       output: '',
       notificationMsg: '',
       loading: false,
+      errors: {}, // for validation
     };
   },
   created() {
@@ -166,6 +174,7 @@ export default {
       this.selected.input_name = []
       this.output = ''
       this.getFieldNumber()
+      this.errors = {}
     },
     "selected.data_path"() {
         if (this .selected.data_path.endsWith(".csv")) {
@@ -230,7 +239,52 @@ export default {
       this.loading = false
     },
 
+    validateForm() {
+      this.errors = {}
+      let isValid = true
+
+      // Trained Model
+      if (!this.selected.model_path) {
+        this.errors.model_path = "Choose a model."
+        isValid = false
+      }
+
+      // Prediction Type
+      if (this.selected.mode === "file") {  // File mode
+        // File Selection
+        if (!this.selected.data_path) {
+          this.errors.data_path = "Choose a file."
+          isValid = false
+        }
+        // Results Saved as
+        if (!this.selected.output_name) {
+          this.errors.output_name = "Output name is required."
+          isValid = false
+        }
+        // Outcome Column
+        if (!this.selected.label_column) {
+          this.errors.label_column = "Outcome column is required."
+          isValid = false
+        }
+      } else if (this.selected.mode === "input") {  // Input mode
+        this.errors.input_values = {}
+        for (let i = 0; i < this.selected.input_values.length; i++) {
+          let value = this.selected.input_values[i]
+          if (!value || value.trim() === "") {
+            this.errors.input_values[i] = `Field ${i + 1} is required.`
+            isValid = false
+          }
+        }
+      }
+
+      return isValid
+    },
+
     async runPredict() {
+      if (!this.validateForm()) {
+        return
+      }
+
       this.loading = true
       this.output = null
 
