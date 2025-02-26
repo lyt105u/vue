@@ -73,6 +73,7 @@
             :disabled="loading"
           />
           <label for="floatingEstimators" style="margin-left:9px;"> n_estimators </label>
+          <div v-if="errors.n_estimators" class="text-danger small">{{ errors.n_estimators }}</div>
         </div>
         <div class="col-sm-2 form-floating">
           <input v-model="selected.lgbm.learning_rate"
@@ -82,6 +83,7 @@
             :disabled="loading"
           />
           <label for="floatingLearningRate" style="margin-left:9px;"> learning_rate </label>
+          <div v-if="errors.learning_rate" class="text-danger small">{{ errors.learning_rate }}</div>
         </div>
         <div class="col-sm-2 form-floating">
           <input v-model="selected.lgbm.max_depth"
@@ -91,6 +93,7 @@
             :disabled="loading"
           />
           <label for="floatingMaxDepth" style="margin-left:9px;"> max_depth </label>
+          <div v-if="errors.max_depth" class="text-danger small">{{ errors.max_depth }}</div>
         </div>
         <div class="col-sm-2 form-floating">
           <input v-model="selected.lgbm.num_leaves"
@@ -100,6 +103,7 @@
             :disabled="loading"
           />
           <label for="floatingNumLeaves" style="margin-left:9px;"> num_leaves </label>
+          <div v-if="errors.num_leaves" class="text-danger small">{{ errors.num_leaves }}</div>
         </div>
       </div>
     </template>
@@ -116,6 +120,7 @@
             :disabled="loading"
           />
           <label for="floatingRfEstimators" style="margin-left:9px;"> n_estimators </label>
+          <div v-if="errors.n_estimators" class="text-danger small">{{ errors.n_estimators }}</div>
         </div>
         <div class="col-sm-2 form-floating">
           <input v-model="selected.rf.max_depth"
@@ -125,6 +130,7 @@
             :disabled="loading"
           />
           <label for="floatingRfMaxDepth" style="margin-left:9px;"> max_depth </label>
+          <div v-if="errors.max_depth" class="text-danger small">{{ errors.max_depth }}</div>
         </div>
         <div class="col-sm-2 form-floating">
           <input v-model="selected.rf.random_state"
@@ -134,6 +140,7 @@
             :disabled="loading"
           />
           <label for="floatingRfRandomState" style="margin-left:9px;"> random_state </label>
+          <div v-if="errors.random_state" class="text-danger small">{{ errors.random_state }}</div>
         </div>
         <div class="col-sm-2 form-floating">
           <input v-model="selected.rf.n_jobs"
@@ -143,6 +150,7 @@
             :disabled="loading"
           />
           <label for="floatingRfNJobs" style="margin-left:9px;"> n_jobs </label>
+          <div v-if="errors.n_jobs" class="text-danger small">{{ errors.n_jobs }}</div>
         </div>
       </div>
     </template>
@@ -158,6 +166,7 @@
             </option>
           </select>
           <label for="floatingLrPenalty" style="margin-left:9px;"> penalty </label>
+          <div v-if="errors.penalty" class="text-danger small">{{ errors.penalty }}</div>
         </div>
         <div class="col-sm-2 form-floating">
           <input v-model="selected.lr.C"
@@ -167,6 +176,7 @@
             :disabled="loading"
           />
           <label for="floatingLrC" style="margin-left:9px;"> C </label>
+          <div v-if="errors.C" class="text-danger small">{{ errors.C }}</div>
         </div>
         <div class="col-sm-2 form-floating">
           <select v-model="selected.lr.solver" class="form-select" id="floatingLrSolver" :disabled="loading">
@@ -175,6 +185,7 @@
             </option>
           </select>
           <label for="floatingLrSolver" style="margin-left:9px;"> solver </label>
+          <div v-if="errors.solver" class="text-danger small">{{ errors.solver }}</div>
         </div>
         <div class="col-sm-2 form-floating">
           <input v-model="selected.lr.max_iter"
@@ -184,6 +195,7 @@
             :disabled="loading"
           />
           <label for="floatingLrMaxIter" style="margin-left:9px;"> max_iter </label>
+          <div v-if="errors.max_iter" class="text-danger small">{{ errors.max_iter }}</div>
         </div>
       </div>
     </template>
@@ -200,6 +212,7 @@
             :disabled="loading"
           />
           <label for="floatingTabnetBatchSize" style="margin-left:9px;"> batch_size </label>
+          <div v-if="errors.batch_size" class="text-danger small">{{ errors.batch_size }}</div>
         </div>
         <div class="col-sm-2 form-floating">
           <input v-model="selected.tabnet.max_epochs"
@@ -209,6 +222,7 @@
             :disabled="loading"
           />
           <label for="floatingTabnetMaxEpochs" style="margin-left:9px;"> max_epochs </label>
+          <div v-if="errors.max_epochs" class="text-danger small">{{ errors.max_epochs }}</div>
         </div>
         <div class="col-sm-2 form-floating">
           <input v-model="selected.tabnet.patience"
@@ -218,6 +232,7 @@
             :disabled="loading"
           />
           <label for="floatingTabnetPatience" style="margin-left:9px;"> patience </label>
+          <div v-if="errors.patience" class="text-danger small">{{ errors.patience }}</div>
         </div>
       </div>
     </template>
@@ -234,6 +249,7 @@
             :disabled="loading"
           />
           <label for="floatingMlpHiddenLayer1" style="margin-left:9px;"> hidden_layer_1 </label>
+          <div v-if="errors.hidden_layer_1" class="text-danger small">{{ errors.hidden_layer_1 }}</div>
         </div>
         <div class="col-sm-2 form-floating">
           <input v-model="selected.mlp.hidden_layer_2"
@@ -243,6 +259,7 @@
             :disabled="loading"
           />
           <label for="floatingMlpHiddenLayer2" style="margin-left:9px;"> hidden_layer_2 </label>
+          <div v-if="errors.hidden_layer_2" class="text-danger small">{{ errors.hidden_layer_2 }}</div>
         </div>
         <div class="col-sm-2 form-floating">
           <input v-model="selected.mlp.hidden_layer_3"
@@ -252,6 +269,7 @@
             :disabled="loading"
           />
           <label for="floatingMlpHiddenLayer3" style="margin-left:9px;"> hidden_layer_3 </label>
+          <div v-if="errors.hidden_layer_3" class="text-danger small">{{ errors.hidden_layer_3 }}</div>
         </div>
         <div class="col-sm-3 form-text"> Leave hidden layer 2 or 3 blank if not needed. </div>
       </div>
@@ -265,6 +283,7 @@
             </option>
           </select>
           <label for="floatingMlpActivation" style="margin-left:9px;"> activation </label>
+          <div v-if="errors.activation" class="text-danger small">{{ errors.activation }}</div>
         </div>
         <div class="col-sm-2 form-floating">
           <input v-model="selected.mlp.learning_rate_init"
@@ -274,6 +293,7 @@
             :disabled="loading"
           />
           <label for="floatingMlpLearningRateInit" style="margin-left:9px;"> learning_rate </label>
+          <div v-if="errors.learning_rate_init" class="text-danger small">{{ errors.learning_rate_init }}</div>
         </div>
         <div class="col-sm-2 form-floating">
           <input v-model="selected.mlp.max_iter"
@@ -283,6 +303,7 @@
             :disabled="loading"
           />
           <label for="floatingMlpMaxIter" style="margin-left:9px;"> max_iter </label>
+          <div v-if="errors.max_iter" class="text-danger small">{{ errors.max_iter }}</div>
         </div>
       </div>
     </template>
@@ -294,6 +315,7 @@
         <select class="form-select" aria-label="Small select example" v-model="selected.data" :disabled="loading">
           <option v-for="data in dataNames" :key="data" :value="data">{{ data }}</option>
         </select>
+        <div v-if="errors.data" class="text-danger small">{{ errors.data }}</div>
       </div>
     </div>
 
@@ -302,6 +324,7 @@
       <label for="inputEmail3" class="col-sm-3 col-form-label">Outcome Column</label>
       <div class="col-sm-8">
         <input v-model="selected.label_column" class="form-control" type="text" :disabled="loading">
+        <div v-if="errors.label_column" class="text-danger small">{{ errors.label_column }}</div>
       </div>
     </div>
 
@@ -358,6 +381,7 @@
           <input v-model="selected.model_name" class="form-control" type="text" :disabled="loading">
           <span class="input-group-text">{{ watched.file_extension }}</span>
         </div>
+        <div v-if="errors.model_name" class="text-danger small">{{ errors.model_name }}</div>
       </div>
     </div>
 
@@ -614,6 +638,7 @@ export default {
     },
     "selected.model_type"() {
       this.updateFileExtension()
+      this.errors = {}
     }
   },
   methods: {
@@ -647,8 +672,11 @@ export default {
       }
     },
 
+    isInt(value) {
+      return /^-?(0|[1-9][0-9]*)$/.test(value) // 允許可選的負號，後面跟著至少一個數字
+    },
     isFloat(value) {
-      return /^[0-9]*\.?[0-9]+$/.test(value); // 檢查數字是否為浮點數格式
+      return /^[0-9]+\.[0-9]+$/.test(value)
     },
 
     validateForm() {
@@ -657,24 +685,137 @@ export default {
 
       // Model Type
       if (!this.selected.model_type) {
-        this.errors.model_type = "Choose a model"
+        this.errors.model_type = "Choose a model."
         isValid = false
       }
 
       // Parameters
       if (this.selected.model_type === "xgb") {
-        if (!this.selected.xgb.n_estimators || isNaN(this.selected.xgb.n_estimators) || !Number.isInteger(Number(this.selected.xgb.n_estimators))) {
+        if (!this.selected.xgb.n_estimators || !this.isInt(this.selected.xgb.n_estimators)) {
           this.errors.n_estimators = "Integer only."
           isValid = false
         }
-        if (!this.selected.xgb.learning_rate || !this.isFloat(this.selected.xgb.learning_rate) || Number(this.selected.xgb.learning_rate) <= 0) {
+        if (!this.selected.xgb.learning_rate || !this.isFloat(this.selected.xgb.learning_rate)) {
           this.errors.learning_rate = "Floating point only."
           isValid = false
         }
-        if (!this.selected.xgb.max_depth || isNaN(this.selected.xgb.max_depth) || !Number.isInteger(Number(this.selected.xgb.max_depth))) {
+        if (!this.selected.xgb.max_depth || !this.isInt(this.selected.xgb.max_depth)) {
           this.errors.max_depth = "Integer only."
           isValid = false
         }
+      } else if (this.selected.model_type === "lightgbm") {
+        if (!this.selected.lgbm.n_estimators || !this.isInt(this.selected.lgbm.n_estimators)) {
+          this.errors.n_estimators = "Integer only."
+          isValid = false
+        }
+        if (!this.selected.lgbm.learning_rate || !this.isFloat(this.selected.lgbm.learning_rate)) {
+          this.errors.learning_rate = "Floating point only."
+          isValid = false
+        }
+        if (!this.selected.lgbm.max_depth || !this.isInt(this.selected.lgbm.max_depth)) {
+          this.errors.max_depth = "Integer only."
+          isValid = false
+        }
+        if (!this.selected.lgbm.num_leaves || !this.isInt(this.selected.lgbm.num_leaves)) {
+          this.errors.num_leaves = "Integer only."
+          isValid = false
+        }
+      } else if (this.selected.model_type === "random_forest") {
+        if (!this.selected.rf.n_estimators || !this.isInt(this.selected.rf.n_estimators)) {
+          this.errors.n_estimators = "Integer only."
+          isValid = false
+        }
+        if (!this.selected.rf.max_depth || !this.isInt(this.selected.rf.max_depth)) {
+          this.errors.max_depth = "Integer only."
+          isValid = false
+        }
+        if (!this.selected.rf.random_state || !this.isInt(this.selected.rf.random_state)) {
+          this.errors.random_state = "Integer only."
+          isValid = false
+        }
+        if (!this.selected.rf.n_jobs || !this.isInt(this.selected.rf.n_jobs)) {
+          this.errors.n_jobs = "Integer only."
+          isValid = false
+        }
+      } else if (this.selected.model_type === "logistic_regression") {
+        if (!this.selected.lr.penalty) {
+          this.errors.penalty = "Choose a penalty."
+          isValid = false
+        }
+        if (!this.selected.lr.C || !this.isFloat(this.selected.lr.C)) {
+          this.errors.C = "Floating point only."
+          isValid = false
+        }
+        if (!this.selected.lr.solver) {
+          this.errors.solver = "Choose a solver."
+          isValid = false
+        }
+        if (!this.selected.lr.max_iter || !this.isInt(this.selected.lr.max_iter)) {
+          this.errors.max_iter = "Integer only."
+          isValid = false
+        }
+      } else if (this.selected.model_type === "tabnet") {
+        if (!this.selected.tabnet.batch_size || !this.isInt(this.selected.tabnet.batch_size)) {
+          this.errors.batch_size = "Integer only."
+          isValid = false
+        }
+        if (!this.selected.tabnet.max_epochs || !this.isInt(this.selected.tabnet.max_epochs)) {
+          this.errors.max_epochs = "Integer only."
+          isValid = false
+        }
+        if (!this.selected.tabnet.patience || !this.isInt(this.selected.tabnet.patience)) {
+          this.errors.patience = "Integer only."
+          isValid = false
+        }
+      } else if (this.selected.model_type === "mlp") {
+        if (!this.selected.mlp.hidden_layer_1 || !this.isInt(this.selected.mlp.hidden_layer_1)) {
+          this.errors.hidden_layer_1 = "Integer only."
+          isValid = false
+        }
+        if (this.selected.mlp.hidden_layer_2 && !this.isInt(this.selected.mlp.hidden_layer_2)) {
+          this.errors.hidden_layer_2 = "Integer only."
+          isValid = false
+        }
+        if (this.selected.mlp.hidden_layer_3) {
+          if (!this.selected.mlp.hidden_layer_2) {
+            this.errors.hidden_layer_3 = "Require Layer 2."
+            isValid = false
+          }
+          if (!this.isInt(this.selected.mlp.hidden_layer_3)) {
+            this.errors.hidden_layer_3 = "Integer only."
+            isValid = false
+          }
+        }
+        if (!this.selected.mlp.activation) {
+          this.errors.activation = "Choose an activation."
+          isValid = false
+        }
+        if (!this.selected.mlp.learning_rate_init || !this.isFloat(this.selected.mlp.learning_rate_init)) {
+          this.errors.learning_rate_init = "Floating point only."
+          isValid = false
+        }
+        if (!this.selected.mlp.max_iter || !this.isInt(this.selected.mlp.max_iter)) {
+          this.errors.max_iter = "Integer only."
+          isValid = false
+        }
+      }
+
+      // File Selection (data)
+      if (!this.selected.data) {
+        this.errors.data = "Choose a file."
+        isValid = false
+      }
+
+      // Outcome Column (label_column)
+      if (!this.selected.label_column) {
+        this.errors.label_column = "Outcome column is required."
+        isValid = false
+      }
+
+      // Model Saved as (model_name)
+      if (!this.selected.model_name) {
+        this.errors.model_name = "Model name is required."
+        isValid = false
       }
 
       return isValid
