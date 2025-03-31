@@ -317,6 +317,81 @@
         </select>
         <div v-if="errors.data" class="text-danger small">{{ errors.data }}</div>
       </div>
+      <div class="col-sm-1">
+        <button class="btn btn-outline-primary" type="button" @click="toggleCollapse">Preview</button>
+      </div>
+    </div>
+
+    <div class="row mb-3">
+      <div class="collapse" ref="collapsePreview">
+        <div class="card card-body">
+          <div class="table-responsive">
+            <table class="table caption-top">
+              <caption>List of users</caption>
+              <thead>
+                <tr>
+                  <th scope="col">First</th>
+                  <th scope="col">Last</th>
+                  <th scope="col">Handle</th>
+                  <th scope="col">First</th>
+                  <th scope="col">Last</th>
+                  <th scope="col">Handle</th>
+                  <th scope="col">First</th>
+                  <th scope="col">Last</th>
+                  <th scope="col">Handle</th>
+                  <th scope="col">First</th>
+                  <th scope="col">Last</th>
+                  <th scope="col">Handle</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Mark</td>
+                  <td>Otto</td>
+                  <td>@mdo</td>
+                  <td>Mark</td>
+                  <td>Otto</td>
+                  <td>@mdo</td>
+                  <td>Mark</td>
+                  <td>Otto</td>
+                  <td>@mdo</td>
+                  <td>Mark</td>
+                  <td>Otto</td>
+                  <td>@mdo</td>
+                </tr>
+                <tr>
+                  <td>Jacob</td>
+                  <td>Thornton</td>
+                  <td>@fat</td>
+                  <td>Mark</td>
+                  <td>Otto</td>
+                  <td>@mdo</td>
+                  <td>Mark</td>
+                  <td>Otto</td>
+                  <td>@mdo</td>
+                  <td>Mark</td>
+                  <td>Otto</td>
+                  <td>@mdo</td>
+                </tr>
+                <tr>
+                  <td>Larry</td>
+                  <td>the Bird</td>
+                  <td>@twitter</td>
+                  <td>Mark</td>
+                  <td>Otto</td>
+                  <td>@mdo</td>
+                  <td>Mark</td>
+                  <td>Otto</td>
+                  <td>@mdo</td>
+                  <td>Mark</td>
+                  <td>Otto</td>
+                  <td>@mdo</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Outcome 欄位 -->
@@ -513,6 +588,7 @@
 import axios from 'axios';
 import ModalNotification from "@/components/ModalNotification.vue"
 import ModalFormulaExplain from "@/components/ModalFormulaExplain.vue"
+import { Collapse } from 'bootstrap'
 
 export default {
   components: {
@@ -639,6 +715,9 @@ export default {
     "selected.model_type"() {
       this.updateFileExtension()
       this.errors = {}
+    },
+    "selected.data"() {
+      this.updateFilePreview()
     }
   },
   methods: {
@@ -658,6 +737,12 @@ export default {
       this.loading = false
     },
 
+    toggleCollapse() {
+      let collapseElement = this.$refs.collapsePreview
+      let collapseInstance = Collapse.getInstance(collapseElement) || new Collapse(collapseElement)
+      collapseInstance.toggle()
+    },
+
     updateTestSize() {
       this.watched.test_size = (1 - parseFloat(this.selected.split_value)).toFixed(1)
     },
@@ -670,6 +755,22 @@ export default {
       } else {
         this.watched.file_extension = ".pkl"
       }
+    },
+
+    async updateFilePreview() {
+      this.loading = true
+      // try {
+      //   const response = await axios.post('http://127.0.0.1:5000/fetch-data', {
+      //     param: 'data/train'
+      //   });
+      //   if (response.data.status == "success") {
+      //     this.dataNames = response.data.files
+      //   }
+      // } catch (error) {
+      //   console.error("fetchData error: " + error)
+      //   this.dataNames = { status: 'error', error: '無法連接後端服務' };
+      // }
+      this.loading = false
     },
 
     isInt(value) {
