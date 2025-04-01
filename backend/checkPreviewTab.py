@@ -46,11 +46,10 @@ def check_missing(df):
 def preview(df, max_rows=10, max_columns=30):
     total_rows = len(df)
     total_columns = len(df.columns)
-    selected_columns = df.columns[:max_columns]
-    preview_df = df[selected_columns].head(max_rows)
+    preview_df = df.head(max_rows)
 
     return {
-        "columns": selected_columns.tolist(),
+        "columns": df.columns.tolist(),
         "preview": preview_df.fillna('').to_dict(orient='records'),
         "total_rows": total_rows,
         "total_columns": total_columns
@@ -64,7 +63,8 @@ if __name__ == "__main__":
         }))
         sys.exit(1)
 
-    file_path = sys.argv[1]
+    file_name = sys.argv[1]
+    file_path = os.path.join("data/train", file_name)
     df = load_file(file_path)
 
     if df is not None:
@@ -72,10 +72,8 @@ if __name__ == "__main__":
         if missing_coords:
             print(json.dumps({
                 "status": "error",
-                "message": "Missing data.",
-                "missing_coords": missing_coords
+                "message": f"Missing data: {missing_coords}"
             }))
-            sys.exit(1)
         else:
             preview_data = preview(df)
             print(json.dumps({

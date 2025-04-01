@@ -318,7 +318,7 @@
         <div v-if="errors.data" class="text-danger small">{{ errors.data }}</div>
       </div>
       <div class="col-sm-1">
-        <button class="btn btn-outline-primary" type="button" @click="toggleCollapse">Preview</button>
+        <button v-if="preview_data.columns != 0" class="btn btn-outline-primary" type="button" @click="toggleCollapse">Preview</button>
       </div>
     </div>
 
@@ -326,66 +326,28 @@
       <div class="collapse" ref="collapsePreview">
         <div class="card card-body">
           <div class="table-responsive">
-            <table class="table caption-top">
-              <caption>List of users</caption>
+            <table class="table">
+              <caption> Showing first 10 rows (total: {{ preview_data.total_rows }} rows) </caption>
               <thead>
                 <tr>
-                  <th scope="col">First</th>
-                  <th scope="col">Last</th>
-                  <th scope="col">Handle</th>
-                  <th scope="col">First</th>
-                  <th scope="col">Last</th>
-                  <th scope="col">Handle</th>
-                  <th scope="col">First</th>
-                  <th scope="col">Last</th>
-                  <th scope="col">Handle</th>
-                  <th scope="col">First</th>
-                  <th scope="col">Last</th>
-                  <th scope="col">Handle</th>
+                  <th v-for="col in preview_data.columns"
+                    :key="col"
+                  >
+                    {{ col }}
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td>Mark</td>
-                  <td>Otto</td>
-                  <td>@mdo</td>
-                  <td>Mark</td>
-                  <td>Otto</td>
-                  <td>@mdo</td>
-                  <td>Mark</td>
-                  <td>Otto</td>
-                  <td>@mdo</td>
-                  <td>Mark</td>
-                  <td>Otto</td>
-                  <td>@mdo</td>
-                </tr>
-                <tr>
-                  <td>Jacob</td>
-                  <td>Thornton</td>
-                  <td>@fat</td>
-                  <td>Mark</td>
-                  <td>Otto</td>
-                  <td>@mdo</td>
-                  <td>Mark</td>
-                  <td>Otto</td>
-                  <td>@mdo</td>
-                  <td>Mark</td>
-                  <td>Otto</td>
-                  <td>@mdo</td>
-                </tr>
-                <tr>
-                  <td>Larry</td>
-                  <td>the Bird</td>
-                  <td>@twitter</td>
-                  <td>Mark</td>
-                  <td>Otto</td>
-                  <td>@mdo</td>
-                  <td>Mark</td>
-                  <td>Otto</td>
-                  <td>@mdo</td>
-                  <td>Mark</td>
-                  <td>Otto</td>
-                  <td>@mdo</td>
+                <tr
+                  v-for="(row, rowIndex) in preview_data.preview"
+                  :key="rowIndex"
+                >
+                  <td
+                    v-for="col in preview_data.columns"
+                    :key="col"
+                  >
+                    {{ row[col] }}
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -606,6 +568,12 @@ export default {
         tabnet: "TabNet",
         mlp: "Multi-Layer Perceptron"
       },
+      preview_data: {
+        columns: [],
+        preview: [],
+        total_rows: 0,
+        total_columns: 0
+      },
       rfPenaltyOptions: {
         l1: 'l1',
         l2: 'l2',
@@ -717,7 +685,9 @@ export default {
       this.errors = {}
     },
     "selected.data"() {
-      this.updateFilePreview()
+      if (this.selected.data != '') {
+        this.updateFilePreview()
+      }
     }
   },
   methods: {
@@ -758,18 +728,44 @@ export default {
     },
 
     async updateFilePreview() {
+      this.preview_data = {
+        columns: [],
+        preview: [],
+        total_rows: 0,
+        total_columns: 0
+      }
+
       this.loading = true
-      // try {
-      //   const response = await axios.post('http://127.0.0.1:5000/fetch-data', {
-      //     param: 'data/train'
-      //   });
-      //   if (response.data.status == "success") {
-      //     this.dataNames = response.data.files
-      //   }
-      // } catch (error) {
-      //   console.error("fetchData error: " + error)
-      //   this.dataNames = { status: 'error', error: '無法連接後端服務' };
-      // }
+      try {
+        const response = await axios.post('http://127.0.0.1:5000/check-PreviewTab', {
+          param: this.selected.data
+        });
+        if (response.data.status == "success") {
+          this.preview_data = response.data.preview_data
+        } else if (response.data.status == "error") {
+          this.modal.title = 'Error'
+          this.modal.content = response.data.message
+          this.preview_data = {
+            columns: [],
+            preview: [],
+            total_rows: 0,
+            total_columns: 0
+          }
+          this.selected.data = ''
+          this.openModalNotification()
+        }
+      } catch (error) {
+        this.modal.title = 'Error'
+        this.modal.content = error
+        this.preview_data = {
+          columns: [],
+          preview: [],
+          total_rows: 0,
+          total_columns: 0
+        }
+        this.selected.data = ''
+        this.openModalNotification()
+      }
       this.loading = false
     },
 
