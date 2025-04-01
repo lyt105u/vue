@@ -10,6 +10,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import subprocess
 import json
+import os
 
 app = Flask(__name__)
 CORS(app)  # 啟用跨域支持
@@ -374,18 +375,30 @@ def run_predict():
             "message": str(e)
         }), 500
 
-@app.route('/check-PreviewTab', methods=['POST'])
-def run_check_previewTab():
-    param = request.json.get('param', None)
-    if not param:
+@app.route('/upload-Tabular', methods=['POST'])
+def upload_and_check():
+    UPLOAD_FOLDER = 'data/train'
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+    if 'file' not in request.files:
         return jsonify({
             "status": "error",
-            "message": "Missing 'param' in request."
-        }), 400
+            "message": "Missing file in request."
+        })
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({
+            "status": "error",
+            "message": "No file selected."
+        })
+    
+    save_path = os.path.join(UPLOAD_FOLDER, file.filename)
+    file.save(save_path)
     
     try:
         fetch_result = subprocess.run(
-            ['python', 'checkPreviewTab.py', param],
+            ['python', 'checkPreviewTab.py', file.filename],
             # capture_output=True,  # 捕獲標準輸出和標準錯誤
             stdout=subprocess.PIPE,     # 只捕獲標準輸出
             stderr=subprocess.DEVNULL,  # 忽略標準錯誤
