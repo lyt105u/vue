@@ -117,11 +117,11 @@
     <h3>
       Results
     </h3>
-    {{ notificationMsg }}
+    {{ modal.content }}
   </div>
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-  <ModalNotification ref="modalNotification" title="Training Complete" :content="notificationMsg" />
+  <ModalNotification ref="modalNotification" :title="modal.title" :content="modal.content" :icon="modal.icon" />
 </template>
 
 <script>
@@ -149,7 +149,11 @@ export default {
         file_extension: '',
       },
       output: '',
-      notificationMsg: '',
+      modal: {
+        title: '',
+        content: '',
+        icon: '',
+      },
       loading: false,
       errors: {}, // for validation
     };
@@ -291,13 +295,24 @@ export default {
       try {
         const response = await axios.post('http://127.0.0.1:5000/run-predict', this.selected)
         this.output = response.data
+        this.modal.title = 'Training completed'
+        this.modal.icon = 'success'
+        if (this.selected.mode === 'file') {
+          this.modal.content = this.output.message
+        } else if (this.selected.mode === 'input') {
+          this.modal.content = this.output.message[0]
+        }
         this.openModalNotification()
       } catch (error) {
         console.error('Error:', error);
         this.output = {
           status: 'error',
           message: error.response?.data?.message || error.message,
-        };
+        }
+        this.modal.title = 'Error'
+        this.modal.icon = 'error'
+        this.modal.content = this.output.message
+        this.openModalNotification()
       }
 
       this.loading = false
@@ -305,14 +320,9 @@ export default {
 
     openModalNotification() {
       if (this.$refs.modalNotification) {
-        if (this.selected.mode == 'file') {
-          this.notificationMsg = this.output.message
-        } else if (this.selected.mode == 'input') {
-          this.notificationMsg = this.output.message[0]
-        }
-        this.$refs.modalNotification.openModal();
+        this.$refs.modalNotification.openModal()
       } else {
-        console.error("ModalNotification component not found.");
+        console.error("ModalNotification component not found.")
       }
     },
   },

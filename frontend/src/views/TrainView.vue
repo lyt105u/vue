@@ -542,7 +542,7 @@
   </div>
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"> <!-- question mark icon -->
-  <ModalNotification ref="modalNotification" :title="modal.title" :content="modal.content" />
+  <ModalNotification ref="modalNotification" :title="modal.title" :content="modal.content" :icon="modal.icon" />
   <ModalFormulaExplain ref="formulaExplainModal" />
 </template>
 
@@ -650,6 +650,7 @@ export default {
       modal: {
         title: '',
         content: '',
+        icon: '',
       },
       loading: false,
       imageData: null,
@@ -745,6 +746,7 @@ export default {
         } else if (response.data.status == "error") {
           this.modal.title = 'Error'
           this.modal.content = response.data.message
+          this.modal.icon = 'error'
           this.preview_data = {
             columns: [],
             preview: [],
@@ -757,6 +759,7 @@ export default {
       } catch (error) {
         this.modal.title = 'Error'
         this.modal.content = error
+        this.modal.icon = 'error'
         this.preview_data = {
           columns: [],
           preview: [],
@@ -994,9 +997,11 @@ export default {
         if (this.output.status == 'success') {
           this.modal.title = 'Training Complete'
           this.modal.content = 'Model trained successfully!'
+          this.modal.icon = 'success'
         } else if (this.output.status == 'error') {
           this.modal.title = 'Error'
           this.modal.content = this.output.message
+          this.modal.icon = 'error'
           this.output = null
         }
         this.loading = false
