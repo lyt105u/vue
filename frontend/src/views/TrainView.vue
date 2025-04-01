@@ -312,17 +312,14 @@
     <div class="row mb-3">
       <label for="inputEmail3" class="col-sm-3 col-form-label">File Selection</label>
       <div class="col-sm-8">
-        <select class="form-select" aria-label="Small select example" v-model="selected.data" :disabled="loading">
-          <option v-for="data in dataNames" :key="data" :value="data">{{ data }}</option>
-        </select>
-        <div v-if="errors.data" class="text-danger small">{{ errors.data }}</div>
+        <input @change="handleFileChange" v-if="showInput" type="file" class="form-control" :disabled="loading">
       </div>
       <div class="col-sm-1">
-        <button v-if="preview_data.columns != 0" class="btn btn-outline-primary" type="button" @click="toggleCollapse">Preview</button>
+        <button v-if="preview_data.columns != 0" class="btn btn-outline-primary" type="button" @click="toggleCollapse" :disabled="loading">Preview</button>
       </div>
     </div>
 
-    <div class="row mb-3">
+    <div v-if="preview_data.total_rows != 0" class="row mb-3">
       <div class="collapse" ref="collapsePreview">
         <div class="card card-body">
           <div class="table-responsive">
@@ -330,22 +327,14 @@
               <caption> Showing first 10 rows (total: {{ preview_data.total_rows }} rows) </caption>
               <thead>
                 <tr>
-                  <th v-for="col in preview_data.columns"
-                    :key="col"
-                  >
+                  <th v-for="col in preview_data.columns" :key="col">
                     {{ col }}
                   </th>
                 </tr>
               </thead>
               <tbody>
-                <tr
-                  v-for="(row, rowIndex) in preview_data.preview"
-                  :key="rowIndex"
-                >
-                  <td
-                    v-for="col in preview_data.columns"
-                    :key="col"
-                  >
+                <tr v-for="(row, rowIndex) in preview_data.preview" :key="rowIndex">
+                  <td v-for="col in preview_data.columns" :key="col">
                     {{ row[col] }}
                   </td>
                 </tr>
@@ -360,7 +349,11 @@
     <div class="row mb-3">
       <label for="inputEmail3" class="col-sm-3 col-form-label">Outcome Column</label>
       <div class="col-sm-8">
-        <input v-model="selected.label_column" class="form-control" type="text" :disabled="loading">
+        <select class="form-select" aria-label="Small select example" v-model="selected.label_column" :disabled="loading">
+          <option v-for="column in preview_data.columns" :key="column" :value="column">
+            {{ column }}
+          </option>
+        </select>
         <div v-if="errors.label_column" class="text-danger small">{{ errors.label_column }}</div>
       </div>
     </div>
@@ -559,7 +552,6 @@ export default {
   },
   data() {
     return {
-      dataNames: '',
       modelOptions: {
         xgb: "XGB",
         lightgbm: "lightGBM",
@@ -650,15 +642,15 @@ export default {
       modal: {
         title: '',
         content: '',
-        icon: '',
+        icon: 'info',
       },
       loading: false,
       imageData: null,
-      errors: {}, // for validation
+      errors: {}, // 檢核用
+      showInput: true,  // 移除 input 的 UI 顯示用
     };
   },
   created() {
-    this.fetchData()
     this.updateTestSize()
     this.updateFileExtension()
   },
@@ -687,25 +679,44 @@ export default {
     },
     "selected.data"() {
       if (this.selected.data != '') {
-        this.updateFilePreview()
+        this.uploadTabular()
       }
     }
   },
   methods: {
-    async fetchData() {
-      this.loading = true
-      try {
-        const response = await axios.post('http://127.0.0.1:5000/fetch-data', {
-          param: 'data/train'
-        });
-        if (response.data.status == "success") {
-          this.dataNames = response.data.files
-        }
-      } catch (error) {
-        console.error("fetchData error: " + error)
-        this.dataNames = { status: 'error', error: '無法連接後端服務' };
+    initPreviewData() {
+      this.preview_data = {
+        columns: [],
+        preview: [],
+        total_rows: 0,
+        total_columns: 0
       }
-      this.loading = false
+    },
+
+    handleFileChange(event) {
+      // 得到的檔名和 this.selected.data 綁定，再用 watch 去呼叫檢查預覽 (ckheckPreviewTab.py) 的腳本
+      const file = event.target.files[0]
+      if (!file) {
+        // 使用者取消選檔 → 什麼都不做或清除選擇
+        this.selected.data = ''
+        this.initPreviewData()
+        return
+      }
+      if (!file.name.endsWith('.csv') && !file.name.endsWith('.xlsx')) {
+        this.modal.title = "Error"
+        this.modal.content = "Unsupported file format. Please provide a CSV or Excel file."
+        this.modal.icon = "error"
+        this.openModalNotification()
+        this.selected.data = ''
+        this.initPreviewData()
+        // 移除 UI 顯示
+        this.showInput = false
+        requestAnimationFrame(() => {
+          this.showInput = true
+        })
+      } else {
+        this.selected.data = file.name
+      }
     },
 
     toggleCollapse() {
@@ -728,31 +739,26 @@ export default {
       }
     },
 
-    async updateFilePreview() {
-      this.preview_data = {
-        columns: [],
-        preview: [],
-        total_rows: 0,
-        total_columns: 0
-      }
-
+    async uploadTabular() {
+      this.initPreviewData()
       this.loading = true
       try {
-        const response = await axios.post('http://127.0.0.1:5000/check-PreviewTab', {
-          param: this.selected.data
-        });
+        const fileInput = document.querySelector('input[type="file"]')
+        const file = fileInput.files[0]
+        const formData = new FormData()
+        formData.append("file", file)
+        const response = await axios.post('http://127.0.0.1:5000/upload-Tabular', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        })
         if (response.data.status == "success") {
           this.preview_data = response.data.preview_data
         } else if (response.data.status == "error") {
           this.modal.title = 'Error'
           this.modal.content = response.data.message
           this.modal.icon = 'error'
-          this.preview_data = {
-            columns: [],
-            preview: [],
-            total_rows: 0,
-            total_columns: 0
-          }
+          this.initPreviewData()
           this.selected.data = ''
           this.openModalNotification()
         }
@@ -760,12 +766,7 @@ export default {
         this.modal.title = 'Error'
         this.modal.content = error
         this.modal.icon = 'error'
-        this.preview_data = {
-          columns: [],
-          preview: [],
-          total_rows: 0,
-          total_columns: 0
-        }
+        this.initPreviewData()
         this.selected.data = ''
         this.openModalNotification()
       }
