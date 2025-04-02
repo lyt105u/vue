@@ -313,6 +313,7 @@
       <label for="inputEmail3" class="col-sm-3 col-form-label">File Selection</label>
       <div class="col-sm-8">
         <input @change="handleFileChange" v-if="showInput" type="file" class="form-control" :disabled="loading">
+        <div v-if="errors.data" class="text-danger small">{{ errors.data }}</div>
       </div>
       <div class="col-sm-1">
         <button v-if="preview_data.columns != 0" class="btn btn-outline-primary" type="button" @click="toggleCollapse" :disabled="loading">Preview</button>
@@ -675,11 +676,12 @@ export default {
     },
     "selected.model_type"() {
       this.updateFileExtension()
-      this.errors = {}
+      // this.errors = {}
     },
     "selected.data"() {
       if (this.selected.data != '') {
         this.uploadTabular()
+        this.selected.label_column = ''
       }
     }
   },
@@ -999,6 +1001,14 @@ export default {
           this.modal.title = 'Training Complete'
           this.modal.content = 'Model trained successfully!'
           this.modal.icon = 'success'
+
+          // download api
+          let extension = ".pkl"
+          if (this.selected.model_type === "tabnet") extension = ".zip"
+          else if (this.selected.model_type === "xgb") extension = ".json"
+          const path = `model/${this.selected.model_name}${extension}`
+          await this.downloadFile(path)
+
         } else if (this.output.status == 'error') {
           this.modal.title = 'Error'
           this.modal.content = this.output.message
@@ -1007,6 +1017,26 @@ export default {
         }
         this.loading = false
         this.openModalNotification()
+      }
+    },
+
+    async downloadFile(path) {
+      try {
+        const response = await axios.post('http://127.0.0.1:5000/download', {
+          download_path: path
+        }, {
+          responseType: 'blob' // 關鍵：支援二進位檔案格式
+        })
+
+        const blob = response.data
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = path.split('/').pop()  // 取檔名
+        a.click()
+        URL.revokeObjectURL(url)
+      } catch (err) {
+        console.error('下載檔案失敗：', err)
       }
     },
 

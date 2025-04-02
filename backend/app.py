@@ -6,11 +6,12 @@
 
 
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import subprocess
 import json
 import os
+import mimetypes
 
 app = Flask(__name__)
 CORS(app)  # 啟用跨域支持
@@ -423,6 +424,30 @@ def upload_and_check():
             "status": "error",
             "message": str(e)
         }), 500
+    
+@app.route('/download', methods=['POST'])
+def download():
+    data = request.get_json()
+    download_path = data.get('download_path')
+
+    if not download_path or not os.path.exists(download_path):
+        return jsonify({
+            "status": "error",
+            "message": "Download path not found."
+        }), 404
+
+    # 自動判斷 mimetype（根據副檔名）
+    mime_type, _ = mimetypes.guess_type(download_path)
+    if not mime_type:
+        mime_type = 'application/octet-stream'  # 二進位 fallback
+
+    filename = os.path.basename(download_path)
+    return send_file(
+        download_path,
+        mimetype=mime_type,
+        as_attachment=True,
+        download_name=filename
+    )
 
 if __name__ == '__main__':
     app.run(debug=True)
