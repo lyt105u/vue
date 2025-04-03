@@ -12,7 +12,7 @@ import base64
 from sklearn.model_selection import StratifiedKFold
 
 def prepare_data(file_name, label_column):
-    folder_path = "data/train"
+    folder_path = "data/upload"
     if not os.path.exists(folder_path):
         raise ValueError(f"Directory '{folder_path}' doesn't exist.")
     

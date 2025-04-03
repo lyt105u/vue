@@ -6,8 +6,8 @@ import sys
 import json
 
 def list_file_names(param):
-    if param == "data/train":
-        folder_path = "data/train/"
+    if param == "data/upload":
+        folder_path = "data/upload/"
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
 

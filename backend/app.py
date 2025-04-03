@@ -378,7 +378,7 @@ def run_predict():
 
 @app.route('/upload-Tabular', methods=['POST'])
 def upload_and_check():
-    UPLOAD_FOLDER = 'data/train'
+    UPLOAD_FOLDER = 'data/upload'
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
     if 'file' not in request.files:

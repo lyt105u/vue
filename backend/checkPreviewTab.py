@@ -64,7 +64,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     file_name = sys.argv[1]
-    file_path = os.path.join("data/train", file_name)
+    file_path = os.path.join("data/upload", file_name)
     df = load_file(file_path)
 
     if df is not None:
