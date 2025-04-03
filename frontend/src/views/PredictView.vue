@@ -13,9 +13,7 @@
     <div class="row mb-3">
       <label for="inputEmail3" class="col-sm-3 col-form-label">Trained Model</label>
       <div class="col-sm-8">
-        <select class="form-select" aria-label="Small select example" v-model="selected.model_path" :disabled="loading">
-          <option v-for="data in modelNames" :key="data" :value="data">{{ data }}</option>
-        </select>
+        <input @change="handleModelChange" v-if="showInputModel" type="file" class="form-control" :disabled="loading" ref="modelInput">
         <div v-if="errors.model_path" class="text-danger small">{{ errors.model_path }}</div>
       </div>
     </div>
@@ -44,10 +42,37 @@
       <div class="row mb-3">
         <label for="inputEmail3" class="col-sm-3 col-form-label">File Selection</label>
         <div class="col-sm-8">
-          <select class="form-select" aria-label="Small select example" v-model="selected.data_path" :disabled="loading">
-            <option v-for="data in xlsxNames" :key="data" :value="data">{{ data }}</option>
-          </select>
+          <input @change="handleFileChange" v-if="showInputFile" type="file" class="form-control" :disabled="loading" ref="fileInput">
           <div v-if="errors.data_path" class="text-danger small">{{ errors.data_path }}</div>
+        </div>
+        <div class="col-sm-1">
+          <button v-if="preview_data.columns != 0" class="btn btn-outline-primary" type="button" @click="toggleCollapse" :disabled="loading">Preview</button>
+        </div>
+      </div>
+
+      <div v-if="preview_data.total_rows != 0" class="row mb-3">
+        <div class="collapse" ref="collapsePreview">
+          <div class="card card-body">
+            <div class="table-responsive">
+              <table class="table">
+                <caption> Showing first 10 rows (total: {{ preview_data.total_rows }} rows) </caption>
+                <thead>
+                  <tr>
+                    <th v-for="col in preview_data.columns" :key="col">
+                      {{ col }}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(row, rowIndex) in preview_data.preview" :key="rowIndex">
+                    <td v-for="col in preview_data.columns" :key="col">
+                      {{ row[col] }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -128,6 +153,7 @@
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import axios from 'axios';
 import ModalNotification from "@/components/ModalNotification.vue"
+import { Collapse } from 'bootstrap'
 
 export default {
   components: {
@@ -156,11 +182,17 @@ export default {
       },
       loading: false,
       errors: {}, // for validation
+      preview_data: {
+        columns: [],
+        preview: [],
+        total_rows: 0,
+        total_columns: 0
+      },
+      showInputFile: true,  // 移除 input 的 UI 顯示用
+      showInputModel: true,
     };
   },
-  created() {
-    this.fetchData();
-  },
+  created() {},
   mounted() {},
   computed: {
     rows() {
@@ -179,47 +211,61 @@ export default {
       this.output = ''
       this.getFieldNumber()
       this.errors = {}
+      if (this.selected.model_path != '') {
+        this.uploadModel()
+      }
     },
     "selected.data_path"() {
-        if (this .selected.data_path.endsWith(".csv")) {
-          this.watched.file_extension = ".csv"
-        } else if (this.selected.data_path.endsWith(".xlsx")) {
-          this.watched.file_extension = ".xlsx"
-        } else {
-          this.watched.file_extension = ""
-        }
+      if (this .selected.data_path.endsWith(".csv")) {
+        this.watched.file_extension = ".csv"
+      } else if (this.selected.data_path.endsWith(".xlsx")) {
+        this.watched.file_extension = ".xlsx"
+      } else {
+        this.watched.file_extension = ""
+      }
+      if (this.selected.data_path != '') {
+        this.uploadTabular()
+      }
     },
     "selected.mode"() {
       this.output = ''
     }
   },
   methods: {
-    async fetchData() {
-      this.loading = true
-      // 拿 trained model names
-      try {
-        const response = await axios.post('http://127.0.0.1:5000/fetch-data', {
-          param: 'model'
-        });
-        if (response.data.status == "success") {
-          this.modelNames = response.data.files
-        }
-      } catch (error) {
-        console.error("fetchData error: " + error)
-        this.modelNames = { status: 'fail', error: '無法連接後端服務' };
+    initPreviewData() {
+      this.preview_data = {
+        columns: [],
+        preview: [],
+        total_rows: 0,
+        total_columns: 0
       }
+    },
 
-      // 拿 xlsx names
+    async uploadModel() {
+      this.loading = true
       try {
-        const response = await axios.post('http://127.0.0.1:5000/fetch-data', {
-          param: 'data/predict'
-        });
-        if (response.data.status == "success") {
-          this.xlsxNames = response.data.files
+        const file = this.$refs.modelInput.files[0]
+        const formData = new FormData()
+        formData.append("file", file)
+        const response = await axios.post('http://127.0.0.1:5000/upload-Model', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        })
+       if (response.data.status == "error") {
+          this.modal.title = 'Error'
+          this.modal.content = response.data.message
+          this.modal.icon = 'error'
+          this.initPreviewData()
+          this.selected.data_path = ''
+          this.openModalNotification()
         }
       } catch (error) {
-        console.error("fetchData error: " + error)
-        this.xlsxNames = { status: 'fail', error: '無法連接後端服務' };
+        this.modal.title = 'Error'
+        this.modal.content = error
+        this.modal.icon = 'error'
+        this.selected.data_path = ''
+        this.openModalNotification()
       }
       this.loading = false
     },
@@ -241,6 +287,95 @@ export default {
         }
       }
       this.loading = false
+    },
+
+    handleFileChange(event) {
+      // 得到的檔名和 this.selected.data 綁定，再用 watch 去呼叫檢查預覽 (ckheckPreviewTab.py) 的腳本
+      const file = event.target.files[0]
+      if (!file) {
+        // 使用者取消選檔 → 什麼都不做或清除選擇
+        this.selected.data_path = ''
+        this.initPreviewData()
+        return
+      }
+      if (!file.name.endsWith('.csv') && !file.name.endsWith('.xlsx')) {
+        this.modal.title = "Error"
+        this.modal.content = "Unsupported file format. Please provide a CSV or Excel file."
+        this.modal.icon = "error"
+        this.openModalNotification()
+        this.selected.data_path = ''
+        this.initPreviewData()
+        // 移除 UI 顯示
+        this.showInputFile = false
+        requestAnimationFrame(() => {
+          this.showInputFile = true
+        })
+      } else {
+        this.selected.data_path = file.name
+      }
+    },
+
+    toggleCollapse() {
+      let collapseElement = this.$refs.collapsePreview
+      let collapseInstance = Collapse.getInstance(collapseElement) || new Collapse(collapseElement)
+      collapseInstance.toggle()
+    },
+
+    async uploadTabular() {
+      this.initPreviewData()
+      this.loading = true
+      try {
+        const file = this.$refs.fileInput.files[0]
+        const formData = new FormData()
+        formData.append("file", file)
+        const response = await axios.post('http://127.0.0.1:5000/upload-Tabular', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        })
+        if (response.data.status == "success") {
+          this.preview_data = response.data.preview_data
+        } else if (response.data.status == "error") {
+          this.modal.title = 'Error'
+          this.modal.content = response.data.message
+          this.modal.icon = 'error'
+          this.initPreviewData()
+          this.selected.data_path = ''
+          this.openModalNotification()
+        }
+      } catch (error) {
+        this.modal.title = 'Error'
+        this.modal.content = error
+        this.modal.icon = 'error'
+        this.initPreviewData()
+        this.selected.data_path = ''
+        this.openModalNotification()
+      }
+      this.loading = false
+    },
+
+    handleModelChange(event) {
+      // 得到的檔名和 this.selected.data 綁定，再用 watch 去呼叫檢查預覽 (ckheckPreviewTab.py) 的腳本
+      const file = event.target.files[0]
+      if (!file) {
+        // 使用者取消選檔 → 什麼都不做或清除選擇
+        this.selected.model_path = ''
+        return
+      }
+      if (!file.name.endsWith('.zip') && !file.name.endsWith('.json') && !file.name.endsWith('.pkl')) {
+        this.modal.title = "Error"
+        this.modal.content = "Unsupported model format. Please provide a zip, json or pkl file."
+        this.modal.icon = "error"
+        this.openModalNotification()
+        this.selected.model_path = ''
+        // 移除 UI 顯示
+        this.showInputModel = false
+        requestAnimationFrame(() => {
+          this.showInputModel = true
+        })
+      } else {
+        this.selected.model_path = file.name
+      }
     },
 
     validateForm() {
@@ -298,7 +433,10 @@ export default {
         this.modal.title = 'Training completed'
         this.modal.icon = 'success'
         if (this.selected.mode === 'file') {
-          this.modal.content = this.output.message
+          this.modal.content = 'Results file downloaded.'
+          // download api
+          const path = `data/result/${this.selected.output_name}${this.watched.file_extension}`
+          await this.downloadFile(path)
         } else if (this.selected.mode === 'input') {
           this.modal.content = this.output.message[0]
         }
@@ -316,6 +454,26 @@ export default {
       }
 
       this.loading = false
+    },
+
+    async downloadFile(path) {
+      try {
+        const response = await axios.post('http://127.0.0.1:5000/download', {
+          download_path: path
+        }, {
+          responseType: 'blob' // 關鍵：支援二進位檔案格式
+        })
+
+        const blob = response.data
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = path.split('/').pop()  // 取檔名
+        a.click()
+        URL.revokeObjectURL(url)
+      } catch (err) {
+        console.error('下載檔案失敗：', err)
+      }
     },
 
     openModalNotification() {

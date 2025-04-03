@@ -425,6 +425,30 @@ def upload_and_check():
             "message": str(e)
         }), 500
     
+@app.route('/upload-Model', methods=['POST'])
+def upload_model():
+    UPLOAD_FOLDER = 'model'
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+    if 'file' not in request.files:
+        return jsonify({
+            "status": "error",
+            "message": "Missing file in request."
+        })
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({
+            "status": "error",
+            "message": "No file selected."
+        })
+    
+    save_path = os.path.join(UPLOAD_FOLDER, file.filename)
+    file.save(save_path)
+    return jsonify({
+        "status": "success",
+    })
+    
 @app.route('/download', methods=['POST'])
 def download():
     data = request.get_json()
