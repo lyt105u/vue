@@ -229,6 +229,8 @@ export default {
     },
     "selected.mode"() {
       this.output = ''
+      this.initPreviewData()
+      this.selected.data_path = ''
     }
   },
   methods: {
