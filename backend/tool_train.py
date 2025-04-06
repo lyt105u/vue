@@ -10,6 +10,18 @@ import matplotlib.pyplot as plt
 import io
 import base64
 from sklearn.model_selection import StratifiedKFold
+import subprocess
+import sys
+subprocess.check_call(
+    [sys.executable, "-m", "pip", "install", "shap==0.47.1"],
+    stdout=subprocess.DEVNULL
+)
+subprocess.check_call(
+    [sys.executable, "-m", "pip", "install", "lime==0.2.0.1"],
+    stdout=subprocess.DEVNULL
+)
+import shap
+from lime.lime_tabular import LimeTabularExplainer
 
 def prepare_data(file_name, label_column):
     folder_path = "data/upload"
@@ -165,7 +177,66 @@ def evaluate_model(y_test, y_pred, model, x_test):
     buf.close()
 
     result['roc'] = image_base64
-    
+
+    # === SHAP Explain ===
+    try:
+        x_test = x_test.astype(float)
+        explainer = shap.Explainer(model, x_test)
+        shap_values = explainer(x_test)
+
+        # 平均重要度（純數值）
+        shap_importance = np.abs(shap_values.values).mean(axis=0)
+        result["shap_importance"] = {
+            f"feature_{i}": float(val)
+            for i, val in enumerate(shap_importance)
+        }
+
+        # SHAP summary beeswarm 圖 → base64
+        plt.figure(figsize=(10, 6))  # 設定較大的圖尺寸
+        shap.plots.beeswarm(shap_values, show=False)
+        plt.tight_layout()  # 自動調整 layout，避免圖被裁
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png')
+        buf.seek(0)
+        result["shap_plot"] = base64.b64encode(buf.getvalue()).decode('utf-8')
+        buf.close()
+    except Exception as e:
+        result["shap_error"] = str(e)
+
+    # === LIME Explain (單一筆) ===
+    try:
+        lime_explainer = LimeTabularExplainer(
+            training_data=x_test,
+            mode="classification",
+            training_labels=y_test,
+            feature_names=[f"feature_{i}" for i in range(x_test.shape[1])],
+            class_names=["class_0", "class_1"],
+            discretize_continuous=True,
+        )
+
+        lime_result = lime_explainer.explain_instance(
+            x_test[0],  # 第0筆樣本
+            model.predict_proba,
+            num_features=10
+        )
+
+        # 儲存圖片到記憶體 buffer
+        fig = lime_result.as_pyplot_figure()
+        fig.set_size_inches(10, 6)  # 改變圖的尺寸
+        fig.tight_layout()  # 自動調整 layout
+        buf = io.BytesIO()
+        fig.savefig(buf, format='png')
+        buf.seek(0)
+        result["lime_plot"] = base64.b64encode(buf.getvalue()).decode('utf-8')
+        buf.close()
+        plt.close(fig)  # 關閉圖避免重疊
+
+        # 同時保留文字格式
+        result["lime_example_0"] = lime_result.as_list()
+
+    except Exception as e:
+        result["lime_error"] = str(e)
+        
     return result
 
 def kfold_evaluation(X, y, split_value, train_function):

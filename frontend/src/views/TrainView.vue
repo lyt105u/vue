@@ -526,11 +526,31 @@
 
     <!-- ROC 曲線 -->
     <div class="col">
-      <div class="card mb-4 rounded-3 shadow-sm">
+      <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalImage('ROC Curve', imageRoc)" style="cursor: pointer;">
         <div class="card-header py-3">
           <h4 class="my-0 fw-normal">ROC Curve</h4>
         </div>
-        <img :src="imageData" alt="ROC Curve" />
+        <img :src="imageRoc" alt="ROC Curve" />
+      </div>
+    </div>
+
+    <!-- SHAP -->
+    <div class="col">
+      <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalImage('SHAP', imageShap)" style="cursor: pointer;">
+        <div class="card-header py-3">
+          <h4 class="my-0 fw-normal">SHAP</h4>
+        </div>
+        <img :src="imageShap" alt="SHAP" />
+      </div>
+    </div>
+
+    <!-- LIME -->
+    <div class="col">
+      <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalImage('LIME', imageLime)" style="cursor: pointer;">
+        <div class="card-header py-3">
+          <h4 class="my-0 fw-normal">LIME</h4>
+        </div>
+        <img :src="imageLime" alt="LIME" />
       </div>
     </div>
   </div>
@@ -538,18 +558,21 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"> <!-- question mark icon -->
   <ModalNotification ref="modalNotification" :title="modal.title" :content="modal.content" :icon="modal.icon" />
   <ModalFormulaExplain ref="formulaExplainModal" />
+  <ModalImage ref="modalImageRef" :title="modal.title" :imageSrc="modal.content"/>
 </template>
 
 <script>
 import axios from 'axios';
 import ModalNotification from "@/components/ModalNotification.vue"
 import ModalFormulaExplain from "@/components/ModalFormulaExplain.vue"
+import ModalImage from "@/components/ModalImage.vue"
 import { Collapse } from 'bootstrap'
 
 export default {
   components: {
     ModalNotification,
     ModalFormulaExplain,
+    ModalImage,
   },
   data() {
     return {
@@ -646,7 +669,9 @@ export default {
         icon: 'info',
       },
       loading: false,
-      imageData: null,
+      imageRoc: null,
+      imageShap: null,
+      imageLime: null,
       errors: {}, // 檢核用
       showInput: true,  // 移除 input 的 UI 顯示用
     };
@@ -763,6 +788,13 @@ export default {
           this.initPreviewData()
           this.selected.data = ''
           this.openModalNotification()
+          this.selected.data = ''
+          this.initPreviewData()
+          // 移除 UI 顯示
+          this.showInput = false
+          requestAnimationFrame(() => {
+            this.showInput = true
+          })
         }
       } catch (error) {
         this.modal.title = 'Error'
@@ -771,6 +803,13 @@ export default {
         this.initPreviewData()
         this.selected.data = ''
         this.openModalNotification()
+        this.selected.data = ''
+        this.initPreviewData()
+        // 移除 UI 顯示
+        this.showInput = false
+        requestAnimationFrame(() => {
+          this.showInput = true
+        })
       }
       this.loading = false
     },
@@ -989,7 +1028,9 @@ export default {
 
         const response = await axios.post(`http://127.0.0.1:5000/${api}`, payload)
         this.output = response.data
-        this.imageData = `data:image/png;base64,${this.output.roc}`
+        this.imageRoc = `data:image/png;base64,${this.output.roc}`
+        this.imageShap = `data:image/png;base64,${this.output.shap_plot}`
+        this.imageLime = `data:image/png;base64,${this.output.lime_plot}`
 
       } catch (error) {
         this.output = {
@@ -1055,6 +1096,14 @@ export default {
         console.error("ModalFormulaExplain component not found.");
       }
     },
+
+    openModalImage(title, imageSrc) {
+      if (this.$refs.modalImageRef) {
+        this.modal.title = title
+        this.modal.content = imageSrc
+        this.$refs.modalImageRef.openModal();
+      }
+    }
   },
 };
 </script>

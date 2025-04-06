@@ -115,7 +115,7 @@ def run_train_xgb():
                 "status": "error",
                 "message": "Error occurred while executing train_xgb.py.",
                 "stderr": result.stderr
-            }), 500
+            })
         
         return jsonify(json.loads(result.stdout))
     
