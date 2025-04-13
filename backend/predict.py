@@ -41,7 +41,7 @@ def load_model(model_path):
     return model
 
 def load_data(data_path):
-    full_path = os.path.join("data", "predict", data_path)
+    full_path = os.path.join("data", "upload", data_path)
     if full_path.endswith(".csv"):
         data = pd.read_csv(full_path)
     elif full_path.endswith(".xlsx"):
