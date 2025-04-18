@@ -536,7 +536,7 @@
 
     <!-- SHAP -->
     <div class="col">
-      <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalImage('SHAP', imageShap)" style="cursor: pointer;">
+      <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalShap(imageShap, output.shap_importance)" style="cursor: pointer;">
         <div class="card-header py-3">
           <h4 class="my-0 fw-normal">SHAP</h4>
         </div>
@@ -559,6 +559,7 @@
   <ModalNotification ref="modalNotification" :title="modal.title" :content="modal.content" :icon="modal.icon" />
   <ModalFormulaExplain ref="formulaExplainModal" />
   <ModalImage ref="modalImageRef" :title="modal.title" :imageSrc="modal.content"/>
+  <ModalShap ref="modalShapRef" :imageSrc="modal.content" :shapImportance="modal.shap_importance"/>
 </template>
 
 <script>
@@ -566,6 +567,7 @@ import axios from 'axios';
 import ModalNotification from "@/components/ModalNotification.vue"
 import ModalFormulaExplain from "@/components/ModalFormulaExplain.vue"
 import ModalImage from "@/components/ModalImage.vue"
+import ModalShap from "@/components/ModalShap.vue"
 import { Collapse } from 'bootstrap'
 
 export default {
@@ -573,6 +575,7 @@ export default {
     ModalNotification,
     ModalFormulaExplain,
     ModalImage,
+    ModalShap,
   },
   data() {
     return {
@@ -667,6 +670,7 @@ export default {
         title: '',
         content: '',
         icon: 'info',
+        shap_importance: {},
       },
       loading: false,
       imageRoc: null,
@@ -1102,6 +1106,14 @@ export default {
         this.modal.title = title
         this.modal.content = imageSrc
         this.$refs.modalImageRef.openModal();
+      }
+    },
+
+    openModalShap(imageSrc, shap_importance) {
+      if (this.$refs.modalShapRef) {
+        this.modal.content = imageSrc
+        this.modal.shap_importance = shap_importance
+        this.$refs.modalShapRef.openModal();
       }
     }
   },
