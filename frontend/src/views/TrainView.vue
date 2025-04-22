@@ -559,7 +559,7 @@
   <ModalNotification ref="modalNotification" :title="modal.title" :content="modal.content" :icon="modal.icon" />
   <ModalFormulaExplain ref="formulaExplainModal" />
   <ModalImage ref="modalImageRef" :title="modal.title" :imageSrc="modal.content"/>
-  <ModalShap ref="modalShapRef" :imageSrc="modal.content" :shapImportance="modal.shap_importance"/>
+  <ModalShap ref="modalShapRef" :imageSrc="modal.content" :shapImportance="modal.shap_importance" :columns="preview_data.columns"/>
 </template>
 
 <script>
