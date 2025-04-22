@@ -37,12 +37,6 @@
                 </tr>
               </tbody>
             </table>
-            <!-- <ul>
-              <li v-for="(value, feature) in sortedShapImportance" :key="feature">
-                Feature <strong>{{ feature }}</strong> has an average contribution of 
-                <strong>{{ value.toFixed(4) }}</strong> to the prediction.
-              </li>
-            </ul> -->
           </div>
         </div>
         <div class="modal-footer">
