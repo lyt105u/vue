@@ -557,6 +557,7 @@
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"> <!-- question mark icon -->
   <ModalNotification ref="modalNotification" :title="modal.title" :content="modal.content" :icon="modal.icon" />
+  <ModalNotification ref="modalFinishTrainingRef" :title="modal.title" :content="modal.content" :icon="modal.icon" :primaryButton="{ text: '下載' }" />
   <ModalFormulaExplain ref="formulaExplainModal" />
   <ModalImage ref="modalImageRef" :title="modal.title" :imageSrc="modal.content"/>
   <ModalShap ref="modalShapRef" :imageSrc="modal.content" :shapImportance="modal.shap_importance" :columns="preview_data.columns"/>
@@ -1056,15 +1057,17 @@ export default {
           else if (this.selected.model_type === "xgb") extension = ".json"
           const path = `model/${this.selected.model_name}${extension}`
           await this.downloadFile(path)
+          this.loading = false
+          this.openModalFinishTraining()
 
         } else if (this.output.status == 'error') {
           this.modal.title = 'Error'
           this.modal.content = this.output.message
           this.modal.icon = 'error'
           this.output = null
+          this.loading = false
+          this.openModalNotification()
         }
-        this.loading = false
-        this.openModalNotification()
       }
     },
 
@@ -1091,6 +1094,14 @@ export default {
     openModalNotification() {
       if (this.$refs.modalNotification) {
         this.$refs.modalNotification.openModal();
+      } else {
+        console.error("ModalNotification component not found.");
+      }
+    },
+
+    openModalFinishTraining() {
+      if (this.$refs.modalFinishTrainingRef) {
+        this.$refs.modalFinishTrainingRef.openModal();
       } else {
         console.error("ModalNotification component not found.");
       }
