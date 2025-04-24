@@ -546,7 +546,7 @@
 
     <!-- LIME -->
     <div class="col">
-      <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalImage('LIME', imageLime)" style="cursor: pointer;">
+      <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalLime(imageLime, output.lime_example_0)" style="cursor: pointer;">
         <div class="card-header py-3">
           <h4 class="my-0 fw-normal">LIME</h4>
         </div>
@@ -560,6 +560,7 @@
   <ModalFormulaExplain ref="formulaExplainModal" />
   <ModalImage ref="modalImageRef" :title="modal.title" :imageSrc="modal.content"/>
   <ModalShap ref="modalShapRef" :imageSrc="modal.content" :shapImportance="modal.shap_importance" :columns="preview_data.columns"/>
+  <ModalLime ref="modalLimeRef" :imageSrc="modal.content" :lime_example_0="modal.lime_example_0" :columns="preview_data.columns"/>
 </template>
 
 <script>
@@ -568,6 +569,7 @@ import ModalNotification from "@/components/ModalNotification.vue"
 import ModalFormulaExplain from "@/components/ModalFormulaExplain.vue"
 import ModalImage from "@/components/ModalImage.vue"
 import ModalShap from "@/components/ModalShap.vue"
+import ModalLime from "@/components/ModalLime.vue"
 import { Collapse } from 'bootstrap'
 
 export default {
@@ -576,6 +578,7 @@ export default {
     ModalFormulaExplain,
     ModalImage,
     ModalShap,
+    ModalLime,
   },
   data() {
     return {
@@ -1115,7 +1118,15 @@ export default {
         this.modal.shap_importance = shap_importance
         this.$refs.modalShapRef.openModal();
       }
-    }
+    },
+
+    openModalLime(imageSrc, lime_example_0) {
+      if (this.$refs.modalLimeRef) {
+        this.modal.content = imageSrc
+        this.modal.lime_example_0 = lime_example_0
+        this.$refs.modalLimeRef.openModal();
+      }
+    },
   },
 };
 </script>

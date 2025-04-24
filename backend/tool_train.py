@@ -218,6 +218,7 @@ def evaluate_model(y_test, y_pred, model, x_test):
             x_test[0],  # 第0筆樣本
             model.predict_proba,
             num_features=10
+            # num_features=len(x_test[0])
         )
 
         # 儲存圖片到記憶體 buffer
