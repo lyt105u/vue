@@ -31,7 +31,7 @@
               </thead>
               <tbody>
                 <tr v-for="item in sortedShapImportance" :key="item.key">
-                  <td>{{ item.key }}</td>
+                  <td><code>{{ item.key }}</code></td>
                   <td>{{ item.columnName }}</td>
                   <td>{{ item.value.toFixed(4) }}</td>
                 </tr>
