@@ -62,6 +62,7 @@ export default {
     },
     lime_example_0: {
       type: Array,
+      default: () => [],  // 預設值為空陣列
       required: true
     },
     columns: {
