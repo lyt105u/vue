@@ -20,7 +20,7 @@
         </div>
         <div class="modal-body">
           <div class="bd-example-snippet bd-code-snippet">
-            <div class="bd-example m-0 border-0">
+            <div class="bd-example m-0 border-0" style="white-space: pre-line;">
               {{ content }}
             </div>
           </div>
@@ -35,6 +35,14 @@
             :data-bs-dismiss="secondaryButton.dismiss ? 'modal' : null"
           >
             {{ secondaryButton.text || 'Close' }}
+          </button>
+          <button
+            v-if="primaryButton"
+            type="button"
+            class="btn btn-primary"
+            @click="handlePrimaryClick"
+          >
+            {{ primaryButton.text || 'OK' }}
           </button>
         </div>
       </div>
@@ -132,6 +140,11 @@ export default {
         this.modalInstance.show()
       } else {
         console.error("Modal instance is not initialized.")
+      }
+    },
+    closeModal() {
+      if (this.modalInstance) {
+        this.modalInstance.hide()
       }
     },
     handlePrimaryClick() {
