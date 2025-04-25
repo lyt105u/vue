@@ -425,6 +425,75 @@ def upload_and_check():
             "message": str(e)
         }), 500
     
+@app.route('/delete-Tabular-Rows', methods=['POST'])
+def delete_tabular_rows():
+    data = request.get_json()
+    filename = data.get('filename')
+    rows = data.get('rows')
+
+    UPLOAD_FOLDER = 'data/upload'
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+    file_path = os.path.join(UPLOAD_FOLDER, filename)
+    try:
+        fetch_result = subprocess.run(
+            ['python', 'deleteTabRows.py', file_path, json.dumps(rows)],
+            # capture_output=True,  # 捕獲標準輸出和標準錯誤
+            stdout=subprocess.PIPE,     # 只捕獲標準輸出
+            stderr=subprocess.DEVNULL,  # 忽略標準錯誤
+            text=True                   # 將輸出轉換為字符串
+        )
+        
+        # debug 用
+        # print("STDOUT:", fetch_result.stdout)  # 打印标准输出
+        # print("STDERR:", fetch_result.stderr)  # 打印标准错误
+        
+        if fetch_result.returncode != 0:
+            return jsonify({
+                "status": "error",
+                "message": "Script execution failed.",
+                "output": fetch_result.stderr
+            })
+
+        return jsonify(json.loads(fetch_result.stdout))
+    
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        })
+    
+@app.route('/preview-Tabular', methods=['POST'])
+def preview():
+    data = request.get_json()
+    filename = data.get('filename')
+    try:
+        fetch_result = subprocess.run(
+            ['python', 'checkPreviewTab.py', filename],
+            # capture_output=True,  # 捕獲標準輸出和標準錯誤
+            stdout=subprocess.PIPE,     # 只捕獲標準輸出
+            stderr=subprocess.DEVNULL,  # 忽略標準錯誤
+            text=True                   # 將輸出轉換為字符串
+        )
+        
+        # debug 用
+        # print("STDOUT:", result.stdout)  # 打印标准输出
+        # print("STDERR:", result.stderr)  # 打印标准错误
+        
+        if fetch_result.returncode != 0:
+            return jsonify({
+                "status": "error",
+                "message": "Script execution failed.",
+                "output": fetch_result.stderr
+            }), 500
+
+        return jsonify(json.loads(fetch_result.stdout))
+    
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+    
 @app.route('/upload-Model', methods=['POST'])
 def upload_model():
     UPLOAD_FOLDER = 'model'

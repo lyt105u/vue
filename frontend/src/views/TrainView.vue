@@ -818,19 +818,20 @@ export default {
       this.loading = false
     },
 
-    deleteMissingData() {
-      console.log(this.modal.content)
-      if (typeof this.modal.content !== 'string') return []
+    async deleteMissingData() {
+      // 關閉 modal
+      if (this.$refs.modalMissingDataRef) {
+        this.$refs.modalMissingDataRef.closeModal()
+      }
+      this.loading = true
 
+      // 從 message (Missing data: ['K3', 'O6']) 切割座標
       const match = this.modal.content.match(/\[(.*?)\]/)
-      if (!match) return []
-
       const missingCells = match[1]
         .split(',')
         .map(item => item.trim().replace(/'/g, ''))
-
       const rowsToDelete = []
-
+      // 換算成 row index
       missingCells.forEach(cell => {
         const match = cell.match(/[A-Z]+(\d+)/)
         if (match) {
@@ -840,10 +841,56 @@ export default {
         }
       })
 
-      console.log(rowsToDelete)
+      // delete-Tabular-Rows 成功才會執行 preview-Tabula
+      try {
+        const response = await axios.post('http://127.0.0.1:5000/delete-Tabular-Rows', {
+          filename: this.selected.data,
+          rows: rowsToDelete
+        })
+        if (response.data.status == "success") {
+          const response = await axios.post('http://127.0.0.1:5000/preview-Tabular', {
+            filename: this.selected.data,
+          })
+          if (response.data.status == "success") {
+            this.preview_data = response.data.preview_data
+          } else if (response.data.status == "error") {
+            this.modal.title = 'Error'
+            this.modal.content = response.data.message
+            this.modal.icon = 'error'
+            this.initPreviewData()
+            this.selected.data = ''
+            this.openModalNotification()
+            // 移除 UI 顯示
+            this.showInput = false
+            requestAnimationFrame(() => {
+              this.showInput = true
+            })
+          }
+        } else if (response.data.status == "error") {
+          this.modal.title = 'Error'
+          this.modal.content = response.data.message
+          this.modal.icon = 'error'
+          this.openModalNotification()
+        }
+      } catch (error) {
+        this.modal.title = 'Error'
+        this.modal.content = error
+        this.modal.icon = 'error'
+        this.initPreviewData()
+        this.selected.data = ''
+        this.openModalNotification()
+        // 移除 UI 顯示
+        this.showInput = false
+        requestAnimationFrame(() => {
+          this.showInput = true
+        })
+      }
+      this.loading = false
     },
 
     removeFileUI() {
+      this.initPreviewData()
+      this.selected.data = ''
       // 移除 UI 顯示
       this.showInput = false
       requestAnimationFrame(() => {
@@ -1131,7 +1178,6 @@ export default {
 
     openModalMissingData() {
       this.initPreviewData()
-      this.selected.data = ''
       if (this.$refs.modalMissingDataRef) {
         this.$refs.modalMissingDataRef.openModal()
       } else {
