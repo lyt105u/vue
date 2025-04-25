@@ -147,6 +147,7 @@
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
   <ModalNotification ref="modalNotification" :title="modal.title" :content="modal.content" :icon="modal.icon" />
+  <ModalNotification ref="modalMissingDataRef" :title="modal.title" :content="modal.content" :icon="modal.icon" :primaryButton="{ text: 'Delete', onClick: deleteMissingData }" :secondaryButton="{ text: 'Cancel', onClick: removeFileUI }" />
 </template>
 
 <script>
@@ -292,7 +293,7 @@ export default {
     },
 
     handleFileChange(event) {
-      // 得到的檔名和 this.selected.data 綁定，再用 watch 去呼叫檢查預覽 (ckheckPreviewTab.py) 的腳本
+      // 得到的檔名和 this.selected.data_path 綁定，再用 watch 去呼叫檢查預覽 (ckheckPreviewTab.py) 的腳本
       const file = event.target.files[0]
       if (!file) {
         // 使用者取消選檔 → 什麼都不做或清除選擇
@@ -339,11 +340,9 @@ export default {
           this.preview_data = response.data.preview_data
         } else if (response.data.status == "error") {
           this.modal.title = 'Error'
-          this.modal.content = response.data.message
+          this.modal.content = response.data.message + '\nDo you want to delete these rows?'
           this.modal.icon = 'error'
-          this.initPreviewData()
-          this.selected.data_path = ''
-          this.openModalNotification()
+          this.openModalMissingData()
         }
       } catch (error) {
         this.modal.title = 'Error'
@@ -352,12 +351,17 @@ export default {
         this.initPreviewData()
         this.selected.data_path = ''
         this.openModalNotification()
+        // 移除 UI 顯示
+        this.showInputFile = false
+        requestAnimationFrame(() => {
+          this.showInputFile = true
+        })
       }
       this.loading = false
     },
 
     handleModelChange(event) {
-      // 得到的檔名和 this.selected.data 綁定，再用 watch 去呼叫檢查預覽 (ckheckPreviewTab.py) 的腳本
+      // 得到的檔名和 this.selected.model_path 綁定
       const file = event.target.files[0]
       if (!file) {
         // 使用者取消選檔 → 什麼都不做或清除選擇
@@ -377,6 +381,90 @@ export default {
         })
       } else {
         this.selected.model_path = file.name
+      }
+    },
+
+    async deleteMissingData() {
+      // 關閉 modal
+      if (this.$refs.modalMissingDataRef) {
+        this.$refs.modalMissingDataRef.closeModal()
+      }
+      this.loading = true
+
+      // 從 message (Missing data: ['K3', 'O6']) 切割座標
+      const match = this.modal.content.match(/\[(.*?)\]/)
+      const missingCells = match[1]
+        .split(',')
+        .map(item => item.trim().replace(/'/g, ''))
+      const rowsToDelete = []
+      // 換算成 row index
+      missingCells.forEach(cell => {
+        const match = cell.match(/[A-Z]+(\d+)/)
+        if (match) {
+          const excelRow = parseInt(match[1])
+          const dfIndex = excelRow - 2
+          if (dfIndex >= 0) rowsToDelete.push(dfIndex)
+        }
+      })
+
+      // delete-Tabular-Rows 成功才會執行 preview-Tabula
+      try {
+        const response = await axios.post('http://127.0.0.1:5000/delete-Tabular-Rows', {
+          filename: this.selected.data_path,
+          rows: rowsToDelete
+        })
+        if (response.data.status == "success") {
+          const response = await axios.post('http://127.0.0.1:5000/preview-Tabular', {
+            filename: this.selected.data_path,
+          })
+          if (response.data.status == "success") {
+            this.preview_data = response.data.preview_data
+          } else if (response.data.status == "error") {
+            this.modal.title = 'Error'
+            this.modal.content = response.data.message
+            this.modal.icon = 'error'
+            this.initPreviewData()
+            this.selected.data_path = ''
+            this.openModalNotification()
+            // 移除 UI 顯示
+            this.showInputFile = false
+            requestAnimationFrame(() => {
+              this.showInputFile = true
+            })
+          }
+        } else if (response.data.status == "error") {
+          this.modal.title = 'Error'
+          this.modal.content = response.data.message
+          this.modal.icon = 'error'
+          this.openModalNotification()
+        }
+      } catch (error) {
+        this.modal.title = 'Error'
+        this.modal.content = error
+        this.modal.icon = 'error'
+        this.initPreviewData()
+        this.selected.data_path = ''
+        this.openModalNotification()
+        // 移除 UI 顯示
+        this.showInputFile = false
+        requestAnimationFrame(() => {
+          this.showInputFile = true
+        })
+      }
+      this.loading = false
+    },
+
+    removeFileUI() {
+      this.initPreviewData()
+      this.selected.data_path = ''
+      console.log(this.selected.data_path)
+      // 移除 UI 顯示
+      this.showInputFile = false
+      requestAnimationFrame(() => {
+        this.showInputFile = true
+      })
+      if (this.$refs.modalMissingDataRef) {
+        this.$refs.modalMissingDataRef.closeModal()
       }
     },
 
@@ -481,6 +569,15 @@ export default {
     openModalNotification() {
       if (this.$refs.modalNotification) {
         this.$refs.modalNotification.openModal()
+      } else {
+        console.error("ModalNotification component not found.")
+      }
+    },
+
+    openModalMissingData() {
+      this.initPreviewData()
+      if (this.$refs.modalMissingDataRef) {
+        this.$refs.modalMissingDataRef.openModal()
       } else {
         console.error("ModalNotification component not found.")
       }
