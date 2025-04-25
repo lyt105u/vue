@@ -791,7 +791,7 @@ export default {
           this.preview_data = response.data.preview_data
         } else if (response.data.status == "error") {
           this.modal.title = 'Error'
-          this.modal.content = response.data.message + '\nDo you want to delete these lines?'
+          this.modal.content = response.data.message + '\nDo you want to delete these rows?'
           this.modal.icon = 'error'
           this.openModalMissingData()
           // this.openModalNotification()
