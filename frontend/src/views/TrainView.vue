@@ -557,7 +557,7 @@
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"> <!-- question mark icon -->
   <ModalNotification ref="modalNotification" :title="modal.title" :content="modal.content" :icon="modal.icon" />
-  <ModalNotification ref="modalFinishTrainingRef" :title="modal.title" :content="modal.content" :icon="modal.icon" :primaryButton="{ text: '下載' }" />
+  <ModalNotification ref="modalMissingDataRef" :title="modal.title" :content="modal.content" :icon="modal.icon" :primaryButton="{ text: 'Delete', onClick: deleteMissingData }" :secondaryButton="{ text: 'Cancel', onClick: removeFileUI }" />
   <ModalFormulaExplain ref="formulaExplainModal" />
   <ModalImage ref="modalImageRef" :title="modal.title" :imageSrc="modal.content"/>
   <ModalShap ref="modalShapRef" :imageSrc="modal.content" :shapImportance="modal.shap_importance" :columns="preview_data.columns"/>
@@ -565,7 +565,7 @@
 </template>
 
 <script>
-import axios from 'axios';
+import axios from 'axios'
 import ModalNotification from "@/components/ModalNotification.vue"
 import ModalFormulaExplain from "@/components/ModalFormulaExplain.vue"
 import ModalImage from "@/components/ModalImage.vue"
@@ -682,7 +682,7 @@ export default {
       imageLime: null,
       errors: {}, // 檢核用
       showInput: true,  // 移除 input 的 UI 顯示用
-    };
+    }
   },
   created() {
     this.updateTestSize()
@@ -791,18 +791,16 @@ export default {
           this.preview_data = response.data.preview_data
         } else if (response.data.status == "error") {
           this.modal.title = 'Error'
-          this.modal.content = response.data.message
+          this.modal.content = response.data.message + '\nDo you want to delete these lines?'
           this.modal.icon = 'error'
-          this.initPreviewData()
-          this.selected.data = ''
-          this.openModalNotification()
-          this.selected.data = ''
-          this.initPreviewData()
+          this.openModalMissingData()
+          // this.openModalNotification()
+
           // 移除 UI 顯示
-          this.showInput = false
-          requestAnimationFrame(() => {
-            this.showInput = true
-          })
+          // this.showInput = false
+          // requestAnimationFrame(() => {
+          //   this.showInput = true
+          // })
         }
       } catch (error) {
         this.modal.title = 'Error'
@@ -811,8 +809,6 @@ export default {
         this.initPreviewData()
         this.selected.data = ''
         this.openModalNotification()
-        this.selected.data = ''
-        this.initPreviewData()
         // 移除 UI 顯示
         this.showInput = false
         requestAnimationFrame(() => {
@@ -820,6 +816,42 @@ export default {
         })
       }
       this.loading = false
+    },
+
+    deleteMissingData() {
+      console.log(this.modal.content)
+      if (typeof this.modal.content !== 'string') return []
+
+      const match = this.modal.content.match(/\[(.*?)\]/)
+      if (!match) return []
+
+      const missingCells = match[1]
+        .split(',')
+        .map(item => item.trim().replace(/'/g, ''))
+
+      const rowsToDelete = []
+
+      missingCells.forEach(cell => {
+        const match = cell.match(/[A-Z]+(\d+)/)
+        if (match) {
+          const excelRow = parseInt(match[1])
+          const dfIndex = excelRow - 2
+          if (dfIndex >= 0) rowsToDelete.push(dfIndex)
+        }
+      })
+
+      console.log(rowsToDelete)
+    },
+
+    removeFileUI() {
+      // 移除 UI 顯示
+      this.showInput = false
+      requestAnimationFrame(() => {
+        this.showInput = true
+      })
+      if (this.$refs.modalMissingDataRef) {
+        this.$refs.modalMissingDataRef.closeModal()
+      }
     },
 
     isInt(value) {
@@ -1057,17 +1089,15 @@ export default {
           else if (this.selected.model_type === "xgb") extension = ".json"
           const path = `model/${this.selected.model_name}${extension}`
           await this.downloadFile(path)
-          this.loading = false
-          this.openModalFinishTraining()
 
         } else if (this.output.status == 'error') {
           this.modal.title = 'Error'
           this.modal.content = this.output.message
           this.modal.icon = 'error'
           this.output = null
-          this.loading = false
-          this.openModalNotification()
         }
+        this.loading = false
+        this.openModalNotification()
       }
     },
 
@@ -1093,25 +1123,27 @@ export default {
 
     openModalNotification() {
       if (this.$refs.modalNotification) {
-        this.$refs.modalNotification.openModal();
+        this.$refs.modalNotification.openModal()
       } else {
-        console.error("ModalNotification component not found.");
+        console.error("ModalNotification component not found.")
       }
     },
 
-    openModalFinishTraining() {
-      if (this.$refs.modalFinishTrainingRef) {
-        this.$refs.modalFinishTrainingRef.openModal();
+    openModalMissingData() {
+      this.initPreviewData()
+      this.selected.data = ''
+      if (this.$refs.modalMissingDataRef) {
+        this.$refs.modalMissingDataRef.openModal()
       } else {
-        console.error("ModalNotification component not found.");
+        console.error("ModalNotification component not found.")
       }
     },
 
     openFormulaExplainModal() {
       if (this.$refs.formulaExplainModal) {
-        this.$refs.formulaExplainModal.openModal();
+        this.$refs.formulaExplainModal.openModal()
       } else {
-        console.error("ModalFormulaExplain component not found.");
+        console.error("ModalFormulaExplain component not found.")
       }
     },
 
@@ -1119,7 +1151,7 @@ export default {
       if (this.$refs.modalImageRef) {
         this.modal.title = title
         this.modal.content = imageSrc
-        this.$refs.modalImageRef.openModal();
+        this.$refs.modalImageRef.openModal()
       }
     },
 
@@ -1127,7 +1159,7 @@ export default {
       if (this.$refs.modalShapRef) {
         this.modal.content = imageSrc
         this.modal.shap_importance = shap_importance
-        this.$refs.modalShapRef.openModal();
+        this.$refs.modalShapRef.openModal()
       }
     },
 
@@ -1135,9 +1167,9 @@ export default {
       if (this.$refs.modalLimeRef) {
         this.modal.content = imageSrc
         this.modal.lime_example_0 = lime_example_0
-        this.$refs.modalLimeRef.openModal();
+        this.$refs.modalLimeRef.openModal()
       }
     },
   },
-};
+}
 </script>
