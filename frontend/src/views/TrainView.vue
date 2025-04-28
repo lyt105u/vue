@@ -802,18 +802,23 @@ export default {
         })
         if (response.data.status == "success") {
           this.preview_data = response.data.preview_data
-        } else if (response.data.status == "error") {
+        } else if (response.data.status == "errorMissing") {
           this.modal.title = 'Error'
           this.modal.content = response.data.message + '\nDo you want to delete these rows?'
           this.modal.icon = 'error'
           this.openModalMissingData()
-          // this.openModalNotification()
-
+        } else if (response.data.status == "error") {
+          this.modal.title = 'Error'
+          this.modal.content = response.data.message
+          this.modal.icon = 'error'
+          this.initPreviewData()
+          this.selected.data = ''
+          this.openModalNotification()
           // 移除 UI 顯示
-          // this.showInput = false
-          // requestAnimationFrame(() => {
-          //   this.showInput = true
-          // })
+          this.showInput = false
+          requestAnimationFrame(() => {
+            this.showInput = true
+          })
         }
       } catch (error) {
         this.modal.title = 'Error'
