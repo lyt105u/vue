@@ -566,9 +566,8 @@ def downloaSmb():
         if fetch_result.returncode != 0:
             return jsonify({
                 "status": "error",
-                "message": "Script execution failed.",
-                "output": fetch_result.stderr
-            }), 500
+                "message": fetch_result,
+            })
 
         return jsonify(json.loads(fetch_result.stdout))
     
@@ -576,7 +575,7 @@ def downloaSmb():
         return jsonify({
             "status": "error",
             "message": str(e)
-        }), 500
+        })
 
 if __name__ == '__main__':
     app.run(debug=True)
