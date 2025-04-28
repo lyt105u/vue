@@ -360,7 +360,7 @@
     </div>
 
     <!-- 切分訓練集 -->
-    <div class="row mb-3">
+    <!-- <div class="row mb-3">
       <label for="inputEmail3" class="col-sm-3 col-form-label">Data Split</label>
       <div class="col-sm-4">
         <div class="form-check">
@@ -378,11 +378,11 @@
           </label>
         </div>
       </div>
-    </div>
+    </div> -->
 
     <!-- Range 拉桿 -->
-    <div v-if="selected.split_strategy=='train_test_split'" class="row mb-3">
-      <label for="inputEmail3" class="col-sm-3 col-form-label"></label> <!-- 排版用 -->
+    <!-- <div v-if="selected.split_strategy=='train_test_split'" class="row mb-3">
+      <label for="inputEmail3" class="col-sm-3 col-form-label"></label>
       <div class="col-sm-4 d-flex align-items-center">
         <input v-model="selected.split_value" type="range" class="form-range" min="0.5" max="0.9" step="0.1" :disabled="loading">
       </div>
@@ -393,13 +393,26 @@
       </div>
     </div>
     <div v-if="selected.split_strategy=='k_fold'" class="row mb-3">
-      <label for="inputEmail3" class="col-sm-3 col-form-label"></label> <!-- 排版用 -->
+      <label for="inputEmail3" class="col-sm-3 col-form-label"></label>
       <div class="col-sm-4 d-flex align-items-center">
         <input v-model="selected.split_value" type="range" class="form-range" min="2" max="10" :disabled="loading">
       </div>
       <div class="col-sm-4 d-flex align-items-center">
         <span id="passwordHelpInline" class="form-text">
           cv_folds: <strong>{{ selected.split_value}}</strong>
+        </span>
+      </div>
+    </div> -->
+
+    <!-- 只留 train_test_split -->
+    <div class="row mb-3">
+      <label for="inputEmail3" class="col-sm-3 col-form-label">Train Test Split</label>
+      <div class="col-sm-4 d-flex align-items-center">
+        <input v-model="selected.split_value" type="range" class="form-range" min="0.5" max="0.9" step="0.1" :disabled="loading">
+      </div>
+      <div class="col-sm-4 d-flex align-items-center">
+        <span id="passwordHelpInline" class="form-text">
+          Train: <strong>{{ selected.split_value}}</strong>, Test: {{ watched.test_size }}
         </span>
       </div>
     </div>
