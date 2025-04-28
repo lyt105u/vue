@@ -311,9 +311,80 @@
     <!-- 訓練資料 -->
     <div class="row mb-3">
       <label for="inputEmail3" class="col-sm-3 col-form-label">File Selection</label>
+      <div class="col-sm-4">
+        <div class="form-check">
+          <input v-model="fileOption" class="form-check-input" type="radio" name="gridRadios" id="gridRadios1_local" value="local" :disabled="loading">
+          <label class="form-check-label" for="gridRadios1_local">
+            Local
+          </label>
+        </div>
+      </div>
+      <div class="col-sm-4">
+        <div class="form-check">
+          <input v-model="fileOption" class="form-check-input" type="radio" name="gridRadios" id="gridRadios1_smb" value="smb" :disabled="loading">
+          <label class="form-check-label" for="gridRadios1_smb">
+            SMB protocol
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="fileOption == 'local'" class="row mb-3">
+      <label class="col-sm-3 col-form-label"></label>
       <div class="col-sm-8">
         <input @change="handleFileChange" v-if="showInput" type="file" class="form-control" :disabled="loading">
         <div v-if="errors.data" class="text-danger small">{{ errors.data }}</div>
+      </div>
+      <div class="col-sm-1">
+        <button v-if="preview_data.columns != 0" class="btn btn-outline-primary" type="button" @click="toggleCollapse" :disabled="loading">Preview</button>
+      </div>
+    </div>
+
+    <div v-if="fileOption == 'smb'" class="row mb-3">
+      <label class="col-sm-3 col-form-label"></label>
+      <div class="col-sm-2 form-floating">
+        <input v-model="smb.username"
+          type="text" 
+          class="form-control" 
+          id="floatingSmbUsername"
+          :disabled="loading"
+          autocomplete="off"
+        />
+        <label for="floatingSmbUsername" style="margin-left:9px;"> User Name </label>
+        <div v-if="smbErrors.username" class="text-danger small">{{ smbErrors.username }}</div>
+      </div>
+      <div class="col-sm-2 form-floating">
+        <input v-model="smb.password"
+          type="password" 
+          class="form-control" 
+          id="floatingSmbPassword"
+          :disabled="loading"
+          autocomplete="off"
+        />
+        <label for="floatingSmbPassword" style="margin-left:9px;"> Password </label>
+        <div v-if="smbErrors.password" class="text-danger small">{{ smbErrors.password }}</div>
+      </div>
+      <div class="col-sm-4 form-floating">
+        <input v-model="smb.remote_path"
+          type="text" 
+          class="form-control" 
+          id="floatingSmbRemotePath"
+          :disabled="loading"
+          autocomplete="off"
+        />
+        <label for="floatingSmbRemotePath" style="margin-left:9px;"> Remote Path </label>
+        <div v-if="smbErrors.remote_path" class="text-danger small">{{ smbErrors.remote_path }}</div>
+      </div>
+      <div class="col-sm-1">
+        <button class="btn btn-outline-primary" type="button" @click="downloadSmb" :disabled="loading">Download</button>
+      </div>
+    </div>
+
+    <div v-if="fileOption=='smb'" class="row mb-3">
+      <label class="col-sm-3 col-form-label"></label>
+      <label class="col-sm-2 col-form-label">File Name:</label>
+      <div class="col-sm-6">
+        <input v-model="selected.file" class="form-control" type="text" disabled>
       </div>
       <div class="col-sm-1">
         <button v-if="preview_data.columns != 0" class="btn btn-outline-primary" type="button" @click="toggleCollapse" :disabled="loading">Preview</button>
@@ -695,6 +766,13 @@ export default {
       imageLime: null,
       errors: {}, // 檢核用
       showInput: true,  // 移除 input 的 UI 顯示用
+      fileOption: "local",
+      smb: {
+        username: '',
+        password: '',
+        remote_path: '',
+      },
+      smbErrors: {},
     }
   },
   created() {
@@ -726,7 +804,9 @@ export default {
     },
     "selected.data"() {
       if (this.selected.data != '') {
-        this.uploadTabular()
+        if (this.fileOption == 'local') {
+          this.uploadTabular()
+        }
         this.selected.label_column = ''
       }
     }
@@ -926,6 +1006,31 @@ export default {
       return /^[0-9]+\.[0-9]+$/.test(value)
     },
 
+    validateSmb() {
+      this.smbErrors = {}
+      let isValid = true
+
+      // User Name
+      if (!this.smb.username) {
+        this.smbErrors.username = "Require username."
+        isValid = false
+      }
+
+      // Password
+      if (!this.smb.password) {
+        this.smbErrors.password = "Require password."
+        isValid = false
+      }
+
+      // Remote Path
+      if (!this.smb.remote_path) {
+        this.smbErrors.remote_path = "Require remote path."
+        isValid = false
+      }
+
+      return isValid
+    },
+
     validateForm() {
       this.errors = {}
       let isValid = true
@@ -1066,6 +1171,73 @@ export default {
       }
 
       return isValid
+    },
+
+    async downloadSmb() {
+      if (!this.validateSmb()) {
+        return
+      }
+
+      try {
+        this.loading = true
+        const response = await axios.post('http://127.0.0.1:5000/download-Smb', {
+          username: this.smb.username,
+          password: this.smb.password,
+          remote_path: this.smb.remote_path,
+        })
+        if (response.data.status == "success") {
+          const parts = this.smb.remote_path.split(/[/\\]+/)
+          const filename = parts[parts.length - 1]
+          this.checkPreviewTab(filename)
+        } else if (response.data.status == "error") {
+          this.modal.title = 'Error'
+          this.modal.content = response.data.message
+          this.modal.icon = 'error'
+          this.openModalNotification()
+        }
+      } catch (error) {
+        this.modal.title = 'Error'
+        this.modal.content = error
+        this.modal.icon = 'error'
+        this.openModalNotification()
+      }
+      this.loading = false
+    },
+
+    async checkPreviewTab(filename) {
+      this.loading = true
+      try {
+        const response = await axios.post('http://127.0.0.1:5000/preview-Tabular', {
+          filename: filename,
+        })
+        if (response.data.status == "success") {
+          this.preview_data = response.data.preview_data
+          this.selected.file = filename
+        } else if (response.data.status == "errorMissing") {
+          this.modal.title = 'Error'
+          this.modal.content = response.data.message + '\nDo you want to delete these rows?'
+          this.modal.icon = 'error'
+          this.openModalMissingData()
+        } else if (response.data.status == "error") {
+          this.modal.title = 'Error'
+          this.modal.content = response.data.message
+          this.modal.icon = 'error'
+          this.initPreviewData()
+          this.selected.data = ''
+          this.openModalNotification()
+          // 移除 UI 顯示
+          this.showInput = false
+          requestAnimationFrame(() => {
+            this.showInput = true
+          })
+        }
+      } catch (error) {
+        this.modal.title = 'Error'
+        this.modal.content = error
+        this.modal.icon = 'error'
+        this.openModalNotification()
+      }
+      this.loading = false
     },
     
     async runTrain() {
