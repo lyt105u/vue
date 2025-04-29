@@ -1,4 +1,4 @@
-# usage: python downloadSmb.py a2556 rkothebest51 "\\LAPTOP-BENDAENK\tmp\長庚訓練csv.csv"
+# usage: python downloadSmb.py a2556 rkothebest51 "\\LAPTOP-BENDAENK\tmp\高醫訓練csv.csv"
 import smbclient
 import shutil
 import argparse
