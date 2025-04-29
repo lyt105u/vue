@@ -1201,7 +1201,15 @@ export default {
         if (response.data.status == "success") {
           const parts = this.smb.remote_path.split(/[/\\]+/)
           const filename = parts[parts.length - 1]
-          this.checkPreviewTab(filename)
+          if (!filename.endsWith('.csv') && !filename.endsWith('.xlsx')) {
+            this.loading = false
+            this.modal.title = "Error"
+            this.modal.content = "Unsupported file format. Please provide a CSV or Excel file."
+            this.modal.icon = "error"
+            this.openModalNotification()
+          } else {
+            this.checkPreviewTab(filename)
+          }
         } else if (response.data.status == "error") {
           this.modal.title = 'Error'
           this.modal.content = response.data.message
