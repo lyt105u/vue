@@ -37,9 +37,8 @@ def run_fetch_data():
         if fetch_result.returncode != 0:
             return jsonify({
                 "status": "error",
-                "message": "Script execution failed.",
-                "output": fetch_result.stderr
-            }), 500
+                "message": fetch_result.stderr,
+            })
 
         return jsonify(json.loads(fetch_result.stdout))
     
@@ -47,7 +46,7 @@ def run_fetch_data():
         return jsonify({
             "status": "error",
             "message": str(e)
-        }), 500
+        })
 
 @app.route('/get-fieldNumber', methods=['POST'])
 def run_get_fieldNumber():
@@ -74,9 +73,8 @@ def run_get_fieldNumber():
         if fetch_result.returncode != 0:
             return jsonify({
                 "status": "error",
-                "message": "Script execution failed.",
-                "output": fetch_result.stderr
-            }), 500
+                "message": fetch_result.stderr,
+            })
 
         return jsonify(json.loads(fetch_result.stdout))
     
@@ -84,7 +82,7 @@ def run_get_fieldNumber():
         return jsonify({
             "status": "error",
             "message": str(e)
-        }), 500
+        })
 
 @app.route('/run-train-xgb', methods=['POST'])
 def run_train_xgb():
@@ -113,8 +111,7 @@ def run_train_xgb():
         if result.returncode != 0:
             return jsonify({
                 "status": "error",
-                "message": "Error occurred while executing train_xgb.py.",
-                "stderr": result.stderr
+                "message": result.stderr,
             })
         
         return jsonify(json.loads(result.stdout))
@@ -123,7 +120,7 @@ def run_train_xgb():
         return jsonify({
             "status": "error",
             "message": str(e)
-        }), 500
+        })
     
 @app.route('/run-train-lgbm', methods=['POST'])
 def run_train_lgbm():
@@ -153,9 +150,8 @@ def run_train_lgbm():
         if result.returncode != 0:
             return jsonify({
                 "status": "error",
-                "message": "Error occurred while executing train_lgbm.py.",
-                "stderr": result.stderr
-            }), 500
+                "message": result.stderr
+            })
         
         return jsonify(json.loads(result.stdout))
     
@@ -163,7 +159,7 @@ def run_train_lgbm():
         return jsonify({
             "status": "error",
             "message": str(e)
-        }), 500
+        })
     
 @app.route('/run-train-rf', methods=['POST'])
 def run_train_rf():
@@ -193,9 +189,8 @@ def run_train_rf():
         if result.returncode != 0:
             return jsonify({
                 "status": "error",
-                "message": "Error occurred while executing train_rf.py.",
-                "stderr": result.stderr
-            }), 500
+                "message": result.stderr
+            })
         
         return jsonify(json.loads(result.stdout))
     
@@ -203,7 +198,7 @@ def run_train_rf():
         return jsonify({
             "status": "error",
             "message": str(e)
-        }), 500
+        })
 
 @app.route('/run-train-lr', methods=['POST'])
 def run_train_lr():
@@ -233,9 +228,8 @@ def run_train_lr():
         if result.returncode != 0:
             return jsonify({
                 "status": "error",
-                "message": "Error occurred while executing train_lr.py.",
-                "stderr": result.stderr
-            }), 500
+                "message": result.stderr
+            })
         
         return jsonify(json.loads(result.stdout))
     
@@ -243,7 +237,7 @@ def run_train_lr():
         return jsonify({
             "status": "error",
             "message": str(e)
-        }), 500
+        })
     
 @app.route('/run-train-tabnet', methods=['POST'])
 def run_train_tabnet():
@@ -272,9 +266,8 @@ def run_train_tabnet():
         if result.returncode != 0:
             return jsonify({
                 "status": "error",
-                "message": "Error occurred while executing train_tabnet.py.",
-                "stderr": result.stderr
-            }), 500
+                "message": result.stderr
+            })
         
         return jsonify(json.loads(result.stdout))
     
@@ -282,7 +275,7 @@ def run_train_tabnet():
         return jsonify({
             "status": "error",
             "message": str(e)
-        }), 500
+        })
     
 @app.route('/run-train-mlp', methods=['POST'])
 def run_train_mlp():
@@ -314,9 +307,8 @@ def run_train_mlp():
         if result.returncode != 0:
             return jsonify({
                 "status": "error",
-                "message": "Error occurred while executing train_mlp.py.",
-                "stderr": result.stderr
-            }), 500
+                "message": result.stderr
+            })
         
         return jsonify(json.loads(result.stdout))
     
@@ -324,7 +316,7 @@ def run_train_mlp():
         return jsonify({
             "status": "error",
             "message": str(e)
-        }), 500
+        })
 
 @app.route('/run-predict', methods=['POST'])
 def run_predict():
@@ -364,9 +356,8 @@ def run_predict():
         if result.returncode != 0:
             return jsonify({
                 "status": "error",
-                "message": "Error occurred while executing predict.py.",
-                "stderr": result.stderr
-            }), 500
+                "message": result.stderr
+            })
         
         return jsonify(json.loads(result.stdout))
     
@@ -374,7 +365,7 @@ def run_predict():
         return jsonify({
             "status": "error",
             "message": str(e)
-        }), 500
+        })
 
 @app.route('/upload-Tabular', methods=['POST'])
 def upload_and_check():
@@ -413,9 +404,8 @@ def upload_and_check():
         if fetch_result.returncode != 0:
             return jsonify({
                 "status": "error",
-                "message": "Script execution failed.",
-                "output": fetch_result.stderr
-            }), 500
+                "message": fetch_result.stderr,
+            })
 
         return jsonify(json.loads(fetch_result.stdout))
     
@@ -423,7 +413,7 @@ def upload_and_check():
         return jsonify({
             "status": "error",
             "message": str(e)
-        }), 500
+        })
     
 @app.route('/delete-Tabular-Rows', methods=['POST'])
 def delete_tabular_rows():
@@ -481,9 +471,8 @@ def preview():
         if fetch_result.returncode != 0:
             return jsonify({
                 "status": "error",
-                "message": "Script execution failed.",
-                "output": fetch_result.stderr
-            }), 500
+                "message": fetch_result.stderr,
+            })
 
         return jsonify(json.loads(fetch_result.stdout))
     
@@ -491,7 +480,7 @@ def preview():
         return jsonify({
             "status": "error",
             "message": str(e)
-        }), 500
+        })
     
 @app.route('/upload-Model', methods=['POST'])
 def upload_model():
