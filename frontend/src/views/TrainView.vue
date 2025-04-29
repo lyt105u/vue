@@ -1188,6 +1188,9 @@ export default {
     },
 
     async downloadSmb() {
+      this.selected.data = ''
+      this.initPreviewData()
+      
       if (!this.validateSmb()) {
         return
       }
