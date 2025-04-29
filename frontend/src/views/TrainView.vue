@@ -385,6 +385,7 @@
       <label class="col-sm-2 col-form-label">File Name:</label>
       <div class="col-sm-6">
         <input v-model="selected.data" class="form-control" type="text" disabled>
+        <div v-if="errors.data" class="text-danger small">{{ errors.data }}</div>
       </div>
       <div class="col-sm-1">
         <button v-if="preview_data.columns != 0" class="btn btn-outline-primary" type="button" @click="toggleCollapse" :disabled="loading">Preview</button>
@@ -1202,11 +1203,11 @@ export default {
           const parts = this.smb.remote_path.split(/[/\\]+/)
           const filename = parts[parts.length - 1]
           if (!filename.endsWith('.csv') && !filename.endsWith('.xlsx')) {
-            this.loading = false
             this.modal.title = "Error"
             this.modal.content = "Unsupported file format. Please provide a CSV or Excel file."
             this.modal.icon = "error"
             this.openModalNotification()
+            this.loading = false
           } else {
             this.checkPreviewTab(filename)
           }
