@@ -450,8 +450,7 @@ def delete_tabular_rows():
         if fetch_result.returncode != 0:
             return jsonify({
                 "status": "error",
-                "message": "Script execution failed.",
-                "output": fetch_result.stderr
+                "message": fetch_result.stderr,
             })
 
         return jsonify(json.loads(fetch_result.stdout))
