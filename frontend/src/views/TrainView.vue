@@ -803,13 +803,26 @@ export default {
       // this.errors = {}
     },
     "selected.data"() {
+      this.selected.label_column = ''
       if (this.selected.data != '') {
         if (this.fileOption == 'local') {
           this.uploadTabular()
         }
-        this.selected.label_column = ''
       }
-    }
+    },
+    "fileOption"() {
+      this.selected.data = ''
+      this.initPreviewData()
+      // 移除 UI 顯示
+      this.showInput = false
+      requestAnimationFrame(() => {
+        this.showInput = true
+      })
+      this.smb.username = ''
+      this.smb.password = ''
+      this.smb.remote_path = ''
+      this.selected.label_column = ''
+    },
   },
   methods: {
     initPreviewData() {
@@ -1194,14 +1207,15 @@ export default {
           this.modal.content = response.data.message
           this.modal.icon = 'error'
           this.openModalNotification()
+          this.loading = false
         }
       } catch (error) {
         this.modal.title = 'Error'
         this.modal.content = error
         this.modal.icon = 'error'
         this.openModalNotification()
+        this.loading = false
       }
-      this.loading = false
     },
 
     async checkPreviewTab(filename) {
@@ -1237,6 +1251,13 @@ export default {
         this.modal.content = error
         this.modal.icon = 'error'
         this.openModalNotification()
+        this.initPreviewData()
+        this.selected.data = ''
+        // 移除 UI 顯示
+        this.showInput = false
+        requestAnimationFrame(() => {
+          this.showInput = true
+        })
       }
       this.loading = false
     },
