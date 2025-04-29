@@ -384,7 +384,7 @@
       <label class="col-sm-3 col-form-label"></label>
       <label class="col-sm-2 col-form-label">File Name:</label>
       <div class="col-sm-6">
-        <input v-model="selected.file" class="form-control" type="text" disabled>
+        <input v-model="selected.data" class="form-control" type="text" disabled>
       </div>
       <div class="col-sm-1">
         <button v-if="preview_data.columns != 0" class="btn btn-outline-primary" type="button" @click="toggleCollapse" :disabled="loading">Preview</button>
@@ -1212,8 +1212,9 @@ export default {
         })
         if (response.data.status == "success") {
           this.preview_data = response.data.preview_data
-          this.selected.file = filename
+          this.selected.data = filename
         } else if (response.data.status == "errorMissing") {
+          this.selected.data = filename
           this.modal.title = 'Error'
           this.modal.content = response.data.message + '\nDo you want to delete these rows?'
           this.modal.icon = 'error'
