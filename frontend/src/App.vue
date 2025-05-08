@@ -65,14 +65,17 @@ export default {
         {
           href: '/',
           title: 'Home',
+          icon: 'fa fa-home'
         },
         {
           href: '/train',
           title: 'Train',
+          icon: 'fa fa-cogs'
         },
         {
           href: '/predict',
           title: 'Predict',
+          icon: 'fa fa-line-chart'
         },
         // {
         //   href: '/about',
