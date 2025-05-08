@@ -1,8 +1,8 @@
 <template>
   <div class="home">
     <img alt="Vue logo" src="../assets/logo.png">
-    <h1>MLAS v0.4</h1>
-    <p>presented on 2025/04/07</p>
+    <h1>MLAS v0.5</h1>
+    <p>presented on 2025/04/30</p>
     <HelloWorld msg="Welcome to Your Vue.js App"/>
   </div>
 </template>
