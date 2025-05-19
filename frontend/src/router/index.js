@@ -8,6 +8,11 @@ const routes = [
     component: HomeView
   },
   {
+    path: '/upload',
+    name: 'upload',
+    component: () => import('../views/UploadView.vue')
+  },
+  {
     path: '/train',
     name: 'train',
     component: () => import('../views/TrainView.vue')

@@ -68,6 +68,11 @@ export default {
           icon: 'fa fa-home'
         },
         {
+          href: '/upload',
+          title: 'Upload',
+          icon: 'fa fa-upload'
+        },
+        {
           href: '/train',
           title: 'Train',
           icon: 'fa fa-cogs'
