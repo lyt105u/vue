@@ -3,6 +3,7 @@
     <h1>Upload</h1>
   </div>
 
+  <!-- tab -->
   <ul class="nav nav-tabs">
     <li class="nav-item">
       <a class="nav-link" 
@@ -23,7 +24,9 @@
   </ul>
 
   <form class="row g-3 needs-validation" @submit.prevent="runUpload" style="margin-top: 16px">
+    <!-- Local tab -->
     <template v-if="selected.mode=='local'">
+      <!-- File Selection -->
       <div class="row mb-3">
         <label class="col-sm-3 col-form-label">File Selection</label>
         <div class="col-sm-8">
@@ -33,16 +36,37 @@
       </div>
     </template>
 
-    <!-- <template v-if="selected.mode=='samba'">
+    <!-- Samba tab -->
+    <template v-if="selected.mode=='samba'">
+      <!-- User Name -->
       <div class="row mb-3">
-        <label class="col-sm-3 col-form-label">File Selection</label>
+        <label class="col-sm-3 col-form-label">User Name</label>
         <div class="col-sm-8">
-          <input @change="handleFileChange" v-if="showInput" type="file" class="form-control" :disabled="loading">
-          <div v-if="errors.file" class="text-danger small">{{ errors.file }}</div>
+          <input v-model="selected.username" class="form-control" type="text" :disabled="loading">
+          <div v-if="errors.username" class="text-danger small">{{ errors.username }}</div>
         </div>
       </div>
-    </template> -->
 
+      <!-- Password -->
+      <div class="row mb-3">
+        <label class="col-sm-3 col-form-label">Password</label>
+        <div class="col-sm-8">
+          <input v-model="selected.password" class="form-control" type="password" :disabled="loading">
+          <div v-if="errors.password" class="text-danger small">{{ errors.password }}</div>
+        </div>
+      </div>
+
+      <!-- Remote Path -->
+      <div class="row mb-3">
+        <label class="col-sm-3 col-form-label">Remote Path</label>
+        <div class="col-sm-8">
+          <input v-model="selected.remote_path" class="form-control" type="text" :disabled="loading">
+          <div v-if="errors.remote_path" class="text-danger small">{{ errors.remote_path }}</div>
+        </div>
+      </div>
+    </template>
+
+    <!-- button -->
     <div class="col-12">
       <button v-if="!loading" type="submit" class="btn btn-primary">Upload</button>
       <button v-if="loading" class="btn btn-primary" type="button" disabled>
@@ -68,7 +92,12 @@ export default {
       loading: false,
       selected:{
         mode: 'local',
+        // local
         file: '',
+        // samba
+        username: '',
+        password: '',
+        remote_path: '',
       },
       errors: {}, // 檢核用
       showInput: true,  // 移除 input 的 UI 顯示用
@@ -85,6 +114,9 @@ export default {
   watch: {
     "selected.mode"() {
       this.selected.file = ''
+      this.selected.username = ''
+      this.selected.password = ''
+      this.selected.remote_path = ''
       this.errors = {}
       // 移除 UI 顯示
       this.showInput = false
@@ -115,9 +147,22 @@ export default {
           isValid = false
         }
       } else if (this.selected.mode == 'samba') {
-        console.log('samba')
+        // User Name
+        if (!this.selected.username) {
+          this.errors.username = "Require username."
+          isValid = false
+        }
+        // Password
+        if (!this.selected.password) {
+          this.errors.password = "Require password."
+          isValid = false
+        }
+        // Remote Path
+        if (!this.selected.remote_path) {
+          this.errors.remote_path = "Require remote path."
+          isValid = false
+        }
       }
-
       return isValid
     },
 
@@ -125,48 +170,82 @@ export default {
       if (!this.validateForm()) {
         return
       }
-
-      this.loading = true
       if (this.selected.mode == 'local') {
-        try {
-          const fileInput = document.querySelector('input[type="file"]')
-          const file = fileInput.files[0]
-          const formData = new FormData()
-          formData.append("file", file)
-          const response = await axios.post('http://127.0.0.1:5000/upload-File', formData, {
-            headers: {
-              'Content-Type': 'multipart/form-data'
-            }
-          })
-          if (response.data.status == "success") {
-            this.modal.title = 'Success'
-            this.modal.content = 'Upload `' + this.selected.file + '` successfully.'
-            this.modal.icon = 'success'
-            this.openModalNotification()
-          } else if (response.data.status == "error") {
-            this.modal.title = 'Error'
-            this.modal.content = response.data.message
-            this.modal.icon = 'error'
-            this.openModalNotification()
+        this.uploadLocal()
+      }else if (this.selected.mode == 'samba') {
+        this.uploadSamba()
+      }      
+    },
+
+    async uploadLocal() {
+      this.loading = true
+      try {
+        const fileInput = document.querySelector('input[type="file"]')
+        const file = fileInput.files[0]
+        const formData = new FormData()
+        formData.append("file", file)
+        const response = await axios.post('http://127.0.0.1:5000/upload-Local-File', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
           }
-        } catch (error) {
+        })
+        if (response.data.status == "success") {
+          this.modal.title = 'Success'
+          this.modal.content = 'Upload `' + this.selected.file + '` successfully.'
+          this.modal.icon = 'success'
+          this.openModalNotification()
+        } else if (response.data.status == "error") {
           this.modal.title = 'Error'
-          this.modal.content = error
+          this.modal.content = response.data.message
           this.modal.icon = 'error'
           this.openModalNotification()
         }
-        // 移除 UI 顯示
-        this.selected.file = ''
-        this.showInput = false
-        requestAnimationFrame(() => {
-          this.showInput = true
-        })
+      } catch (error) {
+        this.modal.title = 'Error'
+        this.modal.content = error
+        this.modal.icon = 'error'
+        this.openModalNotification()
       }
-      
-      else if (this.selected.mode == 'samba') {
-        console.log('samba')
-      }
+      this.selected.file = ''
+      // 移除 UI 顯示
+      this.showInput = false
+      requestAnimationFrame(() => {
+        this.showInput = true
+      })
+      this.loading = false
+    },
 
+    async uploadSamba() {
+      this.loading = true
+      try {
+        this.loading = true
+        const response = await axios.post('http://127.0.0.1:5000/upload-Samba-File', {
+          username: this.selected.username,
+          password: this.selected.password,
+          remote_path: this.selected.remote_path,
+        })
+        if (response.data.status == "success") {
+          const parts = this.selected.remote_path.split(/[/\\]+/)
+          const filename = parts[parts.length - 1]
+          this.modal.title = 'Success'
+          this.modal.content = 'Upload `' + filename + '` successfully.'
+          this.modal.icon = 'success'
+          this.openModalNotification()
+        } else if (response.data.status == "error") {
+          this.modal.title = 'Error'
+          this.modal.content = response.data.message
+          this.modal.icon = 'error'
+          this.openModalNotification()
+        }
+      } catch (error) {
+        this.modal.title = 'Error'
+        this.modal.content = error
+        this.modal.icon = 'error'
+        this.openModalNotification()
+      }
+      this.selected.username = ''
+      this.selected.password = ''
+      this.selected.remote_path = ''
       this.loading = false
     },
 

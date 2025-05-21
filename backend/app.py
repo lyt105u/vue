@@ -530,17 +530,41 @@ def download():
         download_name=filename
     )
 
-@app.route('/download-Smb', methods=['POST'])
-def downloaSmb():
+@app.route('/upload-Local-File', methods=['POST'])
+def upload_local_file():
+    UPLOAD_FOLDER = 'upload'
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+    if 'file' not in request.files:
+        return jsonify({
+            "status": "error",
+            "message": "Missing file in request."
+        })
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({
+            "status": "error",
+            "message": "No file selected."
+        })
+    
+    save_path = os.path.join(UPLOAD_FOLDER, file.filename)
+    file.save(save_path)
+    return jsonify({
+        "status": "success"
+    })
+
+@app.route('/upload-Samba-File', methods=['POST'])
+def upload_samba_file():
     data = request.get_json()
     username = data.get('username')
     password = data.get('password')
     remote_path = data.get('remote_path')
-    local_path = 'data/upload'
+    local_path = 'upload'
 
     try:
         fetch_result = subprocess.run(
-            ['python', 'downloadSmb.py', username, password, remote_path, local_path],
+            ['python', 'uploadSambaFile.py', username, password, remote_path, local_path],
             # capture_output=True,  # 捕獲標準輸出和標準錯誤
             stdout=subprocess.PIPE,     # 只捕獲標準輸出
             stderr=subprocess.DEVNULL,  # 忽略標準錯誤
@@ -564,30 +588,6 @@ def downloaSmb():
             "status": "error",
             "message": str(e)
         })
-    
-@app.route('/upload-File', methods=['POST'])
-def upload_file():
-    UPLOAD_FOLDER = 'upload'
-    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-    if 'file' not in request.files:
-        return jsonify({
-            "status": "error",
-            "message": "Missing file in request."
-        })
-    
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({
-            "status": "error",
-            "message": "No file selected."
-        })
-    
-    save_path = os.path.join(UPLOAD_FOLDER, file.filename)
-    file.save(save_path)
-    return jsonify({
-        "status": "success"
-    })
 
 if __name__ == '__main__':
     app.run(debug=True)

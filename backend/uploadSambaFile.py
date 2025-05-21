@@ -1,4 +1,4 @@
-# usage: python downloadSmb.py a2556 rkothebest51 "\\LAPTOP-BENDAENK\tmp\高醫訓練csv.csv"
+# usage: python uploadSambaFile.py a2556 rkothebest51 "\\LAPTOP-BENDAENK\tmp\高醫訓練csv.csv"
 import smbclient
 import shutil
 import argparse
@@ -27,7 +27,7 @@ def main(args):
         }))
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Download file from SMB share.")
+    parser = argparse.ArgumentParser(description="Upload file from SMB share to local.")
     parser.add_argument("username", help="SMB username")
     parser.add_argument("password", help="SMB password")
     parser.add_argument("remote_path", help="Remote SMB file path")
