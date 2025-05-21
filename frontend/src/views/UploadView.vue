@@ -6,48 +6,187 @@
   <ul class="nav nav-tabs">
     <li class="nav-item">
       <a class="nav-link" 
-        :class="{ active: activeTab === 'local' }"
-        @click="activeTab = 'local'"
+        :class="{ active: selected.mode === 'local' }"
+        @click="selected.mode = 'local'"
         href="#">
-        <i class="fa fa-upload me-1"></i> local
+        <i class="fa fa-upload me-1"></i> Local
       </a>
     </li>
     <li class="nav-item">
       <a class="nav-link"
-        :class="{ active: activeTab === 'cloud' }"
-        @click="activeTab = 'cloud'"
+        :class="{ active: selected.mode === 'samba' }"
+        @click="selected.mode = 'samba'"
         href="#">
-      <i class="fa fa-cloud me-1"></i> cloud
+        <i class="fa fa-cloud me-1"></i> Samba 
       </a>
     </li>
   </ul>
 
-  <div class="home">
-    <img alt="Vue logo" src="../assets/logo.png">
-    <h1>MLAS v0.5</h1>
-    <p>presented on 2025/04/30</p>
-    <HelloWorld msg="Welcome to Your Vue.js App"/>
-  </div>
+  <form class="row g-3 needs-validation" @submit.prevent="runUpload" style="margin-top: 16px">
+    <template v-if="selected.mode=='local'">
+      <div class="row mb-3">
+        <label class="col-sm-3 col-form-label">File Selection</label>
+        <div class="col-sm-8">
+          <input @change="handleFileChange" v-if="showInput" type="file" class="form-control" :disabled="loading">
+          <div v-if="errors.file" class="text-danger small">{{ errors.file }}</div>
+        </div>
+      </div>
+    </template>
+
+    <!-- <template v-if="selected.mode=='samba'">
+      <div class="row mb-3">
+        <label class="col-sm-3 col-form-label">File Selection</label>
+        <div class="col-sm-8">
+          <input @change="handleFileChange" v-if="showInput" type="file" class="form-control" :disabled="loading">
+          <div v-if="errors.file" class="text-danger small">{{ errors.file }}</div>
+        </div>
+      </div>
+    </template> -->
+
+    <div class="col-12">
+      <button v-if="!loading" type="submit" class="btn btn-primary">Upload</button>
+      <button v-if="loading" class="btn btn-primary" type="button" disabled>
+        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+      </button>
+    </div>
+  </form>
+
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <ModalNotification ref="modalNotification" :title="modal.title" :content="modal.content" :icon="modal.icon" />
 </template>
 
 <script>
+import axios from 'axios'
+import ModalNotification from "@/components/ModalNotification.vue"
+
 export default {
-  components: {},
+  components: {
+    ModalNotification,
+  },
   data() {
     return {
-      activeTab: 'local',
+      loading: false,
+      selected:{
+        mode: 'local',
+        file: '',
+      },
+      errors: {}, // 檢核用
+      showInput: true,  // 移除 input 的 UI 顯示用
+      modal: {
+        title: '',
+        content: '',
+        icon: 'info',
+      },
     }
-  }
+  },
+  created() {},
+  mounted() {},
+  computed: {},
+  watch: {
+    "selected.mode"() {
+      this.selected.file = ''
+      this.errors = {}
+      // 移除 UI 顯示
+      this.showInput = false
+      requestAnimationFrame(() => {
+        this.showInput = true
+      })
+    },
+  },
+  methods: {
+    handleFileChange(event) {
+      const file = event.target.files[0]
+      if (!file) {
+        // 使用者取消選檔 → 什麼都不做或清除選擇
+        this.selected.file = ''
+        return
+      }
+      this.selected.file = file.name
+    },
+
+    validateForm() {
+      this.errors = {}
+      let isValid = true
+
+      if (this.selected.mode == 'local') {
+        // File Selection
+        if (!this.selected.file) {
+          this.errors.file = "Choose a file."
+          isValid = false
+        }
+      } else if (this.selected.mode == 'samba') {
+        console.log('samba')
+      }
+
+      return isValid
+    },
+
+    async runUpload() {
+      if (!this.validateForm()) {
+        return
+      }
+
+      this.loading = true
+      if (this.selected.mode == 'local') {
+        try {
+          const fileInput = document.querySelector('input[type="file"]')
+          const file = fileInput.files[0]
+          const formData = new FormData()
+          formData.append("file", file)
+          const response = await axios.post('http://127.0.0.1:5000/upload-File', formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
+          })
+          if (response.data.status == "success") {
+            this.modal.title = 'Success'
+            this.modal.content = 'Upload `' + this.selected.file + '` successfully.'
+            this.modal.icon = 'success'
+            this.openModalNotification()
+          } else if (response.data.status == "error") {
+            this.modal.title = 'Error'
+            this.modal.content = response.data.message
+            this.modal.icon = 'error'
+            this.openModalNotification()
+          }
+        } catch (error) {
+          this.modal.title = 'Error'
+          this.modal.content = error
+          this.modal.icon = 'error'
+          this.openModalNotification()
+        }
+        // 移除 UI 顯示
+        this.selected.file = ''
+        this.showInput = false
+        requestAnimationFrame(() => {
+          this.showInput = true
+        })
+      }
+      
+      else if (this.selected.mode == 'samba') {
+        console.log('samba')
+      }
+
+      this.loading = false
+    },
+
+    openModalNotification() {
+      if (this.$refs.modalNotification) {
+        this.$refs.modalNotification.openModal()
+      } else {
+        console.error("ModalNotification component not found.")
+      }
+    },
+  },
 }
 </script>
 
 <style scoped>
   .nav-link.active {
     background-color: #f2f4f7;
-    border-bottom: transparent;
   }
-  /* .nav-tabs {
-    border-bottom: 0.25px 2c3e50;
-  } */
+  .nav-tabs {
+    --bs-nav-tabs-border-color: rgba(44, 62, 80, 0.25); /* 整條 tab 底線顏色 */ /* #2c3e50 */
+    --bs-nav-tabs-link-active-border-color: rgba(44, 62, 80, 0.25) rgba(44, 62, 80, 0.25) transparent; /* active tab 底線 */
+  }
 </style>

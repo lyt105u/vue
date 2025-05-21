@@ -4,6 +4,7 @@ node_modules
 backend/myenv/
 backend/model/
 backend/data/
+backend/upload/
 
 
 # local env files

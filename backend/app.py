@@ -564,6 +564,30 @@ def downloaSmb():
             "status": "error",
             "message": str(e)
         })
+    
+@app.route('/upload-File', methods=['POST'])
+def upload_file():
+    UPLOAD_FOLDER = 'upload'
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+    if 'file' not in request.files:
+        return jsonify({
+            "status": "error",
+            "message": "Missing file in request."
+        })
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({
+            "status": "error",
+            "message": "No file selected."
+        })
+    
+    save_path = os.path.join(UPLOAD_FOLDER, file.filename)
+    file.save(save_path)
+    return jsonify({
+        "status": "success"
+    })
 
 if __name__ == '__main__':
     app.run(debug=True)
