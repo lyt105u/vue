@@ -12,22 +12,37 @@ import subprocess
 import json
 import os
 import mimetypes
+import shutil
 
 app = Flask(__name__)
 CORS(app)  # 啟用跨域支持
 
-@app.route('/fetch-data', methods=['POST'])
-def run_fetch_data():
-    param = request.json.get('param', None)
-    if not param:
+@app.route('/list-files', methods=['POST'])
+def list_files():
+    data = request.get_json()
+    folder_path = data.get('folder_path')
+    if not folder_path:
         return jsonify({
             "status": "error",
-            "message": "Missing 'param' in request."
-        }), 400
+            "message": "Missing 'folder_path' in request."
+        })
+
+    # 取出所有 key 以 ext 開頭的參數（例如 ext1, ext2...）
+    # 輸入範例
+    # {
+    #     "folder_path": "data",
+    #     "ext1": "csv",
+    #     "ext2": "txt"
+    # }
+    extensions = []
+    for key in sorted(data.keys()):
+        if key.startswith("ext") and isinstance(data[key], str) and data[key].strip():
+            ext = data[key].strip()
+            extensions.append(ext)
     
     try:
         fetch_result = subprocess.run(
-            ['python', 'fetchData.py', param],
+            ['python', 'listFiles.py', folder_path] + extensions,
             # capture_output=True,  # 捕獲標準輸出和標準錯誤
             stdout=subprocess.PIPE,     # 只捕獲標準輸出
             stderr=subprocess.DEVNULL,  # 忽略標準錯誤
@@ -37,7 +52,7 @@ def run_fetch_data():
         if fetch_result.returncode != 0:
             return jsonify({
                 "status": "error",
-                "message": fetch_result.stderr,
+                "message": "Script execution failed or folder not found." + fetch_result.stderr,
             })
 
         return jsonify(json.loads(fetch_result.stdout))
@@ -366,64 +381,13 @@ def run_predict():
             "status": "error",
             "message": str(e)
         })
-
-@app.route('/upload-Tabular', methods=['POST'])
-def upload_and_check():
-    UPLOAD_FOLDER = 'data/upload'
-    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-    if 'file' not in request.files:
-        return jsonify({
-            "status": "error",
-            "message": "Missing file in request."
-        })
     
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({
-            "status": "error",
-            "message": "No file selected."
-        })
-    
-    save_path = os.path.join(UPLOAD_FOLDER, file.filename)
-    file.save(save_path)
-    
-    try:
-        fetch_result = subprocess.run(
-            ['python', 'checkPreviewTab.py', file.filename],
-            # capture_output=True,  # 捕獲標準輸出和標準錯誤
-            stdout=subprocess.PIPE,     # 只捕獲標準輸出
-            stderr=subprocess.DEVNULL,  # 忽略標準錯誤
-            text=True                   # 將輸出轉換為字符串
-        )
-        
-        # debug 用
-        # print("STDOUT:", result.stdout)  # 打印标准输出
-        # print("STDERR:", result.stderr)  # 打印标准错误
-        
-        if fetch_result.returncode != 0:
-            return jsonify({
-                "status": "error",
-                "message": fetch_result.stderr,
-            })
-
-        return jsonify(json.loads(fetch_result.stdout))
-    
-    except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        })
-    
-@app.route('/delete-Tabular-Rows', methods=['POST'])
+@app.route('/delete-tabular-rows', methods=['POST'])
 def delete_tabular_rows():
     data = request.get_json()
-    filename = data.get('filename')
+    file_path = data.get('file_path')
     rows = data.get('rows')
 
-    UPLOAD_FOLDER = 'data/upload'
-    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-    file_path = os.path.join(UPLOAD_FOLDER, filename)
     try:
         fetch_result = subprocess.run(
             ['python', 'deleteTabRows.py', file_path, json.dumps(rows)],
@@ -451,13 +415,13 @@ def delete_tabular_rows():
             "message": str(e)
         })
     
-@app.route('/preview-Tabular', methods=['POST'])
+@app.route('/preview-tabular', methods=['POST'])
 def preview():
     data = request.get_json()
-    filename = data.get('filename')
+    file_path = data.get('file_path')
     try:
         fetch_result = subprocess.run(
-            ['python', 'checkPreviewTab.py', filename],
+            ['python', 'checkPreviewTab.py', file_path],
             # capture_output=True,  # 捕獲標準輸出和標準錯誤
             stdout=subprocess.PIPE,     # 只捕獲標準輸出
             stderr=subprocess.DEVNULL,  # 忽略標準錯誤
@@ -589,6 +553,41 @@ def upload_samba_file():
             "status": "error",
             "message": str(e)
         })
+
+@app.route('/copy-local-file', methods=['POST'])
+def copy_local_file():
+    data = request.get_json()
+    source_path = data.get('source_path')
+    target_folder = data.get('target_folder')
+
+    if not source_path or not target_folder:
+        return jsonify({
+            "status": "error",
+            "message": "Missing source_path or target_folder."
+        })
+
+    if not os.path.isfile(source_path):
+        return jsonify({
+            "status": "error",
+            "message": f"Source file does not exist: {source_path}"
+        })
+
+    os.makedirs(target_folder, exist_ok=True)
+    filename = os.path.basename(source_path)
+    target_path = os.path.join(target_folder, filename)
+
+    try:
+        shutil.copy2(source_path, target_path)
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        })
+
+    return jsonify({
+        "status": "success",
+    })
+
 
 if __name__ == '__main__':
     app.run(debug=True)

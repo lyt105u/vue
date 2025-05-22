@@ -310,88 +310,21 @@
 
     <!-- 訓練資料 -->
     <div class="row mb-3">
-      <label for="inputEmail3" class="col-sm-3 col-form-label">File Selection</label>
-      <div class="col-sm-4">
-        <div class="form-check">
-          <input v-model="fileOption" class="form-check-input" type="radio" name="gridRadios" id="gridRadios1_local" value="local" :disabled="loading">
-          <label class="form-check-label" for="gridRadios1_local">
-            Local
-          </label>
-        </div>
-      </div>
-      <div class="col-sm-4">
-        <div class="form-check">
-          <input v-model="fileOption" class="form-check-input" type="radio" name="gridRadios" id="gridRadios1_smb" value="smb" :disabled="loading">
-          <label class="form-check-label" for="gridRadios1_smb">
-            SMB protocol
-          </label>
-        </div>
-      </div>
-    </div>
-
-    <div v-if="fileOption == 'local'" class="row mb-3">
-      <label class="col-sm-3 col-form-label"></label>
+      <label class="col-sm-3 col-form-label">File Selection</label>
       <div class="col-sm-8">
-        <input @change="handleFileChange" v-if="showInput" type="file" class="form-control" :disabled="loading">
-        <div v-if="errors.data" class="text-danger small">{{ errors.data }}</div>
+        <select class="form-select" aria-label="Small select example" v-model="selected.data" :disabled="loading">
+          <option v-for="file in fileOptions" :key="file" :value="file">
+            {{ file }}
+          </option>
+        </select>
+        <div v-if="errors.label_column" class="text-danger small">{{ errors.label_column }}</div>
       </div>
       <div class="col-sm-1">
         <button v-if="preview_data.columns != 0" class="btn btn-outline-primary" type="button" @click="toggleCollapse" :disabled="loading">Preview</button>
       </div>
     </div>
 
-    <div v-if="fileOption == 'smb'" class="row mb-3">
-      <label class="col-sm-3 col-form-label"></label>
-      <div class="col-sm-2 form-floating">
-        <input v-model="smb.username"
-          type="text" 
-          class="form-control" 
-          id="floatingSmbUsername"
-          :disabled="loading"
-          autocomplete="off"
-        />
-        <label for="floatingSmbUsername" style="margin-left:9px;"> User Name </label>
-        <div v-if="smbErrors.username" class="text-danger small">{{ smbErrors.username }}</div>
-      </div>
-      <div class="col-sm-2 form-floating">
-        <input v-model="smb.password"
-          type="password" 
-          class="form-control" 
-          id="floatingSmbPassword"
-          :disabled="loading"
-          autocomplete="off"
-        />
-        <label for="floatingSmbPassword" style="margin-left:9px;"> Password </label>
-        <div v-if="smbErrors.password" class="text-danger small">{{ smbErrors.password }}</div>
-      </div>
-      <div class="col-sm-4 form-floating">
-        <input v-model="smb.remote_path"
-          type="text" 
-          class="form-control" 
-          id="floatingSmbRemotePath"
-          :disabled="loading"
-          autocomplete="off"
-        />
-        <label for="floatingSmbRemotePath" style="margin-left:9px;"> Remote Path </label>
-        <div v-if="smbErrors.remote_path" class="text-danger small">{{ smbErrors.remote_path }}</div>
-      </div>
-      <div class="col-sm-1">
-        <button class="btn btn-outline-primary" type="button" @click="downloadSmb" :disabled="loading">Download</button>
-      </div>
-    </div>
-
-    <div v-if="fileOption=='smb'" class="row mb-3">
-      <label class="col-sm-3 col-form-label"></label>
-      <label class="col-sm-2 col-form-label">File Name:</label>
-      <div class="col-sm-6">
-        <input v-model="selected.data" class="form-control" type="text" disabled>
-        <div v-if="errors.data" class="text-danger small">{{ errors.data }}</div>
-      </div>
-      <div class="col-sm-1">
-        <button v-if="preview_data.columns != 0" class="btn btn-outline-primary" type="button" @click="toggleCollapse" :disabled="loading">Preview</button>
-      </div>
-    </div>
-
+    <!-- Preview -->
     <div v-if="preview_data.total_rows != 0" class="row mb-3">
       <div class="collapse" ref="collapsePreview">
         <div class="card card-body">
@@ -642,7 +575,8 @@
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"> <!-- question mark icon -->
   <ModalNotification ref="modalNotification" :title="modal.title" :content="modal.content" :icon="modal.icon" />
-  <ModalNotification ref="modalMissingDataRef" :title="modal.title" :content="modal.content" :icon="modal.icon" :primaryButton="{ text: 'Delete', onClick: deleteMissingData }" :secondaryButton="{ text: 'Cancel', onClick: removeFileUI }" />
+  <ModalNotification ref="modalMissingDataRef" :title="modal.title" :content="modal.content" :icon="modal.icon" :primaryButton="{ text: 'Delete', onClick: deleteMissingData }" :secondaryButton="{ text: 'Cancel', onClick: closeModalMissingData }" />
+  <ModalNotification ref="modalFinishTrainingRef" :title="modal.title" :content="modal.content" :icon="modal.icon" :primaryButton="{ text: 'Upload', onClick: uploadTrainedModel }" :secondaryButton="{ text: 'Close', onClick: closeModalFinishTraining }" />
   <ModalFormulaExplain ref="formulaExplainModal" />
   <ModalImage ref="modalImageRef" :title="modal.title" :imageSrc="modal.content"/>
   <ModalShap ref="modalShapRef" :imageSrc="modal.content" :shapImportance="modal.shap_importance" :columns="preview_data.columns"/>
@@ -766,19 +700,13 @@ export default {
       imageShap: null,
       imageLime: null,
       errors: {}, // 檢核用
-      showInput: true,  // 移除 input 的 UI 顯示用
-      fileOption: "local",
-      smb: {
-        username: '',
-        password: '',
-        remote_path: '',
-      },
-      smbErrors: {},
+      fileOptions: [],
     }
   },
   created() {
     this.updateTestSize()
     this.updateFileExtension()
+    this.listFiles()
   },
   mounted() {},
   computed: {},
@@ -805,24 +733,10 @@ export default {
     },
     "selected.data"() {
       this.selected.label_column = ''
-      if (this.selected.data != '') {
-        if (this.fileOption == 'local') {
-          this.uploadTabular()
-        }
-      }
-    },
-    "fileOption"() {
-      this.selected.data = ''
       this.initPreviewData()
-      // 移除 UI 顯示
-      this.showInput = false
-      requestAnimationFrame(() => {
-        this.showInput = true
-      })
-      this.smb.username = ''
-      this.smb.password = ''
-      this.smb.remote_path = ''
-      this.selected.label_column = ''
+      if (this.selected.data != '') {
+        this.previewTab()
+      }
     },
   },
   methods: {
@@ -832,32 +746,6 @@ export default {
         preview: [],
         total_rows: 0,
         total_columns: 0
-      }
-    },
-
-    handleFileChange(event) {
-      // 得到的檔名和 this.selected.data 綁定，再用 watch 去呼叫檢查預覽 (ckheckPreviewTab.py) 的腳本
-      const file = event.target.files[0]
-      if (!file) {
-        // 使用者取消選檔 → 什麼都不做或清除選擇
-        this.selected.data = ''
-        this.initPreviewData()
-        return
-      }
-      if (!file.name.endsWith('.csv') && !file.name.endsWith('.xlsx')) {
-        this.modal.title = "Error"
-        this.modal.content = "Unsupported file format. Please provide a CSV or Excel file."
-        this.modal.icon = "error"
-        this.openModalNotification()
-        this.selected.data = ''
-        this.initPreviewData()
-        // 移除 UI 顯示
-        this.showInput = false
-        requestAnimationFrame(() => {
-          this.showInput = true
-        })
-      } else {
-        this.selected.data = file.name
       }
     },
 
@@ -881,51 +769,27 @@ export default {
       }
     },
 
-    async uploadTabular() {
-      this.initPreviewData()
+    async listFiles() {
       this.loading = true
       try {
-        const fileInput = document.querySelector('input[type="file"]')
-        const file = fileInput.files[0]
-        const formData = new FormData()
-        formData.append("file", file)
-        const response = await axios.post('http://127.0.0.1:5000/upload-Tabular', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
+        const response = await axios.post('http://127.0.0.1:5000/list-files', {
+          folder_path: 'upload', // upload/
+          ext1: 'csv',
+          ext2: 'xlsx',
         })
         if (response.data.status == "success") {
-          this.preview_data = response.data.preview_data
-        } else if (response.data.status == "errorMissing") {
-          this.modal.title = 'Error'
-          this.modal.content = response.data.message + '\nDo you want to delete these rows?'
-          this.modal.icon = 'error'
-          this.openModalMissingData()
+          this.fileOptions = response.data.files
         } else if (response.data.status == "error") {
           this.modal.title = 'Error'
           this.modal.content = response.data.message
           this.modal.icon = 'error'
-          this.initPreviewData()
-          this.selected.data = ''
           this.openModalNotification()
-          // 移除 UI 顯示
-          this.showInput = false
-          requestAnimationFrame(() => {
-            this.showInput = true
-          })
         }
       } catch (error) {
         this.modal.title = 'Error'
         this.modal.content = error
         this.modal.icon = 'error'
-        this.initPreviewData()
-        this.selected.data = ''
         this.openModalNotification()
-        // 移除 UI 顯示
-        this.showInput = false
-        requestAnimationFrame(() => {
-          this.showInput = true
-        })
       }
       this.loading = false
     },
@@ -953,61 +817,36 @@ export default {
         }
       })
 
-      // delete-Tabular-Rows 成功才會執行 preview-Tabula
+      // delete-Tabular-Rows 成功才會執行 preview-tabular
       try {
-        const response = await axios.post('http://127.0.0.1:5000/delete-Tabular-Rows', {
-          filename: this.selected.data,
+        const response = await axios.post('http://127.0.0.1:5000/delete-tabular-rows', {
+          file_path: `upload/${this.selected.data}`, // upload/
           rows: rowsToDelete
         })
         if (response.data.status == "success") {
-          const response = await axios.post('http://127.0.0.1:5000/preview-Tabular', {
-            filename: this.selected.data,
-          })
-          if (response.data.status == "success") {
-            this.preview_data = response.data.preview_data
-          } else if (response.data.status == "error") {
-            this.modal.title = 'Error'
-            this.modal.content = response.data.message
-            this.modal.icon = 'error'
-            this.initPreviewData()
-            this.selected.data = ''
-            this.openModalNotification()
-            // 移除 UI 顯示
-            this.showInput = false
-            requestAnimationFrame(() => {
-              this.showInput = true
-            })
-          }
+          await this.previewTab()
         } else if (response.data.status == "error") {
           this.modal.title = 'Error'
           this.modal.content = response.data.message
           this.modal.icon = 'error'
           this.openModalNotification()
+          this.initPreviewData()
+          this.selected.data = ''
         }
       } catch (error) {
         this.modal.title = 'Error'
         this.modal.content = error
         this.modal.icon = 'error'
+        this.openModalNotification()
         this.initPreviewData()
         this.selected.data = ''
-        this.openModalNotification()
-        // 移除 UI 顯示
-        this.showInput = false
-        requestAnimationFrame(() => {
-          this.showInput = true
-        })
       }
       this.loading = false
     },
 
-    removeFileUI() {
+    closeModalMissingData() {
       this.initPreviewData()
       this.selected.data = ''
-      // 移除 UI 顯示
-      this.showInput = false
-      requestAnimationFrame(() => {
-        this.showInput = true
-      })
       if (this.$refs.modalMissingDataRef) {
         this.$refs.modalMissingDataRef.closeModal()
       }
@@ -1018,31 +857,6 @@ export default {
     },
     isFloat(value) {
       return /^[0-9]+\.[0-9]+$/.test(value)
-    },
-
-    validateSmb() {
-      this.smbErrors = {}
-      let isValid = true
-
-      // User Name
-      if (!this.smb.username) {
-        this.smbErrors.username = "Require username."
-        isValid = false
-      }
-
-      // Password
-      if (!this.smb.password) {
-        this.smbErrors.password = "Require password."
-        isValid = false
-      }
-
-      // Remote Path
-      if (!this.smb.remote_path) {
-        this.smbErrors.remote_path = "Require remote path."
-        isValid = false
-      }
-
-      return isValid
     },
 
     validateForm() {
@@ -1187,60 +1001,15 @@ export default {
       return isValid
     },
 
-    async downloadSmb() {
-      this.selected.data = ''
-      this.initPreviewData()
-      
-      if (!this.validateSmb()) {
-        return
-      }
-
-      try {
-        this.loading = true
-        const response = await axios.post('http://127.0.0.1:5000/download-Smb', {
-          username: this.smb.username,
-          password: this.smb.password,
-          remote_path: this.smb.remote_path,
-        })
-        if (response.data.status == "success") {
-          const parts = this.smb.remote_path.split(/[/\\]+/)
-          const filename = parts[parts.length - 1]
-          if (!filename.endsWith('.csv') && !filename.endsWith('.xlsx')) {
-            this.modal.title = "Error"
-            this.modal.content = "Unsupported file format. Please provide a CSV or Excel file."
-            this.modal.icon = "error"
-            this.openModalNotification()
-            this.loading = false
-          } else {
-            this.checkPreviewTab(filename)
-          }
-        } else if (response.data.status == "error") {
-          this.modal.title = 'Error'
-          this.modal.content = response.data.message
-          this.modal.icon = 'error'
-          this.openModalNotification()
-          this.loading = false
-        }
-      } catch (error) {
-        this.modal.title = 'Error'
-        this.modal.content = error
-        this.modal.icon = 'error'
-        this.openModalNotification()
-        this.loading = false
-      }
-    },
-
-    async checkPreviewTab(filename) {
+    async previewTab() {
       this.loading = true
       try {
-        const response = await axios.post('http://127.0.0.1:5000/preview-Tabular', {
-          filename: filename,
+        const response = await axios.post('http://127.0.0.1:5000/preview-tabular', {
+          file_path: `upload/${this.selected.data}`, // upload/
         })
         if (response.data.status == "success") {
           this.preview_data = response.data.preview_data
-          this.selected.data = filename
         } else if (response.data.status == "errorMissing") {
-          this.selected.data = filename
           this.modal.title = 'Error'
           this.modal.content = response.data.message + '\nDo you want to delete these rows?'
           this.modal.icon = 'error'
@@ -1252,11 +1021,6 @@ export default {
           this.initPreviewData()
           this.selected.data = ''
           this.openModalNotification()
-          // 移除 UI 顯示
-          this.showInput = false
-          requestAnimationFrame(() => {
-            this.showInput = true
-          })
         }
       } catch (error) {
         this.modal.title = 'Error'
@@ -1265,11 +1029,6 @@ export default {
         this.openModalNotification()
         this.initPreviewData()
         this.selected.data = ''
-        // 移除 UI 顯示
-        this.showInput = false
-        requestAnimationFrame(() => {
-          this.showInput = true
-        })
       }
       this.loading = false
     },
@@ -1350,25 +1109,27 @@ export default {
         }
       } finally {
         if (this.output.status == 'success') {
-          this.modal.title = 'Training Complete'
-          this.modal.content = 'Model trained successfully!'
-          this.modal.icon = 'success'
-
           // download api
           let extension = ".pkl"
           if (this.selected.model_type === "tabnet") extension = ".zip"
           else if (this.selected.model_type === "xgb") extension = ".json"
+          // 訓練好的模型會暫存在 model/ 資料夾中，再去把它載下來
+          // 懶得改了QQ，要改的話要去每一個 train_xxx.py 改
           const path = `model/${this.selected.model_name}${extension}`
           await this.downloadFile(path)
 
+          this.modal.title = 'Training Complete'
+          this.modal.content = 'Model trained successfully!\nDo you want to upload it as well?'
+          this.modal.icon = 'success'
+          this.openModalFinishTraining()
         } else if (this.output.status == 'error') {
           this.modal.title = 'Error'
           this.modal.content = this.output.message
           this.modal.icon = 'error'
+          this.openModalNotification()
           this.output = null
         }
         this.loading = false
-        this.openModalNotification()
       }
     },
 
@@ -1438,6 +1199,54 @@ export default {
         this.modal.content = imageSrc
         this.modal.lime_example_0 = lime_example_0
         this.$refs.modalLimeRef.openModal()
+      }
+    },
+
+    openModalFinishTraining() {
+      if (this.$refs.modalFinishTrainingRef) {
+        this.$refs.modalFinishTrainingRef.openModal()
+      } else {
+        console.error("ModalFinishTraining component not found.")
+      }
+    },
+
+    async uploadTrainedModel() {
+      if (this.$refs.modalFinishTrainingRef) {
+        this.$refs.modalFinishTrainingRef.closeModal()
+      }
+      this.loading = true
+      try {
+        let extension = ".pkl"
+        if (this.selected.model_type === "tabnet") extension = ".zip"
+        else if (this.selected.model_type === "xgb") extension = ".json"
+        // 將訓練好暫存在 model/ 的模型複製到 upload/ 中，假裝上傳
+        const response = await axios.post('http://127.0.0.1:5000/copy-local-file', {
+          source_path: `model/${this.selected.model_name}${extension}`,
+          target_folder: 'upload' // upload/
+        })
+        if (response.data.status == "success") {
+          this.modal.title = 'Success'
+          this.modal.content = 'Upload `' + `model/${this.selected.model_name}${extension}` + '` successfully.'
+          this.modal.icon = 'success'
+          this.openModalNotification()
+        } else if (response.data.status == "error") {
+          this.modal.title = 'Error'
+          this.modal.content = response.data.message
+          this.modal.icon = 'error'
+          this.openModalNotification()
+        }
+      } catch (error) {
+        this.modal.title = 'Error'
+        this.modal.content = error
+        this.modal.icon = 'error'
+        this.openModalNotification()
+      }
+      this.loading = false
+    },
+
+    closeModalFinishTraining() {
+      if (this.$refs.modalFinishTrainingRef) {
+        this.$refs.modalFinishTrainingRef.closeModal()
       }
     },
   },

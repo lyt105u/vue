@@ -1,4 +1,7 @@
 # 檢查表格資料是否缺漏，並提供預覽資訊
+# usage: python checkPreviewTab.py <file_path>
+# ex:
+#   python checkPreviewTab.py upload/tabular.csv
 
 import os
 import sys
@@ -59,12 +62,11 @@ if __name__ == "__main__":
     if len(sys.argv) != 2:
         print(json.dumps({
             "status": "error",
-            "message": "Usage: `python checkTabularFile.py <file_name>`.",
+            "message": "Usage: `python checkPreviewTab.py <file_path>`.",
         }))
         sys.exit(1)
 
-    file_name = sys.argv[1]
-    file_path = os.path.join("data/upload", file_name)
+    file_path = sys.argv[1]
     df = load_file(file_path)
 
     if df is not None:
@@ -80,4 +82,3 @@ if __name__ == "__main__":
                 "status": "success",
                 "preview_data": preview_data
             }))
-        
