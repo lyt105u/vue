@@ -554,17 +554,17 @@ def upload_local_file():
         "status": "success"
     })
 
-@app.route('/upload-Samba-File', methods=['POST'])
+@app.route('/upload-samba-file', methods=['POST'])
 def upload_samba_file():
     data = request.get_json()
     username = data.get('username')
     password = data.get('password')
     remote_path = data.get('remote_path')
-    local_path = 'upload'
+    folder = data.get('folder')
 
     try:
         fetch_result = subprocess.run(
-            ['python', 'uploadSambaFile.py', username, password, remote_path, local_path],
+            ['python', 'uploadSambaFile.py', username, password, remote_path, folder],
             # capture_output=True,  # 捕獲標準輸出和標準錯誤
             stdout=subprocess.PIPE,     # 只捕獲標準輸出
             stderr=subprocess.DEVNULL,  # 忽略標準錯誤
