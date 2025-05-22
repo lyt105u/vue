@@ -530,16 +530,16 @@ def download():
         download_name=filename
     )
 
-@app.route('/upload-Local-File', methods=['POST'])
+@app.route('/upload-local-file', methods=['POST'])
 def upload_local_file():
-    UPLOAD_FOLDER = 'upload'
-    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-    if 'file' not in request.files:
+    if 'file' not in request.files or 'folder' not in request.form:
         return jsonify({
             "status": "error",
-            "message": "Missing file in request."
+            "message": "Missing file or folder in request."
         })
+    
+    file = request.files['file']
+    folder = request.form['folder']
     
     file = request.files['file']
     if file.filename == '':
@@ -548,7 +548,8 @@ def upload_local_file():
             "message": "No file selected."
         })
     
-    save_path = os.path.join(UPLOAD_FOLDER, file.filename)
+    os.makedirs(folder, exist_ok=True)
+    save_path = os.path.join(folder, file.filename)
     file.save(save_path)
     return jsonify({
         "status": "success"
