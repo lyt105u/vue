@@ -21,9 +21,9 @@ def train_rf(x_train, y_train, model_name, n_estimators, max_depth, random_state
 
     return rf
 
-def main(file_name, label_column, split_strategy, split_value, model_name, n_estimators, max_depth, random_state, n_jobs):
+def main(file_path, label_column, split_strategy, split_value, model_name, n_estimators, max_depth, random_state, n_jobs):
     try:
-        x, y = prepare_data(file_name, label_column)
+        x, y = prepare_data(file_path, label_column)
     except ValueError as e:
         print(json.dumps({
             "status": "error",
@@ -65,7 +65,7 @@ def main(file_name, label_column, split_strategy, split_value, model_name, n_est
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("file_name", type=str)
+    parser.add_argument("file_path", type=str)
     parser.add_argument("label_column", type=str)
     parser.add_argument("split_strategy", type=str)
     parser.add_argument("split_value", type=str)
@@ -76,4 +76,4 @@ if __name__ == "__main__":
     parser.add_argument("n_jobs", type=int)
 
     args = parser.parse_args()
-    main(args.file_name, args.label_column, args.split_strategy, args.split_value, args.model_name, args.n_estimators, args.max_depth, args.random_state, args.n_jobs)
+    main(args.file_path, args.label_column, args.split_strategy, args.split_value, args.model_name, args.n_estimators, args.max_depth, args.random_state, args.n_jobs)

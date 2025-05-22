@@ -50,9 +50,9 @@ def train_tabnet(x_train, y_train, model_name, batch_size, max_epochs, patience)
 
     return tabnet
 
-def main(file_name, label_column, split_strategy, split_value, model_name, batch_size, max_epochs, patience):
+def main(file_path, label_column, split_strategy, split_value, model_name, batch_size, max_epochs, patience):
     try:
-        x, y = prepare_data(file_name, label_column)
+        x, y = prepare_data(file_path, label_column)
     except ValueError as e:
         print(json.dumps({
             "status": "error",
@@ -102,7 +102,7 @@ def main(file_name, label_column, split_strategy, split_value, model_name, batch
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("file_name", type=str)
+    parser.add_argument("file_path", type=str)
     parser.add_argument("label_column", type=str)
     parser.add_argument("split_strategy", type=str)
     parser.add_argument("split_value", type=str)
@@ -112,4 +112,4 @@ if __name__ == "__main__":
     parser.add_argument("patience", type=int)
 
     args = parser.parse_args()
-    main(args.file_name, args.label_column, args.split_strategy, args.split_value, args.model_name, args.batch_size, args.max_epochs, args.patience)
+    main(args.file_path, args.label_column, args.split_strategy, args.split_value, args.model_name, args.batch_size, args.max_epochs, args.patience)

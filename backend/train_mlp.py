@@ -25,7 +25,7 @@ def train_mlp(x_train, y_train, model_name, hidden_layer_1, hidden_layer_2, hidd
 
     return mlp
 
-def main(file_name, label_column, split_strategy, split_value, model_name, hidden_layer_1, hidden_layer_2, hidden_layer_3, activation, learning_rate_init, max_iter):
+def main(file_path, label_column, split_strategy, split_value, model_name, hidden_layer_1, hidden_layer_2, hidden_layer_3, activation, learning_rate_init, max_iter):
     # 處理空白的 layer
     def convert_arg(value):
         return None if value.lower() in ["null", "none", ""] else int(value)
@@ -34,7 +34,7 @@ def main(file_name, label_column, split_strategy, split_value, model_name, hidde
     hidden_layer_3 = convert_arg(args.hidden_layer_3)
 
     try:
-        x, y = prepare_data(file_name, label_column)
+        x, y = prepare_data(file_path, label_column)
     except ValueError as e:
         print(json.dumps({
             "status": "error",
@@ -76,7 +76,7 @@ def main(file_name, label_column, split_strategy, split_value, model_name, hidde
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("file_name", type=str)
+    parser.add_argument("file_path", type=str)
     parser.add_argument("label_column", type=str)
     parser.add_argument("split_strategy", type=str)
     parser.add_argument("split_value", type=str)
@@ -89,4 +89,4 @@ if __name__ == "__main__":
     parser.add_argument("max_iter", type=int)
 
     args = parser.parse_args()
-    main(args.file_name, args.label_column, args.split_strategy, args.split_value, args.model_name, args.hidden_layer_1, args.hidden_layer_2, args.hidden_layer_3, args.activation, args.learning_rate_init, args.max_iter)
+    main(args.file_path, args.label_column, args.split_strategy, args.split_value, args.model_name, args.hidden_layer_1, args.hidden_layer_2, args.hidden_layer_3, args.activation, args.learning_rate_init, args.max_iter)

@@ -26,9 +26,9 @@ def train_lr(x_train, y_train, model_name, penalty, C, solver, max_iter):
 
     return logistic_reg
 
-def main(file_name, label_column, split_strategy, split_value, model_name, penalty, C, solver, max_iter):
+def main(file_path, label_column, split_strategy, split_value, model_name, penalty, C, solver, max_iter):
     try:
-        x, y = prepare_data(file_name, label_column)
+        x, y = prepare_data(file_path, label_column)
     except ValueError as e:
         print(json.dumps({
             "status": "error",
@@ -73,7 +73,7 @@ def main(file_name, label_column, split_strategy, split_value, model_name, penal
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("file_name", type=str)
+    parser.add_argument("file_path", type=str)
     parser.add_argument("label_column", type=str)
     parser.add_argument("split_strategy", type=str)
     parser.add_argument("split_value", type=str)
@@ -84,4 +84,4 @@ if __name__ == "__main__":
     parser.add_argument("max_iter", type=int)
 
     args = parser.parse_args()
-    main(args.file_name, args.label_column, args.split_strategy, args.split_value, args.model_name, args.penalty, args.C, args.solver, args.max_iter)
+    main(args.file_path, args.label_column, args.split_strategy, args.split_value, args.model_name, args.penalty, args.C, args.solver, args.max_iter)

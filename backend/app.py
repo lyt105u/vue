@@ -87,7 +87,7 @@ def run_get_fieldNumber():
 @app.route('/run-train-xgb', methods=['POST'])
 def run_train_xgb():
     data = request.get_json()
-    file_name = data.get('file_name')
+    file_path = data.get('file_path')
     label_column = data.get('label_column')
     split_strategy = data.get('split_strategy') 
     split_value = data.get('split_value')
@@ -98,7 +98,7 @@ def run_train_xgb():
 
     try:
         result = subprocess.run(
-            ['python', 'train_xgb.py', file_name, label_column, split_strategy, split_value, model_name, n_estimators, learning_rate, max_depth],
+            ['python', 'train_xgb.py', file_path, label_column, split_strategy, split_value, model_name, n_estimators, learning_rate, max_depth],
             # capture_output=True,        # 捕獲標準輸出和標準錯誤
             stdout=subprocess.PIPE,     # 只捕獲標準輸出
             stderr=subprocess.DEVNULL,  # 忽略標準錯誤
@@ -125,7 +125,7 @@ def run_train_xgb():
 @app.route('/run-train-lgbm', methods=['POST'])
 def run_train_lgbm():
     data = request.get_json()
-    file_name = data.get('file_name')
+    file_path = data.get('file_path')
     label_column = data.get('label_column')
     split_strategy = data.get('split_strategy') 
     split_value = data.get('split_value')
@@ -137,7 +137,7 @@ def run_train_lgbm():
 
     try:
         result = subprocess.run(
-            ['python', 'train_lgbm.py', file_name, label_column, split_strategy, split_value, model_name, n_estimators, learning_rate, max_depth, num_leaves],
+            ['python', 'train_lgbm.py', file_path, label_column, split_strategy, split_value, model_name, n_estimators, learning_rate, max_depth, num_leaves],
             # capture_output=True,        # 捕獲標準輸出和標準錯誤
             stdout=subprocess.PIPE,     # 只捕獲標準輸出
             stderr=subprocess.DEVNULL,  # 忽略標準錯誤
@@ -164,7 +164,7 @@ def run_train_lgbm():
 @app.route('/run-train-rf', methods=['POST'])
 def run_train_rf():
     data = request.get_json()
-    file_name = data.get('file_name')
+    file_path = data.get('file_path')
     label_column = data.get('label_column')
     split_strategy = data.get('split_strategy') 
     split_value = data.get('split_value')
@@ -176,7 +176,7 @@ def run_train_rf():
 
     try:
         result = subprocess.run(
-            ['python', 'train_rf.py', file_name, label_column, split_strategy, split_value, model_name, n_estimators, max_depth, random_state, n_jobs],
+            ['python', 'train_rf.py', file_path, label_column, split_strategy, split_value, model_name, n_estimators, max_depth, random_state, n_jobs],
             # capture_output=True,        # 捕獲標準輸出和標準錯誤
             stdout=subprocess.PIPE,     # 只捕獲標準輸出
             stderr=subprocess.DEVNULL,  # 忽略標準錯誤
@@ -203,7 +203,7 @@ def run_train_rf():
 @app.route('/run-train-lr', methods=['POST'])
 def run_train_lr():
     data = request.get_json()
-    file_name = data.get('file_name')
+    file_path = data.get('file_path')
     label_column = data.get('label_column')
     split_strategy = data.get('split_strategy') 
     split_value = data.get('split_value')
@@ -215,7 +215,7 @@ def run_train_lr():
 
     try:
         result = subprocess.run(
-            ['python', 'train_lr.py', file_name, label_column, split_strategy, split_value, model_name, penalty, C, solver, max_iter],
+            ['python', 'train_lr.py', file_path, label_column, split_strategy, split_value, model_name, penalty, C, solver, max_iter],
             # capture_output=True,        # 捕獲標準輸出和標準錯誤
             stdout=subprocess.PIPE,     # 只捕獲標準輸出
             stderr=subprocess.DEVNULL,  # 忽略標準錯誤
@@ -242,7 +242,7 @@ def run_train_lr():
 @app.route('/run-train-tabnet', methods=['POST'])
 def run_train_tabnet():
     data = request.get_json()
-    file_name = data.get('file_name')
+    file_path = data.get('file_path')
     label_column = data.get('label_column')
     split_strategy = data.get('split_strategy') 
     split_value = data.get('split_value')
@@ -253,7 +253,7 @@ def run_train_tabnet():
 
     try:
         result = subprocess.run(
-            ['python', 'train_tabnet.py', file_name, label_column, split_strategy, split_value, model_name, batch_size, max_epochs, patience],
+            ['python', 'train_tabnet.py', file_path, label_column, split_strategy, split_value, model_name, batch_size, max_epochs, patience],
             # capture_output=True,        # 捕獲標準輸出和標準錯誤
             stdout=subprocess.PIPE,     # 只捕獲標準輸出
             stderr=subprocess.DEVNULL,  # 忽略標準錯誤
@@ -280,7 +280,7 @@ def run_train_tabnet():
 @app.route('/run-train-mlp', methods=['POST'])
 def run_train_mlp():
     data = request.get_json()
-    file_name = data.get('file_name')
+    file_path = data.get('file_path')
     label_column = data.get('label_column')
     split_strategy = data.get('split_strategy') 
     split_value = data.get('split_value')
@@ -294,7 +294,7 @@ def run_train_mlp():
 
     try:
         result = subprocess.run(
-            ['python', 'train_mlp.py', file_name, label_column, split_strategy, split_value, model_name, hidden_layer_1, hidden_layer_2, hidden_layer_3, activation, learning_rate_init, max_iter],
+            ['python', 'train_mlp.py', file_path, label_column, split_strategy, split_value, model_name, hidden_layer_1, hidden_layer_2, hidden_layer_3, activation, learning_rate_init, max_iter],
             # capture_output=True,        # 捕獲標準輸出和標準錯誤
             stdout=subprocess.PIPE,     # 只捕獲標準輸出
             stderr=subprocess.DEVNULL,  # 忽略標準錯誤

@@ -23,15 +23,10 @@ subprocess.check_call(
 import shap
 from lime.lime_tabular import LimeTabularExplainer
 
-def prepare_data(file_name, label_column):
-    folder_path = "data/upload"
-    if not os.path.exists(folder_path):
-        raise ValueError(f"Directory '{folder_path}' doesn't exist.")
-    
-    file_path = os.path.join(folder_path, file_name)
-    if file_name.endswith(".csv"):
+def prepare_data(file_path, label_column):
+    if file_path.endswith(".csv"):
         df = pd.read_csv(file_path)
-    elif file_name.endswith(".xlsx"):
+    elif file_path.endswith(".xlsx"):
         df = pd.read_excel(file_path)
     else:
         raise ValueError("Unsupported file format. Please provide a CSV or Excel file.")

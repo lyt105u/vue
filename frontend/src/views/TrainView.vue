@@ -1284,7 +1284,7 @@ export default {
         this.output = null
         let api = ''
         let payload = {
-          file_name: this.selected.data,
+          file_path: `upload/${this.selected.data}`, // upload/
           label_column: this.selected.label_column,
           split_strategy: this.selected.split_strategy,
           split_value: this.selected.split_value,
