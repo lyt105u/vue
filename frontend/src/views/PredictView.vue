@@ -10,6 +10,7 @@
   </div>
 
   <form class="row g-3" @submit.prevent="runPredict" style="margin-top: 16px">
+    <!-- Trained Model -->
     <div class="row mb-3">
       <label for="inputEmail3" class="col-sm-3 col-form-label">Trained Model</label>
       <div class="col-sm-8">
@@ -44,16 +45,20 @@
     </div>
 
     <template v-if="selected.mode=='file'">
+      <!-- File Selection -->
       <div class="row mb-3">
         <label for="inputEmail3" class="col-sm-3 col-form-label">File Selection</label>
         <div class="col-sm-8">
-        <select class="form-select" aria-label="Small select example" v-model="selected.data_name" :disabled="loading">
-          <option v-for="file in fileOptions" :key="file" :value="file">
-            {{ file }}
-          </option>
-        </select>
-        <div v-if="errors.data_name" class="text-danger small">{{ errors.data_name }}</div>
-      </div>
+          <select class="form-select" aria-label="Small select example" v-model="selected.data_name" :disabled="loading">
+            <option v-for="file in fileOptions" :key="file" :value="file">
+              {{ file }}
+            </option>
+          </select>
+          <div v-if="errors.data_name" class="text-danger small">{{ errors.data_name }}</div>
+        </div>
+        <div class="col-sm-1">
+          <button v-if="preview_data.columns != 0" class="btn btn-outline-primary" type="button" @click="toggleCollapse" :disabled="loading">Preview</button>
+        </div>
       </div>
 
       <!-- preview -->
@@ -155,12 +160,12 @@
     <h3>
       Results
     </h3>
-    {{ modal.content }}
+    {{ output }}
   </div>
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
   <ModalNotification ref="modalNotification" :title="modal.title" :content="modal.content" :icon="modal.icon" />
-  <ModalNotification ref="modalMissingDataRef" :title="modal.title" :content="modal.content" :icon="modal.icon" :primaryButton="{ text: 'Delete', onClick: deleteMissingData }" :secondaryButton="{ text: 'Cancel', onClick: removeFileUI }" />
+  <ModalNotification ref="modalMissingDataRef" :title="modal.title" :content="modal.content" :icon="modal.icon" :primaryButton="{ text: 'Delete', onClick: deleteMissingData }" :secondaryButton="{ text: 'Cancel', onClick: closeModalMissingData }" />
 </template>
 
 <script>
@@ -225,10 +230,6 @@ export default {
       await this.getFieldNumber()
     },
 
-    "selected.mode"() {
-      this.output = ''
-    },
-
     "selected.data_name"() {
       if (this .selected.data_name.endsWith(".csv")) {
         this.watched.file_extension = ".csv"
@@ -236,6 +237,11 @@ export default {
         this.watched.file_extension = ".xlsx"
       } else {
         this.watched.file_extension = ""
+      }
+
+      this.initPreviewData()
+      if (this.selected.data_name != '') {
+        this.previewTab()
       }
     },
   },
@@ -308,7 +314,7 @@ export default {
         try {
           const response = await axios.post('http://127.0.0.1:5000/get-field-number', {
             model_path: `upload/${this.selected.model_name}`, // upload/
-          });
+          })
           if (response.data.status == "success") {
             this.selected.input_values = Array(response.data.field_count).fill("");
           } else if (response.data.status == "error") {
@@ -323,6 +329,38 @@ export default {
           this.modal.icon = 'error'
           this.openModalNotification()
         }
+      }
+      this.loading = false
+    },
+
+    async previewTab() {
+      this.loading = true
+      try {
+        const response = await axios.post('http://127.0.0.1:5000/preview-tabular', {
+          file_path: `upload/${this.selected.data_name}`, // upload/
+        })
+        if (response.data.status == "success") {
+          this.preview_data = response.data.preview_data
+        } else if (response.data.status == "errorMissing") {
+          this.modal.title = 'Error'
+          this.modal.content = response.data.message + '\nDo you want to delete these rows?'
+          this.modal.icon = 'error'
+          this.openModalMissingData()
+        } else if (response.data.status == "error") {
+          this.modal.title = 'Error'
+          this.modal.content = response.data.message
+          this.modal.icon = 'error'
+          this.initPreviewData()
+          this.selected.data_name = ''
+          this.openModalNotification()
+        }
+      } catch (error) {
+        this.modal.title = 'Error'
+        this.modal.content = error
+        this.modal.icon = 'error'
+        this.openModalNotification()
+        this.initPreviewData()
+        this.selected.data_name = ''
       }
       this.loading = false
     },
@@ -358,29 +396,19 @@ export default {
 
       // delete-Tabular-Rows 成功才會執行 preview-Tabula
       try {
-        const response = await axios.post('http://127.0.0.1:5000/delete-Tabular-Rows', {
-          filename: this.selected.data_name,
+        const response = await axios.post('http://127.0.0.1:5000/delete-tabular-rows', {
+          file_path: `upload/${this.selected.data_name}`, // upload/
           rows: rowsToDelete
         })
         if (response.data.status == "success") {
-          const response = await axios.post('http://127.0.0.1:5000/preview-Tabular', {
-            filename: this.selected.data_name,
-          })
-          if (response.data.status == "success") {
-            this.preview_data = response.data.preview_data
-          } else if (response.data.status == "error") {
-            this.modal.title = 'Error'
-            this.modal.content = response.data.message
-            this.modal.icon = 'error'
-            this.initPreviewData()
-            this.selected.data_name = ''
-            this.openModalNotification()
-          }
+          await this.previewTab()
         } else if (response.data.status == "error") {
           this.modal.title = 'Error'
           this.modal.content = response.data.message
           this.modal.icon = 'error'
           this.openModalNotification()
+          this.initPreviewData()
+          this.selected.data_name = ''
         }
       } catch (error) {
         this.modal.title = 'Error'
@@ -393,7 +421,7 @@ export default {
       this.loading = false
     },
 
-    removeFileUI() {
+    closeModalMissingData() {
       this.initPreviewData()
       this.selected.data_name = ''
       if (this.$refs.modalMissingDataRef) {
@@ -451,28 +479,42 @@ export default {
       this.output = null
 
       try {
-        const response = await axios.post('http://127.0.0.1:5000/run-predict', this.selected)
-        this.output = response.data
-        this.modal.title = 'Training completed'
-        this.modal.icon = 'success'
-        if (this.selected.mode === 'file') {
-          this.modal.content = 'Results file downloaded.'
-          // download api
-          const path = `data/result/${this.selected.output_name}${this.watched.file_extension}`
-          await this.downloadFile(path)
-        } else if (this.selected.mode === 'input') {
-          this.modal.content = this.output.message[0]
+        const response = await axios.post('http://127.0.0.1:5000/run-predict', {
+          model_path: `upload/${this.selected.model_name}`, // upload/
+          mode: this.selected.mode,
+          data_path: `upload/${this.selected.data_name}`, // upload/
+          output_name: this.selected.output_name,
+          input_values: this.selected.input_values,
+          label_column: this.selected.label_column,
+        })
+        if (response.data.status == "success") {
+          this.output = response.data
+          this.modal.title = 'Training completed'
+          this.modal.icon = 'success'
+          if (this.selected.mode === 'file') {
+            this.modal.content = 'Results file downloaded.'
+            // download api
+            // 結果檔案會暫時存在 data/result/ 裡面，懶得改了，牽動到 predict.py，好麻煩
+            const path = `data/result/${this.selected.output_name}${this.watched.file_extension}`
+            await this.downloadFile(path)
+          } else if (this.selected.mode === 'input') {
+            this.modal.content = this.output.message[0]
+          }
+          this.openModalNotification()
+        } else if (response.data.status == "error") {
+          this.modal.title = 'Error'
+          this.modal.content = response.data.message
+          this.modal.icon = 'error'
+          this.openModalNotification()
         }
-        this.openModalNotification()
       } catch (error) {
-        console.error('Error:', error);
         this.output = {
           status: 'error',
-          message: error.response?.data?.message || error.message,
+          message: error,
         }
         this.modal.title = 'Error'
         this.modal.icon = 'error'
-        this.modal.content = this.output.message
+        this.modal.content = error
         this.openModalNotification()
       }
 

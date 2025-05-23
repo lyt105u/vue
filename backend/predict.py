@@ -22,37 +22,42 @@ import os
 import json
 import numpy as np
 from pytorch_tabnet.tab_model import TabNetClassifier
+import sys
 
 def load_model(model_path):
-    filepath = os.path.join("model", model_path)
-    if filepath.lower().endswith(".json"):  # .json 結尾
+    if model_path.lower().endswith(".json"):  # .json 結尾
         model = XGBClassifier()
-        model.load_model(filepath)
-        # print(f"XGBoost 模型已從 {filepath} 載入")
-    elif filepath.lower().endswith(".pkl"):
-        model = joblib.load(filepath)
-        # print(f"模型已從 {filepath} 載入")
-    elif filepath.lower().endswith(".zip"):
+        model.load_model(model_path)
+        # print(f"XGBoost 模型已從 {model_path} 載入")
+    elif model_path.lower().endswith(".pkl"):
+        model = joblib.load(model_path)
+        # print(f"模型已從 {model_path} 載入")
+    elif model_path.lower().endswith(".zip"):
         model = TabNetClassifier()
-        model.load_model(filepath)
-        # print(f"模型已從 {filepath} 載入")
+        model.load_model(model_path)
+        # print(f"模型已從 {model_path} 載入")
     else:
-        raise ValueError(f"Unsupported model format: {filepath}")
+        print(json.dumps({
+            "status": "error",
+            "message": f"Unsupported model format: {model_path}",
+        }))
+        sys.exit(1)
     return model
 
 def load_data(data_path):
-    full_path = os.path.join("data", "upload", data_path)
-    if full_path.endswith(".csv"):
-        data = pd.read_csv(full_path)
-    elif full_path.endswith(".xlsx"):
-        data = pd.read_excel(full_path)
-    # print(f"Data loaded from {full_path}")
+    if data_path.endswith(".csv"):
+        data = pd.read_csv(data_path)
+    elif data_path.endswith(".xlsx"):
+        data = pd.read_excel(data_path)
+    # print(f"Data loaded from {data_path}")
     return data
 
 def predict_labels(model, model_path, data, label_column):
-    x_test = data.values
+    x_test = data.copy()
     if model_path.lower().endswith(".zip"): # tabnet 只吃 numpy array，不吃 object
-        x_test = np.array(x_test, dtype=np.float32)
+        x_test = x_test.to_numpy(dtype=np.float32)
+    else:
+        x_test = x_test.values
     y_pred = model.predict(x_test)
     data[label_column] = y_pred
     return data
@@ -64,7 +69,7 @@ def save_predictions(data, data_path, output_name):
     # output_path = os.path.join(result_dir, output_name)
     if data_path.endswith(".csv"):
         output_path = os.path.join(result_dir, f"{output_name}.csv")
-        data.to_csv(output_path, index=False, encoding='utf-8')
+        data.to_csv(output_path, index=False, encoding='utf-8-sig')
     elif data_path.endswith(".xlsx"):
         output_path = os.path.join(result_dir, f"{output_name}.xlsx")
         data.to_excel(output_path, index=False)

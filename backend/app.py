@@ -344,16 +344,16 @@ def run_predict():
     label_column = data.get('label_column')
 
     if not model_path or not mode:
-        return jsonify({"status": "error", "message": "model_path and mode are necessary args"}), 400
+        return jsonify({"status": "error", "message": "model_path and mode are necessary args"})
 
     command = ['python', 'predict.py', model_path, mode]
     if mode == 'file':
         if not data_path or not output_name:
-            return jsonify({"status": "error", "message": "data_path 和 output_name 是 file 模式下的必要參數"}), 400
+            return jsonify({"status": "error", "message": "data_path 和 output_name 是 file 模式下的必要參數"})
         command.extend(['--data_path', data_path, '--output_name', output_name, '--label_column', label_column])
     elif mode == 'input':
         if not input_values or not isinstance(input_values, list):
-            return jsonify({"status": "error", "message": "input_values 是 input 模式下的必要參數，且必須為陣列格式"}), 400
+            return jsonify({"status": "error", "message": "input_values 是 input 模式下的必要參數，且必須為陣列格式"})
         command.extend(['--input_values'] + list(map(str, input_values)))
 
     try:
