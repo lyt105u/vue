@@ -1,3 +1,8 @@
+# 取得模型所需要的欄位數
+# usage: python getFieldNumber.py <model_path>
+# ex:
+#   python checkPreviewTab.py upload/tabular.csv
+
 import sys
 import os
 import json
@@ -5,11 +10,14 @@ from xgboost import XGBClassifier
 from pytorch_tabnet.tab_model import TabNetClassifier
 import joblib
 
-def get_field_number(model_name):
+def get_field_number(model_path):
     try:
-        model_path = os.path.join("model", model_name)
         if not os.path.exists(model_path):
-            raise FileNotFoundError(f"Model '{model_path}' doesn't exist!")
+            print(json.dumps({
+                "status": "error",
+                "message": f"Model '{model_path}' doesn't exist!",
+            }))
+            sys.exit(1)
 
         # 確定檔案類型
         file_extension = os.path.splitext(model_path)[-1].lower()
@@ -21,7 +29,11 @@ def get_field_number(model_name):
                 xgb_model.load_model(model_path)
                 return xgb_model.n_features_in_
             except Exception as e:
-                raise ValueError(f"Failed to load XGBoost model: {e}")
+                print(json.dumps({
+                    "status": "error",
+                    "message": f"Failed to load XGBoost model: {e}",
+                }))
+                sys.exit(1)
 
         # 讀取 TabNet 模型（需 `.zip` 格式）
         elif file_extension == ".zip":
@@ -30,7 +42,11 @@ def get_field_number(model_name):
                 tabnet_model.load_model(model_path)
                 return tabnet_model.network.input_dim
             except Exception as e:
-                raise ValueError(f"Failed to load TabNet model: {e}")
+                print(json.dumps({
+                    "status": "error",
+                    "message": f"Failed to load TabNet model: {e}",
+                }))
+                sys.exit(1)
 
         # 讀取其他 Scikit-Learn 及 LightGBM 模型（PKL 格式）
         elif file_extension == ".pkl":
@@ -41,21 +57,41 @@ def get_field_number(model_name):
                 if hasattr(model, "n_features_in_"):
                     return model.n_features_in_
                 else:
-                    raise ValueError("The loaded model does not have 'n_features_in_' attribute.")
+                    print(json.dumps({
+                        "status": "error",
+                        "message": "The loaded model does not have 'n_features_in_' attribute.",
+                    }))
+                    sys.exit(1)
             except Exception as e:
-                raise ValueError(f"Failed to load Pickle/Joblib model: {e}")
+                print(json.dumps({
+                    "status": "error",
+                    "message": f"Failed to load Pickle/Joblib model: {e}",
+                }))
+                sys.exit(1)
 
         else:
-            raise ValueError(f"Unsupported format: {file_extension}")
+            print(json.dumps({
+                "status": "error",
+                "message": f"Unsupported format: {file_extension}",
+            }))
+            sys.exit(1)
     except Exception as e:
-        raise ValueError(f"Error in get_field_number: {e}")
+        print(json.dumps({
+            "status": "error",
+            "message": f"Error in get_field_number: {e}",
+        }))
+        sys.exit(1)
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        raise ValueError("Usage: python getFieldNumber.py <model_name>")
+        print(json.dumps({
+            "status": "error",
+            "message": "Usage: python getFieldNumber.py <model_path>.",
+        }))
+        sys.exit(1)
 
-    model_name = sys.argv[1]
-    field_count = get_field_number(model_name)
+    model_path = sys.argv[1]
+    field_count = get_field_number(model_path)
 
     print(json.dumps({
         "status": "success",

@@ -63,18 +63,18 @@ def list_files():
             "message": str(e)
         })
 
-@app.route('/get-fieldNumber', methods=['POST'])
-def run_get_fieldNumber():
-    param = request.json.get('param', None)
-    if not param:
+@app.route('/get-field-number', methods=['POST'])
+def get_field_number():
+    model_path = request.json.get('model_path', None)
+    if not model_path:
         return jsonify({
             "status": "error",
             "message": "Missing 'param' in request."
-        }), 400
+        })
     
     try:
         fetch_result = subprocess.run(
-            ['python', 'getFieldNumber.py', param],
+            ['python', 'getFieldNumber.py', model_path],
             # capture_output=True,  # 捕獲標準輸出和標準錯誤
             stdout=subprocess.PIPE,     # 只捕獲標準輸出
             stderr=subprocess.DEVNULL,  # 忽略標準錯誤
@@ -445,30 +445,6 @@ def preview():
             "status": "error",
             "message": str(e)
         })
-    
-@app.route('/upload-Model', methods=['POST'])
-def upload_model():
-    UPLOAD_FOLDER = 'model'
-    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-    if 'file' not in request.files:
-        return jsonify({
-            "status": "error",
-            "message": "Missing file in request."
-        })
-    
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({
-            "status": "error",
-            "message": "No file selected."
-        })
-    
-    save_path = os.path.join(UPLOAD_FOLDER, file.filename)
-    file.save(save_path)
-    return jsonify({
-        "status": "success",
-    })
     
 @app.route('/download', methods=['POST'])
 def download():

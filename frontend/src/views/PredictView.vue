@@ -13,12 +13,12 @@
     <div class="row mb-3">
       <label for="inputEmail3" class="col-sm-3 col-form-label">Trained Model</label>
       <div class="col-sm-8">
-        <select class="form-select" aria-label="Small select example" v-model="selected.model_path" :disabled="loading">
+        <select class="form-select" aria-label="Small select example" v-model="selected.model_name" :disabled="loading">
           <option v-for="model in modelOptions" :key="model" :value="model">
             {{ model }}
           </option>
         </select>
-        <div v-if="errors.model_path" class="text-danger small">{{ errors.model_path }}</div>
+        <div v-if="errors.model_name" class="text-danger small">{{ errors.model_name }}</div>
       </div>
     </div>
 
@@ -47,12 +47,12 @@
       <div class="row mb-3">
         <label for="inputEmail3" class="col-sm-3 col-form-label">File Selection</label>
         <div class="col-sm-8">
-        <select class="form-select" aria-label="Small select example" v-model="selected.data_path" :disabled="loading">
+        <select class="form-select" aria-label="Small select example" v-model="selected.data_name" :disabled="loading">
           <option v-for="file in fileOptions" :key="file" :value="file">
             {{ file }}
           </option>
         </select>
-        <div v-if="errors.data_path" class="text-danger small">{{ errors.data_path }}</div>
+        <div v-if="errors.data_name" class="text-danger small">{{ errors.data_name }}</div>
       </div>
       </div>
 
@@ -176,9 +176,9 @@ export default {
   data() {
     return {
       selected: {
-        model_path: '',
+        model_name: '',
         mode: 'file',
-        data_path: '',
+        data_name: '',
         output_name: '',
         input_values: [],
         label_column: ''
@@ -218,39 +218,25 @@ export default {
     },
   },
   watch: {
-    async "selected.model_path"() {
-      // this.selected.data_path = ''
-      // this.selected.output_name = ''
-      this.selected.input_values = []
+    async "selected.model_name"() {
       this.output = ''
-      await this.getFieldNumber()
       this.errors = {}
+      this.selected.input_values = []
+      await this.getFieldNumber()
     },
-    "selected.data_path"() {
-      if (this .selected.data_path.endsWith(".csv")) {
+
+    "selected.mode"() {
+      this.output = ''
+    },
+
+    "selected.data_name"() {
+      if (this .selected.data_name.endsWith(".csv")) {
         this.watched.file_extension = ".csv"
-      } else if (this.selected.data_path.endsWith(".xlsx")) {
+      } else if (this.selected.data_name.endsWith(".xlsx")) {
         this.watched.file_extension = ".xlsx"
       } else {
         this.watched.file_extension = ""
       }
-    },
-    "selected.mode"() {
-      this.output = ''
-      this.initPreviewData()
-      this.selected.data_path = ''
-      this.selected.output_name = ''
-      this.selected.input_values = []
-      this.selected.label_column = ''
-      console.log(this.output_name)
-      // selected: {
-      //   model_path: '',
-      //   mode: 'file',
-      //   data_path: '',
-      //   output_name: '',
-      //   input_values: [],
-      //   label_column: ''
-      // },
     },
   },
   methods: {
@@ -318,10 +304,10 @@ export default {
     async getFieldNumber() {
       this.loading = true
       this.selected.input_values = []
-      if (this.selected.model_path) {
+      if (this.selected.model_name) {
         try {
-          const response = await axios.post('http://127.0.0.1:5000/get-fieldNumber', {
-            param: this.selected.model_path
+          const response = await axios.post('http://127.0.0.1:5000/get-field-number', {
+            model_path: `upload/${this.selected.model_name}`, // upload/
           });
           if (response.data.status == "success") {
             this.selected.input_values = Array(response.data.field_count).fill("");
@@ -332,7 +318,10 @@ export default {
             this.openModalNotification()
           }
         } catch (error) {
-          console.error("fetchData error: " + error)
+          this.modal.title = 'Error'
+          this.modal.content = error
+          this.modal.icon = 'error'
+          this.openModalNotification()
         }
       }
       this.loading = false
@@ -370,12 +359,12 @@ export default {
       // delete-Tabular-Rows 成功才會執行 preview-Tabula
       try {
         const response = await axios.post('http://127.0.0.1:5000/delete-Tabular-Rows', {
-          filename: this.selected.data_path,
+          filename: this.selected.data_name,
           rows: rowsToDelete
         })
         if (response.data.status == "success") {
           const response = await axios.post('http://127.0.0.1:5000/preview-Tabular', {
-            filename: this.selected.data_path,
+            filename: this.selected.data_name,
           })
           if (response.data.status == "success") {
             this.preview_data = response.data.preview_data
@@ -384,7 +373,7 @@ export default {
             this.modal.content = response.data.message
             this.modal.icon = 'error'
             this.initPreviewData()
-            this.selected.data_path = ''
+            this.selected.data_name = ''
             this.openModalNotification()
           }
         } else if (response.data.status == "error") {
@@ -398,7 +387,7 @@ export default {
         this.modal.content = error
         this.modal.icon = 'error'
         this.initPreviewData()
-        this.selected.data_path = ''
+        this.selected.data_name = ''
         this.openModalNotification()
       }
       this.loading = false
@@ -406,7 +395,7 @@ export default {
 
     removeFileUI() {
       this.initPreviewData()
-      this.selected.data_path = ''
+      this.selected.data_name = ''
       if (this.$refs.modalMissingDataRef) {
         this.$refs.modalMissingDataRef.closeModal()
       }
@@ -417,16 +406,16 @@ export default {
       let isValid = true
 
       // Trained Model
-      if (!this.selected.model_path) {
-        this.errors.model_path = "Choose a model."
+      if (!this.selected.model_name) {
+        this.errors.model_name = "Choose a model."
         isValid = false
       }
 
       // Prediction Type
       if (this.selected.mode === "file") {  // File mode
         // File Selection
-        if (!this.selected.data_path) {
-          this.errors.data_path = "Choose a file."
+        if (!this.selected.data_name) {
+          this.errors.data_name = "Choose a file."
           isValid = false
         }
         // Results Saved as
