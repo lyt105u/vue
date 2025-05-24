@@ -1,4 +1,12 @@
 # usage: python uploadSambaFile.py a2556 rkothebest51 "\\LAPTOP-BENDAENK\tmp\高醫訓練csv.csv" upload
+# usage: python uploadSambaFile.py a2556 rkothebest51 "\\LAPTOP-BOEB9U25\tmp\高醫訓練csv.csv" upload
+
+import subprocess
+import sys
+subprocess.check_call(
+    [sys.executable, "-m", "pip", "install", "smbprotocol==1.15.0"],
+    stdout=subprocess.DEVNULL
+)
 import smbclient
 import shutil
 import argparse
