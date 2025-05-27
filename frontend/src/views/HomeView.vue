@@ -1,9 +1,12 @@
 <template>
   <div class="home">
     <img alt="Vue logo" src="../assets/logo.png">
-    <h1>MLAS v0.5</h1>
-    <p>presented on 2025/04/30</p>
-    <HelloWorld msg="Welcome to Your Vue.js App"/>
+    <h1>{{ $t('title') }}</h1>
+    <p>{{ $t('presented') }}</p>
+    <!-- <HelloWorld msg="Welcome to Your Vue.js App"/> -->
+    <select class="form-select" v-model="$i18n.locale">
+      <option v-for="locale in $i18n.availableLocales" :key="`locale-${locale}`" :value="locale">{{ localeLabels[locale] }}</option>
+    </select>
   </div>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 </template>
@@ -14,6 +17,28 @@
 
 export default {
   name: 'HomeView',
-  components: {}
+  components: {},
+  data() {
+    return {
+      localeLabels: {
+        en: 'English',
+        zh: '中文',
+      }
+    }
+  },
 }
 </script>
+
+
+<style scoped>
+.home {
+  display: flex;
+  flex-direction: column;
+  align-items: center;      /* 水平置中 */
+  min-height: 100vh;        /* 占滿整個視窗高度 */
+  text-align: center;       /* 文字置中 */
+}
+select {
+   width: 200px;
+}
+</style>

@@ -1,6 +1,7 @@
 <template>
   <div class="about">
     <h1>Predict</h1>
+    {{ $t('presented') }}
   </div>
 
   <div class="bd-example-snippet bd-code-snippet">
