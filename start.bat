@@ -1,5 +1,5 @@
 @echo off
-start cmd /k "cd /d frontend\ && npm run serve"
+start cmd /k "cd /d frontend\ && npm install && npm run serve"
 start cmd /k "cd /d backend\ && myenv\Scripts\activate && pip install -r requirements.txt && python tool_checkVersion.py && python app.py"
 
 REM 等待後端啟動 (假設 Flask 運行在 http://127.0.0.1:5000)
