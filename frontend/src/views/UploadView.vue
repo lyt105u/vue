@@ -1,6 +1,6 @@
 <template>
   <div class="about">
-    <h1>Upload</h1>
+    <h1>{{ $t('lblUpload') }}</h1>
   </div>
 
   <!-- tab -->
@@ -10,7 +10,7 @@
         :class="{ active: selected.mode === 'local' }"
         @click="selected.mode = 'local'"
         href="#">
-        <i class="fa fa-upload me-1"></i> Local
+        <i class="fa fa-upload me-1"></i> {{ $t('lblUpload') }}
       </a>
     </li>
     <li class="nav-item">
@@ -18,7 +18,7 @@
         :class="{ active: selected.mode === 'samba' }"
         @click="selected.mode = 'samba'"
         href="#">
-        <i class="fa fa-cloud me-1"></i> Samba 
+        <i class="fa fa-cloud me-1"></i> {{ $t('lblSamba') }} 
       </a>
     </li>
   </ul>
@@ -28,7 +28,7 @@
     <template v-if="selected.mode=='local'">
       <!-- File Selection -->
       <div class="row mb-3">
-        <label class="col-sm-3 col-form-label">File Selection</label>
+        <label class="col-sm-3 col-form-label">{{ $t('lblFileSelection') }}</label>
         <div class="col-sm-8">
           <input @change="handleFileChange" v-if="showInput" type="file" class="form-control" :disabled="loading">
           <div v-if="errors.file" class="text-danger small">{{ errors.file }}</div>
@@ -40,7 +40,7 @@
     <template v-if="selected.mode=='samba'">
       <!-- User Name -->
       <div class="row mb-3">
-        <label class="col-sm-3 col-form-label">User Name</label>
+        <label class="col-sm-3 col-form-label">{{ $t('lblUserName') }}</label>
         <div class="col-sm-8">
           <input v-model="selected.username" class="form-control" type="text" :disabled="loading">
           <div v-if="errors.username" class="text-danger small">{{ errors.username }}</div>
@@ -49,7 +49,7 @@
 
       <!-- Password -->
       <div class="row mb-3">
-        <label class="col-sm-3 col-form-label">Password</label>
+        <label class="col-sm-3 col-form-label">{{ $t('lblPassword') }}</label>
         <div class="col-sm-8">
           <input v-model="selected.password" class="form-control" type="password" :disabled="loading">
           <div v-if="errors.password" class="text-danger small">{{ errors.password }}</div>
@@ -58,7 +58,7 @@
 
       <!-- Remote Path -->
       <div class="row mb-3">
-        <label class="col-sm-3 col-form-label">Remote Path</label>
+        <label class="col-sm-3 col-form-label">{{ $t('lblRemotePath') }}</label>
         <div class="col-sm-8">
           <input v-model="selected.remote_path" class="form-control" type="text" :disabled="loading">
           <div v-if="errors.remote_path" class="text-danger small">{{ errors.remote_path }}</div>
@@ -68,7 +68,7 @@
 
     <!-- button -->
     <div class="col-12">
-      <button v-if="!loading" type="submit" class="btn btn-primary">Upload</button>
+      <button v-if="!loading" type="submit" class="btn btn-primary">{{ $t('lblUpload') }}</button>
       <button v-if="loading" class="btn btn-primary" type="button" disabled>
         <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
       </button>
@@ -193,18 +193,18 @@ export default {
           }
         })
         if (response.data.status == "success") {
-          this.modal.title = 'Success'
-          this.modal.content = 'Upload `' + this.selected.file + '` successfully.'
+          this.modal.title = this.$t('lblSuccess')
+          this.modal.content = this.$t('msgUploadSuccess', { filename: this.selected.file })
           this.modal.icon = 'success'
           this.openModalNotification()
         } else if (response.data.status == "error") {
-          this.modal.title = 'Error'
+          this.modal.title = this.$t('lblError')
           this.modal.content = response.data.message
           this.modal.icon = 'error'
           this.openModalNotification()
         }
       } catch (error) {
-        this.modal.title = 'Error'
+        this.modal.title = this.$t('lblError')
         this.modal.content = error
         this.modal.icon = 'error'
         this.openModalNotification()
@@ -231,18 +231,18 @@ export default {
         if (response.data.status == "success") {
           const parts = this.selected.remote_path.split(/[/\\]+/)
           const filename = parts[parts.length - 1]
-          this.modal.title = 'Success'
-          this.modal.content = 'Upload `' + filename + '` successfully.'
+          this.modal.title = this.$t('lblSuccess')
+          this.modal.content = this.$t('msgUploadSuccess', { filename: filename })
           this.modal.icon = 'success'
           this.openModalNotification()
         } else if (response.data.status == "error") {
-          this.modal.title = 'Error'
+          this.modal.title = this.$t('lblError')
           this.modal.content = response.data.message
           this.modal.icon = 'error'
           this.openModalNotification()
         }
       } catch (error) {
-        this.modal.title = 'Error'
+        this.modal.title = this.$t('lblError')
         this.modal.content = error
         this.modal.icon = 'error'
         this.openModalNotification()

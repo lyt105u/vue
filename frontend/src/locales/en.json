@@ -1,5 +1,27 @@
 {
-  "title": "MLAS v0.5",
-  "presented": "presented on 2025/04/30",
-  "language": "English"
+  "lblMlas": "MLAS",
+  "lblHome": "Home",
+  "lblUpload": "Upload",
+  "lblTrain": "Train",
+  "lblPredict": "Predict",
+  "lblTrainedModel": "Trained Model",
+  "lblPredictionType": "Prediction Type",
+  "lblFilePrediction": "File Prediction",
+  "lblManualInput": "Manual Input",
+  "lblFileSelection": "File Selection",
+  "lblPreview": "Preview",
+  "lblResultsSavedAs": "Results saved as",
+  "lblOutcomeColumn": "Outcsome Column",
+  "lblError": "Error",
+  "lblDelete": "Delete",
+  "lblCancel": "Cancel",
+  "lblSamba": "Samba",
+  "lblUserName": "User Name",
+  "lblPassword": "Password",
+  "lblRemotePath": "Remote Path",
+  "lblSuccess": "Success",
+  "lblTrainingCompleted": "Training Completed",
+  
+  "msgPreviewCaption": "Showing first 10 rows (total:{count} rows)",
+  "msgUploadSuccess": "Upload `{filename}` successfully."
 }

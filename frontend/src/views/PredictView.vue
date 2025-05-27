@@ -1,7 +1,6 @@
 <template>
   <div class="about">
-    <h1>Predict</h1>
-    {{ $t('presented') }}
+    <h1>{{ $t('lblPredict') }}</h1>
   </div>
 
   <div class="bd-example-snippet bd-code-snippet">
@@ -13,7 +12,7 @@
   <form class="row g-3" @submit.prevent="runPredict" style="margin-top: 16px">
     <!-- Trained Model -->
     <div class="row mb-3">
-      <label for="inputEmail3" class="col-sm-3 col-form-label">Trained Model</label>
+      <label for="inputEmail3" class="col-sm-3 col-form-label">{{ $t('lblTrainedModel') }}</label>
       <div class="col-sm-8">
         <select class="form-select" aria-label="Small select example" v-model="selected.model_name" :disabled="loading">
           <option v-for="model in modelOptions" :key="model" :value="model">
@@ -26,12 +25,12 @@
 
     <!-- Prediction Type -->
     <div class="row mb-3">
-      <label for="inputEmail3" class="col-sm-3 col-form-label">Prediction Type</label>
+      <label for="inputEmail3" class="col-sm-3 col-form-label">{{ $t('lblPredictionType') }}</label>
       <div class="col-sm-4">
         <div class="form-check">
           <input v-model="selected.mode" class="form-check-input" type="radio" name="gridRadios" id="gridRadios1_file" value="file"  :disabled="loading">
           <label class="form-check-label" for="gridRadios1">
-            File Prediction
+            {{ $t('lblFilePrediction') }}
           </label>
         </div>
       </div>
@@ -39,7 +38,7 @@
         <div class="form-check">
           <input v-model="selected.mode" class="form-check-input" type="radio" name="gridRadios" id="gridRadios1_input" value="input"  :disabled="loading">
           <label class="form-check-label" for="gridRadios1">
-            Manual Input
+            {{ $t('lblManualInput') }}
           </label>
         </div>
       </div>
@@ -48,7 +47,7 @@
     <template v-if="selected.mode=='file'">
       <!-- File Selection -->
       <div class="row mb-3">
-        <label for="inputEmail3" class="col-sm-3 col-form-label">File Selection</label>
+        <label for="inputEmail3" class="col-sm-3 col-form-label">{{ $t('lblFileSelection') }}</label>
         <div class="col-sm-8">
           <select class="form-select" aria-label="Small select example" v-model="selected.data_name" :disabled="loading">
             <option v-for="file in fileOptions" :key="file" :value="file">
@@ -58,7 +57,7 @@
           <div v-if="errors.data_name" class="text-danger small">{{ errors.data_name }}</div>
         </div>
         <div class="col-sm-1">
-          <button v-if="preview_data.columns != 0" class="btn btn-outline-primary" type="button" @click="toggleCollapse" :disabled="loading">Preview</button>
+          <button v-if="preview_data.columns != 0" class="btn btn-outline-primary" style="white-space: nowrap" type="button" @click="toggleCollapse" :disabled="loading">{{ $t('lblPreview') }}</button>
         </div>
       </div>
 
@@ -68,7 +67,7 @@
           <div class="card card-body">
             <div class="table-responsive">
               <table class="table">
-                <caption> Showing first 10 rows (total: {{ preview_data.total_rows }} rows) </caption>
+                <caption>{{ $t('msgPreviewCaption', { count: preview_data.total_rows }) }}</caption>
                 <thead>
                   <tr>
                     <th v-for="col in preview_data.columns" :key="col">
@@ -91,7 +90,7 @@
 
       <!-- Results Saved as -->
       <div class="row mb-3">
-        <label for="inputEmail3" class="col-sm-3 col-form-label">Results Saved as</label>
+        <label for="inputEmail3" class="col-sm-3 col-form-label">{{ $t('lblResultsSavedAs') }}</label>
         <div class="col-sm-8">
           <div class="input-group">
             <input v-model="selected.output_name" class="form-control" type="text" :disabled="loading">
@@ -103,7 +102,7 @@
       
       <!-- Outcome Column -->
       <div class="row mb-3">
-        <label for="inputEmail3" class="col-sm-3 col-form-label">Outcome Column</label>
+        <label for="inputEmail3" class="col-sm-3 col-form-label">{{ $t('lblOutcomeColumn') }}</label>
         <div class="col-sm-8">
           <input v-model="selected.label_column" class="form-control" type="text" :disabled="loading">
           <div v-if="errors.label_column" class="text-danger small">{{ errors.label_column }}</div>
@@ -116,7 +115,7 @@
       <div class="row mb-3" v-for="(row, rowIndex) in rows" :key="rowIndex">
         <!-- 第一行顯示，其他行保持空白，排版用 -->
         <label for="inputEmail3" class="col-sm-3 col-form-label">
-          {{ rowIndex === 0 ? "Manual Input" : "" }}
+          {{ rowIndex === 0 ? $t('lblManualInputOnly') : "" }}
         </label>
 
         <div v-for="(field, fieldIndex) in row" :key="`${rowIndex}-${fieldIndex}`" class="col-sm-2">
@@ -142,7 +141,7 @@
     
     <!-- button -->
     <div class="col-12">
-      <button v-if="!loading" type="submit" class="btn btn-primary">Predict</button>
+      <button v-if="!loading" type="submit" class="btn btn-primary">{{ $t('lblPredict') }}</button>
       <button v-if="loading" class="btn btn-primary" type="button" disabled>
         <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
       </button>
@@ -166,7 +165,7 @@
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
   <ModalNotification ref="modalNotification" :title="modal.title" :content="modal.content" :icon="modal.icon" />
-  <ModalNotification ref="modalMissingDataRef" :title="modal.title" :content="modal.content" :icon="modal.icon" :primaryButton="{ text: 'Delete', onClick: deleteMissingData }" :secondaryButton="{ text: 'Cancel', onClick: closeModalMissingData }" />
+  <ModalNotification ref="modalMissingDataRef" :title="modal.title" :content="modal.content" :icon="modal.icon" :primaryButton="modalButtons.primary" :secondaryButton="modalButtons.secondary" />
 </template>
 
 <script>
@@ -222,6 +221,20 @@ export default {
       }
       return result;
     },
+
+    modalButtons() {
+    return {
+      primary: {
+        text: this.$t('lblDelete'),
+        onClick: this.deleteMissingData,
+      },
+      secondary: {
+        text: this.$t('lblCancel'),
+        onClick: this.closeModalMissingData,
+      }
+    }
+  }
+
   },
   watch: {
     async "selected.model_name"() {
@@ -260,7 +273,7 @@ export default {
         if (response.data.status == "success") {
           this.modelOptions = response.data.files
         } else if (response.data.status == "error") {
-          this.modal.title = 'Error'
+          this.modal.title = this.$t('lblError')
           this.modal.content = response.data.message
           this.modal.icon = 'error'
           this.openModalNotification()
@@ -268,7 +281,7 @@ export default {
           return
         }
       } catch (error) {
-        this.modal.title = 'Error'
+        this.modal.title = this.$t('lblError')
         this.modal.content = error
         this.modal.icon = 'error'
         this.openModalNotification()
@@ -285,13 +298,13 @@ export default {
         if (response.data.status == "success") {
           this.fileOptions = response.data.files
         } else if (response.data.status == "error") {
-          this.modal.title = 'Error'
+          this.modal.title = this.$t('lblError')
           this.modal.content = response.data.message
           this.modal.icon = 'error'
           this.openModalNotification()
         }
       } catch (error) {
-        this.modal.title = 'Error'
+        this.modal.title = this.$t('lblError')
         this.modal.content = error
         this.modal.icon = 'error'
         this.openModalNotification()
@@ -319,13 +332,13 @@ export default {
           if (response.data.status == "success") {
             this.selected.input_values = Array(response.data.field_count).fill("");
           } else if (response.data.status == "error") {
-            this.modal.title = 'Error'
+            this.modal.title = this.$t('lblError')
             this.modal.content = response.data.message
             this.modal.icon = 'error'
             this.openModalNotification()
           }
         } catch (error) {
-          this.modal.title = 'Error'
+          this.modal.title = this.$t('lblError')
           this.modal.content = error
           this.modal.icon = 'error'
           this.openModalNotification()
@@ -343,12 +356,12 @@ export default {
         if (response.data.status == "success") {
           this.preview_data = response.data.preview_data
         } else if (response.data.status == "errorMissing") {
-          this.modal.title = 'Error'
+          this.modal.title = this.$t('lblError')
           this.modal.content = response.data.message + '\nDo you want to delete these rows?'
           this.modal.icon = 'error'
           this.openModalMissingData()
         } else if (response.data.status == "error") {
-          this.modal.title = 'Error'
+          this.modal.title = this.$t('lblError')
           this.modal.content = response.data.message
           this.modal.icon = 'error'
           this.initPreviewData()
@@ -356,7 +369,7 @@ export default {
           this.openModalNotification()
         }
       } catch (error) {
-        this.modal.title = 'Error'
+        this.modal.title = this.$t('lblError')
         this.modal.content = error
         this.modal.icon = 'error'
         this.openModalNotification()
@@ -404,7 +417,7 @@ export default {
         if (response.data.status == "success") {
           await this.previewTab()
         } else if (response.data.status == "error") {
-          this.modal.title = 'Error'
+          this.modal.title = this.$t('lblError')
           this.modal.content = response.data.message
           this.modal.icon = 'error'
           this.openModalNotification()
@@ -412,7 +425,7 @@ export default {
           this.selected.data_name = ''
         }
       } catch (error) {
-        this.modal.title = 'Error'
+        this.modal.title = this.$t('lblError')
         this.modal.content = error
         this.modal.icon = 'error'
         this.initPreviewData()
@@ -490,7 +503,7 @@ export default {
         })
         if (response.data.status == "success") {
           this.output = response.data
-          this.modal.title = 'Training completed'
+          this.modal.title = this.$t('lblTrainingCompleted')
           this.modal.icon = 'success'
           if (this.selected.mode === 'file') {
             this.modal.content = 'Results file downloaded.'
@@ -503,7 +516,7 @@ export default {
           }
           this.openModalNotification()
         } else if (response.data.status == "error") {
-          this.modal.title = 'Error'
+          this.modal.title = this.$t('lblError')
           this.modal.content = response.data.message
           this.modal.icon = 'error'
           this.openModalNotification()
@@ -513,7 +526,7 @@ export default {
           status: 'error',
           message: error,
         }
-        this.modal.title = 'Error'
+        this.modal.title = this.$t('lblError')
         this.modal.icon = 'error'
         this.modal.content = error
         this.openModalNotification()

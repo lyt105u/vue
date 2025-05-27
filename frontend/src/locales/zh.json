@@ -1,5 +1,27 @@
 {
-  "title": "MLAS v0.5",
-  "presented": "發表於 2025/04/30",
-  "language": "中文"
+  "lblMlas": "MLAS",
+  "lblHome": "首頁",
+  "lblUpload": "上傳",
+  "lblTrain": "訓練",
+  "lblPredict": "預測",
+  "lblTrainedModel": "訓練模型",
+  "lblPredictionType": "預測類型",
+  "lblFilePrediction": "檔案預測",
+  "lblManualInput": "手動輸入",
+  "lblFileSelection": "檔案選擇",
+  "lblPreview": "預覽",
+  "lblResultsSavedAs": "結果儲存為",
+  "lblOutcomeColumn": "結果欄位",
+  "lblError": "錯誤",
+  "lblDelete": "刪除",
+  "lblCancel": "取消",
+  "lblSamba": "Samba",
+  "lblUserName": "使用者名稱",
+  "lblPassword": "密碼",
+  "lblRemotePath": "遠端路徑",
+  "lblSuccess": "成功",
+  "lblTrainingCompleted": "訓練完成",
+  
+  "msgPreviewCaption": "顯示前 10 筆資料（總共：{count} 筆）",
+  "msgUploadSuccess": "成功上傳 `{filename}`。"
 }

@@ -1,6 +1,7 @@
 <template>
   <!-- <NavBar /> -->
   <sidebar-menu
+    :key="$i18n.locale" 
     v-model:collapsed="collapsed"
     :menu="menu"
     :theme="selectedTheme"
@@ -55,44 +56,38 @@ export default {
     // SideBar,
     SidebarMenu,
   },
-  data() {
-    return {
-      menu: [
+  computed: {
+    menu() {
+      return [
         {
-          header: 'Main Navigation',
+          header: this.$t('lblMlas'),
           hiddenOnCollapse: true
         },
         {
           href: '/',
-          title: 'Home',
+          title: this.$t('lblHome'),
           icon: 'fa fa-home'
         },
         {
           href: '/upload',
-          title: 'Upload',
+          title: this.$t('lblUpload'),
           icon: 'fa fa-upload'
         },
         {
           href: '/train',
-          title: 'Train',
+          title: this.$t('lblTrain'),
           icon: 'fa fa-cogs'
         },
         {
           href: '/predict',
-          title: 'Predict',
+          title: this.$t('lblPredict'),
           icon: 'fa fa-line-chart'
-        },
-        // {
-        //   href: '/about',
-        //   title: 'Charts',
-        //   child: [
-        //     {
-        //       href: '/charts/sublink',
-        //       title: 'Sub Link'
-        //     }
-        //   ]
-        // }
-      ],
+        }
+      ]
+    }
+  },
+  data() {
+    return {
       collapsed: false,
       selectedTheme: 'white-theme',
       isOnMobile: false,

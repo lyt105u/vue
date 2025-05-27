@@ -1,8 +1,8 @@
 <template>
   <div class="home">
     <img alt="Vue logo" src="../assets/logo.png">
-    <h1>{{ $t('title') }}</h1>
-    <p>{{ $t('presented') }}</p>
+    <h1>{{ $t('lblMlas') }} v0.5</h1>
+    <p>2025/04/30</p>
     <!-- <HelloWorld msg="Welcome to Your Vue.js App"/> -->
     <select class="form-select" v-model="$i18n.locale">
       <option v-for="locale in $i18n.availableLocales" :key="`locale-${locale}`" :value="locale">{{ localeLabels[locale] }}</option>
