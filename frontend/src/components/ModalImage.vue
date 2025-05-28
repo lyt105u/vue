@@ -10,7 +10,7 @@
             <img :src="imageSrc" :alt="title" class="img-fluid" />
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ $t('lblClose') }}</button>
           </div>
         </div>
       </div>

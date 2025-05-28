@@ -3,7 +3,7 @@
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h1 class="modal-title fs-5" id="modalFormulaExplainLabel">Confusion Matrix & Metrics Explanation</h1>
+            <h1 class="modal-title fs-5" id="modalFormulaExplainLabel">{{ $t('lblConfusionMatrix') }} & {{ $t('lblMetricsExplanation') }}</h1>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
@@ -12,7 +12,7 @@
                 <table class="table table-sm table-bordered">
                   <thead>
                     <tr>
-                      <th scope="col" colspan="2">Confusion Matrix</th>
+                      <th scope="col" colspan="2">{{ $t('lblConfusionMatrix') }}</th>
                     </tr>
                   </thead>
                   <tbody>

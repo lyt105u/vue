@@ -1,6 +1,6 @@
 <template>
   <div class="about">
-    <h1>Train</h1>
+    <h1>{{ $t('lblTrain') }}</h1>
   </div>
   
   <div class="bd-example-snippet bd-code-snippet">
@@ -12,7 +12,7 @@
   <form class="row g-3 needs-validation" @submit.prevent="runTrain" style="margin-top: 16px">
     <!-- Model 種類 -->
     <div class="row mb-3">
-      <label for="inputEmail3" class="col-sm-3 col-form-label">Model Type</label>
+      <label for="inputEmail3" class="col-sm-3 col-form-label">{{ $t('lblModelType') }}</label>
       <div class="col-sm-8">
         <select class="form-select" aria-label="Small select example" v-model="selected.model_type" :disabled="loading">
           <option v-for="(label, value) in modelOptions" :key="value" :value="value">
@@ -26,7 +26,7 @@
     <!-- XGB 參數 -->
     <template v-if="selected.model_type=='xgb'">
       <div class="row mb-3">
-        <label for="inputEmail3" class="col-sm-3 col-form-label"> Parameters </label>
+        <label for="inputEmail3" class="col-sm-3 col-form-label"> {{ $t('lblParameter') }} </label>
         <div class="col-sm-2 form-floating">
           <!-- remove placeholder to cancel floating animation -->
           <input v-model="selected.xgb.n_estimators"
@@ -64,7 +64,7 @@
     <!-- LightGBM 參數 -->
     <template v-if="selected.model_type=='lightgbm'">
       <div class="row mb-3">
-        <label for="inputEmail3" class="col-sm-3 col-form-label"> Parameters </label>
+        <label for="inputEmail3" class="col-sm-3 col-form-label"> {{ $t('lblParameter') }} </label>
         <div class="col-sm-2 form-floating">
           <input v-model="selected.lgbm.n_estimators"
             type="text" 
@@ -111,7 +111,7 @@
     <!-- Random Forest 參數 -->
     <template v-if="selected.model_type=='random_forest'">
       <div class="row mb-3">
-        <label for="inputEmail3" class="col-sm-3 col-form-label"> Parameters </label>
+        <label for="inputEmail3" class="col-sm-3 col-form-label"> {{ $t('lblParameter') }} </label>
         <div class="col-sm-2 form-floating">
           <input v-model="selected.rf.n_estimators"
             type="text" 
@@ -158,7 +158,7 @@
     <!-- Logistic Regression 參數 -->
     <template v-if="selected.model_type=='logistic_regression'">
       <div class="row mb-3">
-        <label for="inputEmail3" class="col-sm-3 col-form-label"> Parameters </label>
+        <label for="inputEmail3" class="col-sm-3 col-form-label"> {{ $t('lblParameter') }} </label>
         <div class="col-sm-2 form-floating">
           <select v-model="selected.lr.penalty" class="form-select" id="floatingLrPenalty" :disabled="loading">
             <option v-for="(label, value) in rfPenaltyOptions" :key="value" :value="value">
@@ -203,7 +203,7 @@
     <!-- TabNet 參數 -->
     <template v-if="selected.model_type=='tabnet'">
       <div class="row mb-3">
-        <label for="inputEmail3" class="col-sm-3 col-form-label"> Parameters </label>
+        <label for="inputEmail3" class="col-sm-3 col-form-label"> {{ $t('lblParameter') }} </label>
         <div class="col-sm-2 form-floating">
           <input v-model="selected.tabnet.batch_size"
             type="text" 
@@ -240,7 +240,7 @@
     <!-- MLP 參數 -->
     <template v-if="selected.model_type=='mlp'">
       <div class="row mb-3">
-        <label for="inputEmail3" class="col-sm-3 col-form-label"> Parameters </label>
+        <label for="inputEmail3" class="col-sm-3 col-form-label"> {{ $t('lblParameter') }} </label>
         <div class="col-sm-2 form-floating">
           <input v-model="selected.mlp.hidden_layer_1"
             type="text" 
@@ -310,7 +310,7 @@
 
     <!-- 訓練資料 -->
     <div class="row mb-3">
-      <label class="col-sm-3 col-form-label">File Selection</label>
+      <label class="col-sm-3 col-form-label">{{ $t('lblFileSelection') }}</label>
       <div class="col-sm-8">
         <select class="form-select" aria-label="Small select example" v-model="selected.data" :disabled="loading">
           <option v-for="file in fileOptions" :key="file" :value="file">
@@ -320,7 +320,7 @@
         <div v-if="errors.label_column" class="text-danger small">{{ errors.label_column }}</div>
       </div>
       <div class="col-sm-1">
-        <button v-if="preview_data.columns != 0" class="btn btn-outline-primary" type="button" @click="toggleCollapse" :disabled="loading">Preview</button>
+        <button v-if="preview_data.columns != 0" class="btn btn-outline-primary" type="button" @click="toggleCollapse" :disabled="loading">{{ $t('lblPreview') }}</button>
       </div>
     </div>
 
@@ -330,7 +330,7 @@
         <div class="card card-body">
           <div class="table-responsive">
             <table class="table">
-              <caption> Showing first 10 rows (total: {{ preview_data.total_rows }} rows) </caption>
+              <caption>{{ $t('msgPreviewCaption', { count: preview_data.total_rows }) }}</caption>
               <thead>
                 <tr>
                   <th v-for="col in preview_data.columns" :key="col">
@@ -353,7 +353,7 @@
 
     <!-- Outcome 欄位 -->
     <div class="row mb-3">
-      <label for="inputEmail3" class="col-sm-3 col-form-label">Outcome Column</label>
+      <label for="inputEmail3" class="col-sm-3 col-form-label">{{ $t('lblOutcomeColumn') }}</label>
       <div class="col-sm-8">
         <select class="form-select" aria-label="Small select example" v-model="selected.label_column" :disabled="loading">
           <option v-for="column in preview_data.columns" :key="column" :value="column">
@@ -411,20 +411,20 @@
 
     <!-- 只留 train_test_split -->
     <div class="row mb-3">
-      <label for="inputEmail3" class="col-sm-3 col-form-label">Train Test Split</label>
+      <label for="inputEmail3" class="col-sm-3 col-form-label">{{ $t('lblTrainTestSplit') }}</label>
       <div class="col-sm-4 d-flex align-items-center">
         <input v-model="selected.split_value" type="range" class="form-range" min="0.5" max="0.9" step="0.1" :disabled="loading">
       </div>
       <div class="col-sm-4 d-flex align-items-center">
         <span id="passwordHelpInline" class="form-text">
-          Train: <strong>{{ selected.split_value}}</strong>, Test: {{ watched.test_size }}
+          {{ $t('lblTrain') }}: <strong>{{ selected.split_value}}</strong>, {{ $t('lblTest') }}: {{ watched.test_size }}
         </span>
       </div>
     </div>
 
     <!-- Model 儲存檔名 -->
     <div v-if="selected.split_strategy=='train_test_split'" class="row mb-3">
-      <label for="inputEmail3" class="col-sm-3 col-form-label">Model Saved as</label>
+      <label for="inputEmail3" class="col-sm-3 col-form-label">{{ $t('lblModelSavedAs') }}</label>
       <div class="col-sm-8">
         <div class="input-group">
           <input v-model="selected.model_name" class="form-control" type="text" :disabled="loading">
@@ -436,7 +436,7 @@
 
     <!-- button -->
     <div class="col-12">
-      <button v-if="!loading" type="submit" class="btn btn-primary">Train</button>
+      <button v-if="!loading" type="submit" class="btn btn-primary">{{ $t('lblTrain') }}</button>
       <button v-if="loading" class="btn btn-primary" type="button" disabled>
         <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
       </button>
@@ -453,7 +453,7 @@
   <!-- Results 標題 -->
   <div v-if="output" class="about">
     <h3>
-      Results
+      {{ $t('lblTrainingResult') }}
       <button style="border: none; background: none; cursor: pointer;" @click="openFormulaExplainModal">
         <i class="fa fa-question-circle" style="font-size:24px;color:lightblue"></i>
       </button>
@@ -465,7 +465,7 @@
     <div class="col">
       <div class="card mb-4 rounded-3 shadow-sm">
         <div class="card-header py-3">
-          <h4 class="my-0 fw-normal">Result</h4>
+          <h4 class="my-0 fw-normal">{{ $t('lblTrainingResult') }}</h4>
         </div>
         <div class="card-body">
           <ul class="list-unstyled mt-3 mb-4">
@@ -474,7 +474,7 @@
                 <table class="table table-sm table-bordered">
                   <thead>
                     <tr>
-                      <th scope="col" colspan="2">Confusion Matrix</th>
+                      <th scope="col" colspan="2">{{ $t('lblConfusionMatrix') }}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -513,7 +513,7 @@
                   <table class="table table-sm table-bordered">
                     <thead>
                       <tr>
-                        <th scope="col" colspan="2">Confusion Matrix</th>
+                        <th scope="col" colspan="2">{{ $t('lblConfusionMatrix') }}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -544,11 +544,11 @@
 
     <!-- ROC 曲線 -->
     <div class="col">
-      <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalImage('ROC Curve', imageRoc)" style="cursor: pointer;">
+      <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalImage($t('lblRocCurve'), imageRoc)" style="cursor: pointer;">
         <div class="card-header py-3">
-          <h4 class="my-0 fw-normal">ROC Curve</h4>
+          <h4 class="my-0 fw-normal">{{ $t('lblRocCurve') }}</h4>
         </div>
-        <img :src="imageRoc" alt="ROC Curve" />
+        <img :src="imageRoc" :alt="$t('lblRocCurve')" />
       </div>
     </div>
 
@@ -556,9 +556,9 @@
     <div class="col">
       <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalShap(imageShap, output.shap_importance)" style="cursor: pointer;">
         <div class="card-header py-3">
-          <h4 class="my-0 fw-normal">SHAP</h4>
+          <h4 class="my-0 fw-normal">{{ $t('lblShpa') }}</h4>
         </div>
-        <img :src="imageShap" alt="SHAP" />
+        <img :src="imageShap" :alt="$t('lblShpa')" />
       </div>
     </div>
 
@@ -566,17 +566,17 @@
     <div class="col">
       <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalLime(imageLime, output.lime_example_0)" style="cursor: pointer;">
         <div class="card-header py-3">
-          <h4 class="my-0 fw-normal">LIME</h4>
+          <h4 class="my-0 fw-normal">{{ $t('lblLime') }}</h4>
         </div>
-        <img :src="imageLime" alt="LIME" />
+        <img :src="imageLime" :alt="$t('lblLime')" />
       </div>
     </div>
   </div>
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"> <!-- question mark icon -->
   <ModalNotification ref="modalNotification" :title="modal.title" :content="modal.content" :icon="modal.icon" />
-  <ModalNotification ref="modalMissingDataRef" :title="modal.title" :content="modal.content" :icon="modal.icon" :primaryButton="{ text: 'Delete', onClick: deleteMissingData }" :secondaryButton="{ text: 'Cancel', onClick: closeModalMissingData }" />
-  <ModalNotification ref="modalFinishTrainingRef" :title="modal.title" :content="modal.content" :icon="modal.icon" :primaryButton="{ text: 'Upload', onClick: uploadTrainedModel }" :secondaryButton="{ text: 'Close', onClick: closeModalFinishTraining }" />
+  <ModalNotification ref="modalMissingDataRef" :title="modal.title" :content="modal.content" :icon="modal.icon" :primaryButton="modalMissingData.primary" :secondaryButton="modalMissingData.secondary" />
+  <ModalNotification ref="modalFinishTrainingRef" :title="modal.title" :content="modal.content" :icon="modal.icon" :primaryButton="modalFinishTraining.primary" :secondaryButton="modalFinishTraining.secondary" />
   <ModalFormulaExplain ref="formulaExplainModal" />
   <ModalImage ref="modalImageRef" :title="modal.title" :imageSrc="modal.content"/>
   <ModalShap ref="modalShapRef" :imageSrc="modal.content" :shapImportance="modal.shap_importance" :columns="preview_data.columns"/>
@@ -709,7 +709,33 @@ export default {
     this.listFiles()
   },
   mounted() {},
-  computed: {},
+  computed: {
+    modalMissingData() {
+      return {
+        primary: {
+          text: this.$t('lblDelete'),
+          onClick: this.deleteMissingData,
+        },
+        secondary: {
+          text: this.$t('lblCancel'),
+          onClick: this.closeModalMissingData,
+        }
+      }
+    },
+
+    modalFinishTraining() {
+      return {
+        primary: {
+          text: this.$t('lblUpload'),
+          onClick: this.uploadTrainedModel,
+        },
+        secondary: {
+          text: this.$t('lblCancel'),
+          onClick: this.closeModalFinishTraining,
+        }
+      }
+    }
+  },
   watch: {
     "selected.split_strategy"() {
       if (this.selected.split_strategy == 'train_test_split') {
@@ -780,13 +806,13 @@ export default {
         if (response.data.status == "success") {
           this.fileOptions = response.data.files
         } else if (response.data.status == "error") {
-          this.modal.title = 'Error'
+          this.modal.title = this.$t('lblError')
           this.modal.content = response.data.message
           this.modal.icon = 'error'
           this.openModalNotification()
         }
       } catch (error) {
-        this.modal.title = 'Error'
+        this.modal.title = this.$t('lblError')
         this.modal.content = error
         this.modal.icon = 'error'
         this.openModalNotification()
@@ -826,7 +852,7 @@ export default {
         if (response.data.status == "success") {
           await this.previewTab()
         } else if (response.data.status == "error") {
-          this.modal.title = 'Error'
+          this.modal.title = this.$t('lblError')
           this.modal.content = response.data.message
           this.modal.icon = 'error'
           this.openModalNotification()
@@ -834,7 +860,7 @@ export default {
           this.selected.data = ''
         }
       } catch (error) {
-        this.modal.title = 'Error'
+        this.modal.title = this.$t('lblError')
         this.modal.content = error
         this.modal.icon = 'error'
         this.openModalNotification()
@@ -1010,12 +1036,12 @@ export default {
         if (response.data.status == "success") {
           this.preview_data = response.data.preview_data
         } else if (response.data.status == "errorMissing") {
-          this.modal.title = 'Error'
+          this.modal.title = this.$t('lblError')
           this.modal.content = response.data.message + '\nDo you want to delete these rows?'
           this.modal.icon = 'error'
           this.openModalMissingData()
         } else if (response.data.status == "error") {
-          this.modal.title = 'Error'
+          this.modal.title = this.$t('lblError')
           this.modal.content = response.data.message
           this.modal.icon = 'error'
           this.initPreviewData()
@@ -1023,7 +1049,7 @@ export default {
           this.openModalNotification()
         }
       } catch (error) {
-        this.modal.title = 'Error'
+        this.modal.title = this.$t('lblError')
         this.modal.content = error
         this.modal.icon = 'error'
         this.openModalNotification()
@@ -1118,12 +1144,12 @@ export default {
           const path = `model/${this.selected.model_name}${extension}`
           await this.downloadFile(path)
 
-          this.modal.title = 'Training Complete'
-          this.modal.content = 'Model trained successfully!\nDo you want to upload it as well?'
+          this.modal.title = this.$t('lblTrainingCompleted')
+          this.modal.content = this.$t('msgTrainingCompleted')
           this.modal.icon = 'success'
           this.openModalFinishTraining()
         } else if (this.output.status == 'error') {
-          this.modal.title = 'Error'
+          this.modal.title = this.$t('lblError')
           this.modal.content = this.output.message
           this.modal.icon = 'error'
           this.openModalNotification()
@@ -1226,17 +1252,18 @@ export default {
         })
         if (response.data.status == "success") {
           this.modal.title = 'Success'
-          this.modal.content = 'Upload `' + `model/${this.selected.model_name}${extension}` + '` successfully.'
+          const filename = `${this.selected.model_name}${extension}`
+          this.modal.content = this.$t('msgUploadSuccess', { filename })
           this.modal.icon = 'success'
           this.openModalNotification()
         } else if (response.data.status == "error") {
-          this.modal.title = 'Error'
+          this.modal.title = this.$t('lblError')
           this.modal.content = response.data.message
           this.modal.icon = 'error'
           this.openModalNotification()
         }
       } catch (error) {
-        this.modal.title = 'Error'
+        this.modal.title = this.$t('lblError')
         this.modal.content = error
         this.modal.icon = 'error'
         this.openModalNotification()

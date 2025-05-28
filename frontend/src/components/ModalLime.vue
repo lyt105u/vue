@@ -3,18 +3,18 @@
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header">
-          <h1 class="modal-title fs-5" id="modalImageLabel">SHAP</h1>
+          <h1 class="modal-title fs-5" id="modalImageLabel">{{ $t('lblLime') }}</h1>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <div class="mb-3">
             <small>
-              The following plot and table explain how individual feature conditions contributed to the model’s prediction for the first sample.
-              LIME builds a local interpretable model to approximate the complex model around this instance.
+              {{ $t('msgLimeExplanation1') }}
+              {{ $t('msgLimeExplanation2') }}
             </small>
           </div>
           <div class="text-center">
-            <img :src="imageSrc" alt="SHAP" class="img-fluid" />
+            <img :src="imageSrc" :alt="$t('lblLime')" class="img-fluid" />
           </div>
           <div>
             <!-- <small>
@@ -24,10 +24,10 @@
             <table class="table table-striped">
               <thead>
                 <tr>
-                  <th scope="col">Condition</th>
-                  <th scope="col">Feature</th>
-                  <th scope="col">Contribution</th>
-                  <th scope="col">Effect</th>
+                  <th scope="col">{{ $t('lblCondition') }}</th>
+                  <th scope="col">{{ $t('lblFeature') }}</th>
+                  <th scope="col">{{ $t('lblContribution') }}</th>
+                  <th scope="col">{{  $t('lblEffect') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -36,7 +36,7 @@
                   <td>{{ item.columnName }}</td>
                   <td>{{ item.weight.toFixed(4) }}</td>
                   <td :style="{ color: item.weight > 0 ? 'green' : 'red' }">
-                    {{ item.weight > 0 ? 'Increases prediction' : 'Decreases prediction' }}
+                    {{ item.weight > 0 ? $t('lblIncreasePrediction') : $t('lblDecreasePrediction') }}
                   </td>
                 </tr>
               </tbody>
@@ -44,7 +44,7 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ $t('lblClose') }}</button>
         </div>
       </div>
     </div>

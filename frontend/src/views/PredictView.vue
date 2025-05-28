@@ -223,17 +223,17 @@ export default {
     },
 
     modalButtons() {
-    return {
-      primary: {
-        text: this.$t('lblDelete'),
-        onClick: this.deleteMissingData,
-      },
-      secondary: {
-        text: this.$t('lblCancel'),
-        onClick: this.closeModalMissingData,
+      return {
+        primary: {
+          text: this.$t('lblDelete'),
+          onClick: this.deleteMissingData,
+        },
+        secondary: {
+          text: this.$t('lblCancel'),
+          onClick: this.closeModalMissingData,
+        }
       }
     }
-  }
 
   },
   watch: {
@@ -503,7 +503,7 @@ export default {
         })
         if (response.data.status == "success") {
           this.output = response.data
-          this.modal.title = this.$t('lblTrainingCompleted')
+          this.modal.title = this.$t('lblPredictionCompleted')
           this.modal.icon = 'success'
           if (this.selected.mode === 'file') {
             this.modal.content = 'Results file downloaded.'

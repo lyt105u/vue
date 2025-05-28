@@ -34,7 +34,7 @@
             @click="handleSecondaryClick"
             :data-bs-dismiss="secondaryButton.dismiss ? 'modal' : null"
           >
-            {{ secondaryButton.text || 'Close' }}
+            {{ secondaryButton.text || $t('lblClose') }}
           </button>
           <button
             v-if="primaryButton"
@@ -42,7 +42,7 @@
             class="btn btn-primary"
             @click="handlePrimaryClick"
           >
-            {{ primaryButton.text || 'OK' }}
+            {{ primaryButton.text || $t('lblOk') }}
           </button>
         </div>
       </div>
@@ -97,7 +97,7 @@ export default {
     secondaryButton: {
       type: Object,
       default: () => ({
-        text: 'Close',
+        text: this.$t('lblClose'),
         dismiss: true,
       }),
     },
