@@ -50,5 +50,12 @@
   "msgShapExplain1": "The SHAP plot below shows how each feature contributed to the model’s predictions across all test samples.",
   "msgShapExplain2": "Each dot represents a single sample. The horizontal position indicates how much a feature increased or decreased the model output.",
   "msgShapExplain3": "The values below represent the average absolute SHAP value for each feature across all samples.",
-  "msgShapExplain4": "A higher value means the feature tends to have a stronger influence on the model predictions."
+  "msgShapExplain4": "A higher value means the feature tends to have a stronger influence on the model predictions.",
+  "msgMissingDataFound": "Missing data found at the following cells:",
+  "msgConfirmDeleteRows": "Do you want to delete these rows?",
+
+  "msgValRequired": "This field is required.",
+  "msgValIntOnly": "Integer only.",
+  "msgValFloatOnly": "Floating point only.",
+  "msgValRequireLayer2": "layer_2 is required."
 }

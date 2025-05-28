@@ -143,23 +143,23 @@ export default {
       if (this.selected.mode == 'local') {
         // File Selection
         if (!this.selected.file) {
-          this.errors.file = "Choose a file."
+          this.errors.file = this.$t('msgValRequired')
           isValid = false
         }
       } else if (this.selected.mode == 'samba') {
         // User Name
         if (!this.selected.username) {
-          this.errors.username = "Require username."
+          this.errors.username = this.$t('msgValRequired')
           isValid = false
         }
         // Password
         if (!this.selected.password) {
-          this.errors.password = "Require password."
+          this.errors.password = this.$t('msgValRequired')
           isValid = false
         }
         // Remote Path
         if (!this.selected.remote_path) {
-          this.errors.remote_path = "Require remote path."
+          this.errors.remote_path = this.$t('msgValRequired')
           isValid = false
         }
       }

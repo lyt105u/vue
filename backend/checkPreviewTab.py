@@ -74,7 +74,7 @@ if __name__ == "__main__":
         if missing_coords:
             print(json.dumps({
                 "status": "errorMissing",
-                "message": f"Missing data: {missing_coords}"
+                "message": missing_coords
             }))
         else:
             preview_data = preview(df)

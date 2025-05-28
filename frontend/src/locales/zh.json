@@ -50,5 +50,12 @@
   "msgShapExplain1": "下方的 SHAP 圖顯示了每個特徵對模型在所有測試樣本中的預測結果所造成的影響。",
   "msgShapExplain2": "每個點代表一筆樣本，其在水平方向上的位置表示該特徵對模型輸出結果的正向或負向影響程度。",
   "msgShapExplain3": "下方的數值表示每個特徵在所有樣本中的平均 SHAP 絕對值。",
-  "msgShapExplain4": "數值越高表示該特徵對模型預測結果的影響越大。"
+  "msgShapExplain4": "數值越高表示該特徵對模型預測結果的影響越大。",
+  "msgMissingDataFound": "偵測到以下儲存格有缺失值：",
+  "msgConfirmDeleteRows": "是否要刪除這些資料列？",
+
+  "msgValRequired": "此為必填欄位",
+  "msgValIntOnly": "僅允許整數",
+  "msgValFloatOnly": "僅允許浮點數",
+  "msgValRequireLayer2": "請填layer_2"
 }

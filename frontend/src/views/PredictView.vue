@@ -357,7 +357,7 @@ export default {
           this.preview_data = response.data.preview_data
         } else if (response.data.status == "errorMissing") {
           this.modal.title = this.$t('lblError')
-          this.modal.content = response.data.message + '\nDo you want to delete these rows?'
+          this.modal.content = this.$t('msgMissingDataFound') + response.data.message + '\n' + this.$t('msgConfirmDeleteRows')
           this.modal.icon = 'error'
           this.openModalMissingData()
         } else if (response.data.status == "error") {

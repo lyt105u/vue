@@ -827,7 +827,7 @@ export default {
       }
       this.loading = true
 
-      // 從 message (Missing data: ['K3', 'O6']) 切割座標
+      // 從 message (['K3', 'O6']) 切割座標
       const match = this.modal.content.match(/\[(.*?)\]/)
       const missingCells = match[1]
         .split(',')
@@ -891,136 +891,136 @@ export default {
 
       // Model Type
       if (!this.selected.model_type) {
-        this.errors.model_type = "Choose a model."
+        this.errors.model_type = this.$t('msgValRequired')
         isValid = false
       }
 
       // Parameters
       if (this.selected.model_type === "xgb") {
         if (!this.selected.xgb.n_estimators || !this.isInt(this.selected.xgb.n_estimators)) {
-          this.errors.n_estimators = "Integer only."
+          this.errors.n_estimators = this.$t('msgValIntOnly')
           isValid = false
         }
         if (!this.selected.xgb.learning_rate || !this.isFloat(this.selected.xgb.learning_rate)) {
-          this.errors.learning_rate = "Floating point only."
+          this.errors.learning_rate = this.$t('msgValFloatOnly')
           isValid = false
         }
         if (!this.selected.xgb.max_depth || !this.isInt(this.selected.xgb.max_depth)) {
-          this.errors.max_depth = "Integer only."
+          this.errors.max_depth = this.$t('msgValIntOnly')
           isValid = false
         }
       } else if (this.selected.model_type === "lightgbm") {
         if (!this.selected.lgbm.n_estimators || !this.isInt(this.selected.lgbm.n_estimators)) {
-          this.errors.n_estimators = "Integer only."
+          this.errors.n_estimators = this.$t('msgValIntOnly')
           isValid = false
         }
         if (!this.selected.lgbm.learning_rate || !this.isFloat(this.selected.lgbm.learning_rate)) {
-          this.errors.learning_rate = "Floating point only."
+          this.errors.learning_rate = this.$t('msgValFloatOnly')
           isValid = false
         }
         if (!this.selected.lgbm.max_depth || !this.isInt(this.selected.lgbm.max_depth)) {
-          this.errors.max_depth = "Integer only."
+          this.errors.max_depth = this.$t('msgValIntOnly')
           isValid = false
         }
         if (!this.selected.lgbm.num_leaves || !this.isInt(this.selected.lgbm.num_leaves)) {
-          this.errors.num_leaves = "Integer only."
+          this.errors.num_leaves = this.$t('msgValIntOnly')
           isValid = false
         }
       } else if (this.selected.model_type === "random_forest") {
         if (!this.selected.rf.n_estimators || !this.isInt(this.selected.rf.n_estimators)) {
-          this.errors.n_estimators = "Integer only."
+          this.errors.n_estimators = this.$t('msgValIntOnly')
           isValid = false
         }
         if (!this.selected.rf.max_depth || !this.isInt(this.selected.rf.max_depth)) {
-          this.errors.max_depth = "Integer only."
+          this.errors.max_depth = this.$t('msgValIntOnly')
           isValid = false
         }
         if (!this.selected.rf.random_state || !this.isInt(this.selected.rf.random_state)) {
-          this.errors.random_state = "Integer only."
+          this.errors.random_state = this.$t('msgValIntOnly')
           isValid = false
         }
         if (!this.selected.rf.n_jobs || !this.isInt(this.selected.rf.n_jobs)) {
-          this.errors.n_jobs = "Integer only."
+          this.errors.n_jobs = this.$t('msgValIntOnly')
           isValid = false
         }
       } else if (this.selected.model_type === "logistic_regression") {
         if (!this.selected.lr.penalty) {
-          this.errors.penalty = "Choose a penalty."
+          this.errors.penalty = this.$t('msgValRequired')
           isValid = false
         }
         if (!this.selected.lr.C || !this.isFloat(this.selected.lr.C)) {
-          this.errors.C = "Floating point only."
+          this.errors.C = this.$t('msgValFloatOnly')
           isValid = false
         }
         if (!this.selected.lr.solver) {
-          this.errors.solver = "Choose a solver."
+          this.errors.solver = this.$t('msgValRequired')
           isValid = false
         }
         if (!this.selected.lr.max_iter || !this.isInt(this.selected.lr.max_iter)) {
-          this.errors.max_iter = "Integer only."
+          this.errors.max_iter = this.$t('msgValIntOnly')
           isValid = false
         }
       } else if (this.selected.model_type === "tabnet") {
         if (!this.selected.tabnet.batch_size || !this.isInt(this.selected.tabnet.batch_size)) {
-          this.errors.batch_size = "Integer only."
+          this.errors.batch_size = this.$t('msgValIntOnly')
           isValid = false
         }
         if (!this.selected.tabnet.max_epochs || !this.isInt(this.selected.tabnet.max_epochs)) {
-          this.errors.max_epochs = "Integer only."
+          this.errors.max_epochs = this.$t('msgValIntOnly')
           isValid = false
         }
         if (!this.selected.tabnet.patience || !this.isInt(this.selected.tabnet.patience)) {
-          this.errors.patience = "Integer only."
+          this.errors.patience = this.$t('msgValIntOnly')
           isValid = false
         }
       } else if (this.selected.model_type === "mlp") {
         if (!this.selected.mlp.hidden_layer_1 || !this.isInt(this.selected.mlp.hidden_layer_1)) {
-          this.errors.hidden_layer_1 = "Integer only."
+          this.errors.hidden_layer_1 = this.$t('msgValIntOnly')
           isValid = false
         }
         if (this.selected.mlp.hidden_layer_2 && !this.isInt(this.selected.mlp.hidden_layer_2)) {
-          this.errors.hidden_layer_2 = "Integer only."
+          this.errors.hidden_layer_2 = this.$t('msgValIntOnly')
           isValid = false
         }
         if (this.selected.mlp.hidden_layer_3) {
           if (!this.selected.mlp.hidden_layer_2) {
-            this.errors.hidden_layer_3 = "Require Layer 2."
+            this.errors.hidden_layer_3 = this.$t('msgValRequireLayer2')
             isValid = false
           }
           if (!this.isInt(this.selected.mlp.hidden_layer_3)) {
-            this.errors.hidden_layer_3 = "Integer only."
+            this.errors.hidden_layer_3 = this.$t('msgValIntOnly')
             isValid = false
           }
         }
         if (!this.selected.mlp.activation) {
-          this.errors.activation = "Choose an activation."
+          this.errors.activation = this.$t('msgValRequired')
           isValid = false
         }
         if (!this.selected.mlp.learning_rate_init || !this.isFloat(this.selected.mlp.learning_rate_init)) {
-          this.errors.learning_rate_init = "Floating point only."
+          this.errors.learning_rate_init = this.$t('msgValFloatOnly')
           isValid = false
         }
         if (!this.selected.mlp.max_iter || !this.isInt(this.selected.mlp.max_iter)) {
-          this.errors.max_iter = "Integer only."
+          this.errors.max_iter = this.$t('msgValIntOnly')
           isValid = false
         }
       }
 
       // File Selection (data)
       if (!this.selected.data) {
-        this.errors.data = "Choose a file."
+        this.errors.data = this.$t('msgValRequired')
         isValid = false
       }
 
       // Outcome Column (label_column)
       if (!this.selected.label_column) {
-        this.errors.label_column = "Outcome column is required."
+        this.errors.label_column = this.$t('msgValRequired')
         isValid = false
       }
 
       // Model Saved as (model_name)
       if (!this.selected.model_name) {
-        this.errors.model_name = "Model name is required."
+        this.errors.model_name = this.$t('msgValRequired')
         isValid = false
       }
 
@@ -1037,7 +1037,7 @@ export default {
           this.preview_data = response.data.preview_data
         } else if (response.data.status == "errorMissing") {
           this.modal.title = this.$t('lblError')
-          this.modal.content = response.data.message + '\nDo you want to delete these rows?'
+          this.modal.content = this.$t('msgMissingDataFound') + response.data.message + '\n' + this.$t('msgConfirmDeleteRows')
           this.modal.icon = 'error'
           this.openModalMissingData()
         } else if (response.data.status == "error") {
