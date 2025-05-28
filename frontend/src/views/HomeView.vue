@@ -1,7 +1,7 @@
 <template>
   <div class="home">
-    <img alt="Vue logo" src="../assets/logo.png">
-    <h1>{{ $t('lblMlas') }} v0.5</h1>
+    <img alt="Vue logo" src="../assets/logo2.png" style="max-width: 400px; max-height: 400px;">
+    <h1></h1>
     <p>2025/04/30</p>
     <!-- <HelloWorld msg="Welcome to Your Vue.js App"/> -->
     <select class="form-select" v-model="$i18n.locale">
