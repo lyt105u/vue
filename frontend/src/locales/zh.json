@@ -54,6 +54,7 @@
   "msgShapExplain4": "數值越高表示該特徵對模型預測結果的影響越大。",
   "msgMissingDataFound": "偵測到以下儲存格有缺失值：",
   "msgConfirmDeleteRows": "是否要刪除這些資料列？",
+  "msgFileDownloaded": "成功下載預測結果檔案。",
 
   "msgValRequired": "此為必填欄位",
   "msgValIntOnly": "僅允許整數",

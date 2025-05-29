@@ -449,7 +449,7 @@ export default {
 
       // Trained Model
       if (!this.selected.model_name) {
-        this.errors.model_name = "Choose a model."
+        this.errors.model_name = this.$t('msgValRequired')
         isValid = false
       }
 
@@ -457,17 +457,17 @@ export default {
       if (this.selected.mode === "file") {  // File mode
         // File Selection
         if (!this.selected.data_name) {
-          this.errors.data_name = "Choose a file."
+          this.errors.data_name = this.$t('msgValRequired')
           isValid = false
         }
         // Results Saved as
         if (!this.selected.output_name) {
-          this.errors.output_name = "Output name is required."
+          this.errors.output_name = this.$t('msgValRequired')
           isValid = false
         }
         // Outcome Column
         if (!this.selected.label_column) {
-          this.errors.label_column = "Outcome column is required."
+          this.errors.label_column = this.$t('msgValRequired')
           isValid = false
         }
       } else if (this.selected.mode === "input") {  // Input mode
@@ -475,7 +475,7 @@ export default {
         for (let i = 0; i < this.selected.input_values.length; i++) {
           let value = this.selected.input_values[i]
           if (!value || value.trim() === "") {
-            this.errors.input_values[i] = `Field ${i + 1} is required.`
+            this.errors.input_values[i] = this.$t('msgValRequired')
             isValid = false
           }
         }
@@ -506,7 +506,7 @@ export default {
           this.modal.title = this.$t('lblPredictionCompleted')
           this.modal.icon = 'success'
           if (this.selected.mode === 'file') {
-            this.modal.content = 'Results file downloaded.'
+            this.modal.content = this.$t('msgFileDownloaded')
             // download api
             // 結果檔案會暫時存在 data/result/ 裡面，懶得改了，牽動到 predict.py，好麻煩
             const path = `data/result/${this.selected.output_name}${this.watched.file_extension}`

@@ -54,6 +54,7 @@
   "msgShapExplain4": "A higher value means the feature tends to have a stronger influence on the model predictions.",
   "msgMissingDataFound": "Missing data found at the following cells:",
   "msgConfirmDeleteRows": "Do you want to delete these rows?",
+  "msgFileDownloaded": "Prediction result file has been downloaded.",
 
   "msgValRequired": "This field is required.",
   "msgValIntOnly": "Integer only.",
