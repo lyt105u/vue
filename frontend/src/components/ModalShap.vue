@@ -10,6 +10,7 @@
           <div class="mb-3">
             <small>
               {{ $t('msgShapExplain1') }}
+              <br>
               {{ $t('msgShapExplain2') }}
             </small>
           </div>
@@ -19,6 +20,7 @@
           <div>
             <small>
               {{ $t('msgShapExplain3') }}
+              <br>
               {{ $t('msgShapExplain4') }}
             </small>
             <table class="table table-striped">
