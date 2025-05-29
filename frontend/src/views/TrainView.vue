@@ -271,7 +271,7 @@
           <label for="floatingMlpHiddenLayer3" style="margin-left:9px;"> hidden_layer_3 </label>
           <div v-if="errors.hidden_layer_3" class="text-danger small">{{ errors.hidden_layer_3 }}</div>
         </div>
-        <div class="col-sm-3 form-text"> Leave hidden layer 2 or 3 blank if not needed. </div>
+        <div class="col-sm-3 form-text"> {{ $t('msgHiddenLayerHint') }} </div>
       </div>
 
       <div class="row mb-3">

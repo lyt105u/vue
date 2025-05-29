@@ -55,6 +55,7 @@
   "msgMissingDataFound": "Missing data found at the following cells:",
   "msgConfirmDeleteRows": "Do you want to delete these rows?",
   "msgFileDownloaded": "Prediction result file has been downloaded.",
+  "msgHiddenLayerHint": "Leave hidden_layer_2 or 3 blank if not needed.",
 
   "msgValRequired": "This field is required.",
   "msgValIntOnly": "Integer only.",

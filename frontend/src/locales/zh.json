@@ -55,6 +55,7 @@
   "msgMissingDataFound": "偵測到以下儲存格有缺失值：",
   "msgConfirmDeleteRows": "是否要刪除這些資料列？",
   "msgFileDownloaded": "成功下載預測結果檔案。",
+  "msgHiddenLayerHint": "若不需要，可將 hidden_layer_2 或 3 留空。",
 
   "msgValRequired": "此為必填欄位",
   "msgValIntOnly": "僅允許整數",
