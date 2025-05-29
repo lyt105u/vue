@@ -41,6 +41,7 @@
   "lblIncreasePrediction": "Increase Prediction",
   "lblDecreasePrediction": "Decrease Prediction",
   "lblOk": "OK",
+  "lblAvgShap": "Average SHAP Value",
   
   "msgPreviewCaption": "Showing first 10 rows (total:{count} rows)",
   "msgUploadSuccess": "Upload `{filename}` successfully.",

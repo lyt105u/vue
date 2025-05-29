@@ -28,7 +28,7 @@
   "lblModelSavedAs": "模型儲存為",
   "lblTrainingResult": "訓練結果",
   "lblConfusionMatrix": "混淆矩陣",
-  "lblRocCurve": "ROC曲線",
+  "lblRocCurve": "ROC 曲線",
   "lblShap": "SHAP",
   "lblLime": "LIME",
   "lblPredictionCompleted": "預測完成",
@@ -41,6 +41,7 @@
   "lblIncreasePrediction": "增加預測值",
   "lblDecreasePrediction": "降低預測值",
   "lblOk": "OK",
+  "lblAvgShap": "平均 SHAP 值",
   
   "msgPreviewCaption": "顯示前 10 筆資料（總共：{count} 筆）",
   "msgUploadSuccess": "成功上傳 `{filename}`。",
@@ -57,5 +58,5 @@
   "msgValRequired": "此為必填欄位",
   "msgValIntOnly": "僅允許整數",
   "msgValFloatOnly": "僅允許浮點數",
-  "msgValRequireLayer2": "請填layer_2"
+  "msgValRequireLayer2": "請填 layer_2"
 }

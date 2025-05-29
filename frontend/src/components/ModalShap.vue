@@ -25,8 +25,8 @@
               <thead>
                 <tr>
                   <th scope="col">#</th>
-                  <th scope="col">Feature</th>
-                  <th scope="col">Average SHAP Value</th>
+                  <th scope="col">{{ $t('lblFeature') }}</th>
+                  <th scope="col">{{ $t('lblAvgShap') }}</th>
                 </tr>
               </thead>
               <tbody>
