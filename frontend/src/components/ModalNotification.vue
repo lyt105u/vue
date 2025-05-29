@@ -97,7 +97,7 @@ export default {
     secondaryButton: {
       type: Object,
       default: () => ({
-        text: this.$t('lblClose'),
+        text: '',
         dismiss: true,
       }),
     },
