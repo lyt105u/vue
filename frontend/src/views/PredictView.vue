@@ -115,7 +115,7 @@
       <div class="row mb-3" v-for="(row, rowIndex) in rows" :key="rowIndex">
         <!-- 第一行顯示，其他行保持空白，排版用 -->
         <label for="inputEmail3" class="col-sm-3 col-form-label">
-          {{ rowIndex === 0 ? $t('lblManualInputOnly') : "" }}
+          {{ rowIndex === 0 ? $t('lblManualInput') : "" }}
         </label>
 
         <div v-for="(field, fieldIndex) in row" :key="`${rowIndex}-${fieldIndex}`" class="col-sm-2">
@@ -127,6 +127,7 @@
               :id="`floatingInput-${rowIndex}-${fieldIndex}`" 
               :placeholder="`Field ${rowIndex * 4 + fieldIndex + 1}`"
               :disabled="loading"
+              autocomplete="off"
             />
             <label :for="`floatingInput-${rowIndex}-${fieldIndex}`">
               {{ rowIndex * 4 + fieldIndex + 1 }}
@@ -158,9 +159,9 @@
   <!-- output -->
   <div v-if="output" class="about">
     <h3>
-      Results
+      {{ $t('lblPredictionResult') }}
     </h3>
-    {{ output }}
+    {{ modal.content }}
   </div>
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
@@ -512,7 +513,7 @@ export default {
             const path = `data/result/${this.selected.output_name}${this.watched.file_extension}`
             await this.downloadFile(path)
           } else if (this.selected.mode === 'input') {
-            this.modal.content = this.output.message[0]
+            this.modal.content = this.$t('lblPredictionResult') + ':' + this.output.message[0]
           }
           this.openModalNotification()
         } else if (response.data.status == "error") {
