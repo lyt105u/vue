@@ -22,6 +22,9 @@ subprocess.check_call(
 )
 import shap
 from lime.lime_tabular import LimeTabularExplainer
+from sklearn.pipeline import Pipeline
+# from pytorch_tabnet.tab_model import TabNetClassifier
+from sklearn.neural_network import MLPClassifier
 
 def prepare_data(file_path, label_column):
     if file_path.endswith(".csv"):
@@ -175,26 +178,71 @@ def evaluate_model(y_test, y_pred, model, x_test):
 
     # === SHAP Explain ===
     try:
-        x_test = x_test.astype(float)
-        explainer = shap.Explainer(model, x_test)
-        shap_values = explainer(x_test)
+        x_test = np.array(x_test, dtype=np.float32)
+        # Pipeline (Logistic Regression)
+        if isinstance(model, Pipeline) and "logisticregression" in model.named_steps:
+            estimator = model.named_steps["logisticregression"]
+            scaler = model.named_steps["standardscaler"]
+            x_scaled = scaler.transform(x_test)
 
-        # 平均重要度（純數值）
-        shap_importance = np.abs(shap_values.values).mean(axis=0)
+            explainer = shap.LinearExplainer(estimator, x_scaled, feature_perturbation="interventional")
+            shap_values = explainer.shap_values(x_scaled)
+
+            if isinstance(shap_values, list):
+                shap_values_for_plot = shap_values[1]
+            else:
+                shap_values_for_plot = shap_values
+
+            shap_data = x_scaled
+
+        elif isinstance(model, MLPClassifier):
+            # 只取少量資料以避免 KernelExplainer 過慢
+            background = x_test[:10]
+            explain_target = x_test[:5]
+
+            explainer = shap.KernelExplainer(model.predict_proba, background)
+            shap_values = explainer.shap_values(explain_target)
+
+            if isinstance(shap_values, list):
+                shap_values_for_plot = np.array(shap_values[1])  # binary: class 1
+            else:
+                shap_values_for_plot = np.array(shap_values)
+
+            shap_data = np.array(explain_target)
+
+            # 修正 shape 避免 summary_plot 出錯
+            if shap_values_for_plot.ndim == 3 and shap_values_for_plot.shape[-1] == 2:
+                shap_values_for_plot = shap_values_for_plot[..., 1]
+
+                # 其他模型（Tree-based or compatible）
+        else:
+            explainer = shap.Explainer(model, x_test)
+            shap_values = explainer(x_test)
+
+            if hasattr(shap_values, "values") and shap_values.values.ndim == 3:
+                shap_values_for_plot = shap_values.values[..., 1]
+            else:
+                shap_values_for_plot = shap_values.values
+
+            shap_data = shap_values.data
+
+        # 平均重要度
+        shap_importance = np.abs(shap_values_for_plot).mean(axis=0)
         result["shap_importance"] = {
-            f"feature_{i}": float(val)
-            for i, val in enumerate(shap_importance)
+            f"feature_{i}": float(val) for i, val in enumerate(shap_importance)
         }
 
-        # SHAP summary beeswarm 圖 → base64
-        plt.figure(figsize=(10, 6))  # 設定較大的圖尺寸
-        shap.plots.beeswarm(shap_values, show=False)
-        plt.tight_layout()  # 自動調整 layout，避免圖被裁
+        # beeswarm plot
+        plt.figure(figsize=(10, 6))
+        shap.summary_plot(shap_values_for_plot, shap_data, show=False)
+        plt.tight_layout()
         buf = io.BytesIO()
         plt.savefig(buf, format='png')
         buf.seek(0)
-        result["shap_plot"] = base64.b64encode(buf.getvalue()).decode('utf-8')
+        result["shap_plot"] = base64.b64encode(buf.getvalue()).decode("utf-8")
         buf.close()
+        plt.close()
+
     except Exception as e:
         result["shap_error"] = str(e)
 

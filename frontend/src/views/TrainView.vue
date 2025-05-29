@@ -317,10 +317,10 @@
             {{ file }}
           </option>
         </select>
-        <div v-if="errors.label_column" class="text-danger small">{{ errors.label_column }}</div>
+        <div v-if="errors.data" class="text-danger small">{{ errors.data }}</div>
       </div>
       <div class="col-sm-1">
-        <button v-if="preview_data.columns != 0" class="btn btn-outline-primary" type="button" @click="toggleCollapse" :disabled="loading">{{ $t('lblPreview') }}</button>
+        <button v-if="preview_data.columns != 0" class="btn btn-outline-primary" style="white-space: nowrap" type="button" @click="toggleCollapse" :disabled="loading">{{ $t('lblPreview') }}</button>
       </div>
     </div>
 
@@ -553,17 +553,17 @@
     </div>
 
     <!-- SHAP -->
-    <div class="col">
+    <div v-if="!output.shap_error" class="col">
       <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalShap(imageShap, output.shap_importance)" style="cursor: pointer;">
         <div class="card-header py-3">
-          <h4 class="my-0 fw-normal">{{ $t('lblShpa') }}</h4>
+          <h4 class="my-0 fw-normal">{{ $t('lblShap') }}</h4>
         </div>
-        <img :src="imageShap" :alt="$t('lblShpa')" />
+        <img :src="imageShap" :alt="$t('lblShap')" />
       </div>
     </div>
 
     <!-- LIME -->
-    <div class="col">
+    <div v-if="!output.lime_error" class="col">
       <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalLime(imageLime, output.lime_example_0)" style="cursor: pointer;">
         <div class="card-header py-3">
           <h4 class="my-0 fw-normal">{{ $t('lblLime') }}</h4>
@@ -1251,7 +1251,7 @@ export default {
           target_folder: 'upload' // upload/
         })
         if (response.data.status == "success") {
-          this.modal.title = 'Success'
+          this.modal.title = this.$t('lblSuccess')
           const filename = `${this.selected.model_name}${extension}`
           this.modal.content = this.$t('msgUploadSuccess', { filename })
           this.modal.icon = 'success'
