@@ -10,6 +10,7 @@
           <div class="mb-3">
             <small>
               {{ $t('msgLimeExplanation1') }}
+              <br>
               {{ $t('msgLimeExplanation2') }}
             </small>
           </div>
