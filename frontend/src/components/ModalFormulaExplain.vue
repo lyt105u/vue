@@ -9,7 +9,7 @@
           <div class="modal-body">
             <div class="bd-example-snippet bd-code-snippet">
               <div class="bd-example m-0 border-0">
-                <table class="table table-sm table-bordered">
+                <table class="table table-sm table-bordered text-center">
                   <thead>
                     <tr>
                       <th scope="col" colspan="2">{{ $t('lblConfusionMatrix') }}</th>
@@ -43,7 +43,7 @@
   
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ $t('lblClose') }}</button>
           </div>
         </div>
       </div>
