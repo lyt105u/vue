@@ -551,6 +551,26 @@
         <img :src="imageRoc" :alt="$t('lblRocCurve')" />
       </div>
     </div>
+    
+    <!-- Loss 曲線 -->
+    <div v-if="output.loss_plot" class="col">
+      <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalImage('Loss', imageLoss)" style="cursor: pointer;">
+        <div class="card-header py-3">
+          <h4 class="my-0 fw-normal">Loss</h4>
+        </div>
+        <img :src="imageLoss" alt="Loss" />
+      </div>
+    </div>
+
+    <!-- Accuracy 曲線 -->
+    <div v-if="output.accuracy_plot" class="col">
+      <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalImage('Accuracy', imageAccuracy)" style="cursor: pointer;">
+        <div class="card-header py-3">
+          <h4 class="my-0 fw-normal">Accuracy</h4>
+        </div>
+        <img :src="imageAccuracy" alt="Accuracy" />
+      </div>
+    </div>
 
     <!-- SHAP -->
     <div v-if="!output.shap_error" class="col">
@@ -697,6 +717,8 @@ export default {
       },
       loading: false,
       imageRoc: null,
+      imageLoss: null,
+      imageAccuracy: null,
       imageShap: null,
       imageLime: null,
       errors: {}, // 檢核用
@@ -1125,6 +1147,8 @@ export default {
         const response = await axios.post(`http://127.0.0.1:5000/${api}`, payload)
         this.output = response.data
         this.imageRoc = `data:image/png;base64,${this.output.roc}`
+        this.imageLoss = `data:image/png;base64,${this.output.loss_plot}`
+        this.imageAccuracy = `data:image/png;base64,${this.output.accuracy_plot}`
         this.imageShap = `data:image/png;base64,${this.output.shap_plot}`
         this.imageLime = `data:image/png;base64,${this.output.lime_plot}`
 

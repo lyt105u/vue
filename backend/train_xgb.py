@@ -4,9 +4,12 @@ import os
 from xgboost import XGBClassifier
 from sklearn.model_selection import train_test_split
 from tool_train import prepare_data, NumpyEncoder, evaluate_model, kfold_evaluation
+import matplotlib.pyplot as plt
+import base64
+import io
 
-def train_xgb(x_train, y_train, model_name, n_estimators, learning_rate, max_depth):
-
+def train_xgb(x_train, y_train, x_val, y_val, model_name, n_estimators, learning_rate, max_depth):
+    evals_result = {}
     xgb = XGBClassifier(base_score=0.5, booster='gbtree', colsample_bylevel=1,
                         colsample_bynode=1, colsample_bytree=1, enable_categorical=False,
                         gamma=0, device='cpu', importance_type=None,
@@ -15,14 +18,68 @@ def train_xgb(x_train, y_train, model_name, n_estimators, learning_rate, max_dep
                         monotone_constraints='()', n_estimators=n_estimators, n_jobs=72,
                         num_parallel_tree=1, random_state=0,
                         reg_alpha=0, reg_lambda=1, scale_pos_weight=1, subsample=1,
-                        tree_method='exact', validate_parameters=1, verbosity=None)
-    xgb.fit(x_train, y_train)
+                        tree_method='exact', validate_parameters=1, verbosity=None, eval_metric=['logloss', 'error'])
+    xgb.fit(
+        x_train, y_train,
+        eval_set=[(x_train, y_train), (x_val, y_val)],
+        verbose=False
+    )
+
+    evals_result = xgb.evals_result()
     
     if model_name:
         os.makedirs("model", exist_ok=True)
         xgb.save_model(f"model/{model_name}.json")
 
-    return xgb
+    return xgb, evals_result
+
+def plot_loss(evals_result):
+    logloss_train = evals_result['validation_0']['logloss']
+    logloss_val = evals_result['validation_1']['logloss']
+    epochs = range(1, len(logloss_train) + 1)
+
+    plt.figure()
+    plt.plot(epochs, logloss_train, label='Train LogLoss')
+    plt.plot(epochs, logloss_val, label='Validation LogLoss')
+    plt.xlabel("Epoch")
+    plt.ylabel("Log Loss")
+    plt.title("Training vs Validation Log Loss")
+    plt.legend()
+    plt.grid(True)
+
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png', bbox_inches='tight')
+    buf.seek(0)
+    image_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+    buf.close()
+    plt.close()
+
+    return image_base64
+
+def plot_accuracy(evals_result):
+    error_train = evals_result['validation_0']['error']
+    error_val = evals_result['validation_1']['error']
+    acc_train = [1 - e for e in error_train]
+    acc_val = [1 - e for e in error_val]
+    epochs = range(1, len(acc_train) + 1)
+
+    plt.figure()
+    plt.plot(epochs, acc_train, label='Train Accuracy')
+    plt.plot(epochs, acc_val, label='Validation Accuracy')
+    plt.xlabel("Epoch")
+    plt.ylabel("Accuracy")
+    plt.title("Training vs Validation Accuracy")
+    plt.legend()
+    plt.grid(True)
+
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png', bbox_inches='tight')
+    buf.seek(0)
+    image_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+    buf.close()
+    plt.close()
+
+    return image_base64
 
 def main(file_path, label_column, split_strategy, split_value, model_name, n_estimators, learning_rate, max_depth):
     try:
@@ -38,9 +95,11 @@ def main(file_path, label_column, split_strategy, split_value, model_name, n_est
         x_train, x_test, y_train, y_test = train_test_split(
             x, y, train_size=float(split_value), stratify=y, random_state=30
         )
-        model = train_xgb(x_train, y_train, model_name, n_estimators, learning_rate, max_depth)
+        model, evals_result = train_xgb(x_train, y_train, x_test, y_test, model_name, n_estimators, learning_rate, max_depth)
         y_pred = model.predict(x_test)
         results = evaluate_model(y_test, y_pred, model, x_test)
+        results["loss_plot"] = plot_loss(evals_result)
+        results["accuracy_plot"] = plot_accuracy(evals_result)
     elif split_strategy == "k_fold":
         # 重新打包 train function，這樣就不用傳遞超參數
         def train_xgb_wrapped(x_train, y_train, model_name):
