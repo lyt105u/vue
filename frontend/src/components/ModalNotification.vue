@@ -1,5 +1,5 @@
 <template>
-  <div class="modal fade" ref="modalRef" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="finishTrainingModalLabel" aria-hidden="true">
+  <div class="modal fade" ref="modalRef" tabindex="-1" aria-labelledby="finishTrainingModalLabel" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
@@ -68,12 +68,13 @@ export default {
   //   :primaryButton="{ text: '下載', onClick: downloadResult }"
   // />
 
-  // 自訂 secondary（不關閉 modal）：
+  // 自訂 secondary（不關閉 modal），以及 onUserDismiss function：
   // <FinishTrainingModal
   //   :title="'提醒'"
   //   :content="'請確認操作'"
   //   :primaryButton="{ text: '確定', onClick: handleConfirm }"
   //   :secondaryButton="{ text: '取消', dismiss: false, onClick: cancelAction }"
+  //   :onUserDismiss="closeModalMissingData"
   // />
 
   props: {
@@ -101,15 +102,21 @@ export default {
         dismiss: true,
       }),
     },
+    onUserDismiss: {
+      type: Function,
+      default: null,
+    },
   },
   data() {
     return {
       modalInstance: null,
+      hideTriggeredByCode: false,
     }
   },
   mounted() {
     if (this.$refs.modalRef) {
       this.modalInstance = new Modal(this.$refs.modalRef)
+      this.$refs.modalRef.addEventListener('hide.bs.modal', this.handleHide)
     }
   },
   computed: {
@@ -138,12 +145,11 @@ export default {
     openModal() {
       if (this.modalInstance) {
         this.modalInstance.show()
-      } else {
-        console.error("Modal instance is not initialized.")
       }
     },
     closeModal() {
       if (this.modalInstance) {
+        this.hideTriggeredByCode = true
         this.modalInstance.hide()
       }
     },
@@ -151,12 +157,24 @@ export default {
       if (this.primaryButton?.onClick) {
         this.primaryButton.onClick()
       } else if (this.modalInstance) {
+        this.hideTriggeredByCode = true
         this.modalInstance.hide() // 預設關閉 modal
       }
     },
     handleSecondaryClick() {
       if (this.secondaryButton?.onClick) {
         this.secondaryButton.onClick()
+      }
+    },
+    handleHide() {
+      if (this.hideTriggeredByCode) {
+        this.hideTriggeredByCode = false
+        return
+      }
+      if (typeof this.onUserDismiss === 'function') {
+        this.onUserDismiss()
+      } else {
+        this.modalInstance?.hide() // 預設行為：關閉 modal
       }
     },
   },
