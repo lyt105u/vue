@@ -43,6 +43,12 @@
   "lblOk": "OK",
   "lblAvgShap": "平均 SHAP 值",
   "lblPredictionResult": "預測結果",
+  "lblXgb": "XGB",
+  "lblLightGBM": "LightGBM",
+  "lblRandomForest": "Random Forest",
+  "lblLogisticRegression": "Logistic Regression",
+  "lblTabNet": "TabNet",
+  "lblMultiLayerPerceptron": "Multi-Layer Perceptron",
   
   "msgPreviewCaption": "顯示前 10 筆資料（總共：{count} 筆）",
   "msgUploadSuccess": "成功上傳 `{filename}`。",

@@ -623,12 +623,12 @@ export default {
   data() {
     return {
       modelOptions: {
-        xgb: "XGB",
-        lightgbm: "lightGBM",
-        random_forest: "Random Forest",
-        logistic_regression: "Logistic Regression",
-        tabnet: "TabNet",
-        mlp: "Multi-Layer Perceptron"
+        xgb: this.$t('lblXgb'),
+        lightgbm: this.$t('lblLightGBM'),
+        random_forest: this.$t('lblRandomForest'),
+        logistic_regression: this.$t('lblLogisticRegression'),
+        tabnet: this.$t('lblTabNet'),
+        mlp: this.$t('lblMultiLayerPerceptron'),
       },
       preview_data: {
         columns: [],

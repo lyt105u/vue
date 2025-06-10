@@ -43,6 +43,12 @@
   "lblOk": "OK",
   "lblAvgShap": "Average SHAP Value",
   "lblPredictionResult": "Prediction Result",
+  "lblXgb": "XGB",
+  "lblLightGBM": "LightGBM",
+  "lblRandomForest": "Random Forest",
+  "lblLogisticRegression": "Logistic Regression",
+  "lblTabNet": "TabNet",
+  "lblMultiLayerPerceptron": "Multi-Layer Perceptron",
   
   "msgPreviewCaption": "Showing first 10 rows (total:{count} rows)",
   "msgUploadSuccess": "Upload `{filename}` successfully.",
