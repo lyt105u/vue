@@ -21,6 +21,11 @@
         </select>
         <div v-if="errors.model_type" class="text-danger small">{{ errors.model_type }}</div>
       </div>
+      <div v-if="selected.model_type=='random_forest'" class="col-sm-1">
+        <button type="button" style="border: none; background: none; cursor: pointer;" @click="openRFExplainModal">
+          <i class="fa fa-question-circle" style="font-size:24px; color:lightblue"></i>
+        </button>
+      </div>
     </div>
 
     <!-- XGB 參數 -->
@@ -840,6 +845,12 @@ export default {
         this.openModalNotification()
       }
       this.loading = false
+    },
+
+    openRFExplainModal() {
+      this.modal.title = this.$t('lblRandomForest')
+      this.modal.content = this.$t('msgRandomForestExplain')
+      this.openModalNotification()
     },
 
     async deleteMissingData() {

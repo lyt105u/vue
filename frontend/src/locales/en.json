@@ -63,6 +63,7 @@
   "msgConfirmDeleteRows": "Do you want to delete these rows?",
   "msgFileDownloaded": "Prediction result file has been downloaded.",
   "msgHiddenLayerHint": "Leave hidden_layer_2 or 3 blank if not needed.",
+  "msgRandomForestExplain": "The Random Forest algorithm is a type of ensemble method based on bagging, which trains multiple independent decision trees simultaneously and aggregates their predictions via majority voting.\nUnlike iterative models such as LightGBM or XGBoost, Random Forest does not have a sequential training process, and therefore it cannot generate traditional loss or accuracy curves over epochs.",
 
   "msgValRequired": "This field is required.",
   "msgValIntOnly": "Integer only.",

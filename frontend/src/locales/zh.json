@@ -63,6 +63,7 @@
   "msgConfirmDeleteRows": "是否要刪除這些資料列？",
   "msgFileDownloaded": "成功下載預測結果檔案。",
   "msgHiddenLayerHint": "若不需要，可將 hidden_layer_2 或 3 留空。",
+  "msgRandomForestExplain": "Random Forest 屬於集成學習中的 Bagging 方法，在訓練過程中會同時建立多棵獨立的決策樹，並透過投票決定最終預測結果。\n與逐輪訓練的模型（如 LightGBM 或 XGBoost）不同，隨機森林並不具備逐輪的訓練過程，因此無法產生傳統意義上的 loss 或 accuracy 曲線。",
 
   "msgValRequired": "此為必填欄位",
   "msgValIntOnly": "僅允許整數",
