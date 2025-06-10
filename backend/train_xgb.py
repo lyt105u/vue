@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import base64
 import io
 
+from tool_train import prepare_data, NumpyEncoder
 import pandas as pd
 from sklearn.metrics import (
     confusion_matrix, accuracy_score, precision_score, recall_score, f1_score, roc_curve, auc
@@ -26,25 +27,6 @@ subprocess.check_call(
 )
 import shap
 from lime.lime_tabular import LimeTabularExplainer
-from sklearn.pipeline import Pipeline
-# from pytorch_tabnet.tab_model import TabNetClassifier
-from sklearn.neural_network import MLPClassifier
-
-def prepare_data(file_path, label_column):
-    if file_path.endswith(".csv"):
-        df = pd.read_csv(file_path)
-    elif file_path.endswith(".xlsx"):
-        df = pd.read_excel(file_path)
-    else:
-        raise ValueError("Unsupported file format. Please provide a CSV or Excel file.")
-
-    if label_column not in df.columns:
-        raise ValueError(f"Outcome column '{label_column}' not found in the dataset.")
-    
-    x = df.drop(columns=[label_column]).values
-    y = df[label_column].values.astype(float)
-
-    return x, y
 
 def train_xgb(x_train, y_train, x_val, y_val, model_name, n_estimators, learning_rate, max_depth):
     evals_result = {}
@@ -194,56 +176,21 @@ def evaluate_model(y_test, y_pred, model, x_test):
     buf.close()
 
     result['roc'] = image_base64
+    return result
 
-    # === SHAP Explain ===
+def explain_with_shap(model, x_test):
+    result = {}
     try:
         x_test = np.array(x_test, dtype=np.float32)
-        # Pipeline (Logistic Regression)
-        if isinstance(model, Pipeline) and "logisticregression" in model.named_steps:
-            estimator = model.named_steps["logisticregression"]
-            scaler = model.named_steps["standardscaler"]
-            x_scaled = scaler.transform(x_test)
+        explainer = shap.Explainer(model, x_test)
+        shap_values = explainer(x_test)
 
-            explainer = shap.LinearExplainer(estimator, x_scaled, feature_perturbation="interventional")
-            shap_values = explainer.shap_values(x_scaled)
-
-            if isinstance(shap_values, list):
-                shap_values_for_plot = shap_values[1]
-            else:
-                shap_values_for_plot = shap_values
-
-            shap_data = x_scaled
-
-        elif isinstance(model, MLPClassifier):
-            # 只取少量資料以避免 KernelExplainer 過慢
-            background = x_test[:10]
-            explain_target = x_test[:5]
-
-            explainer = shap.KernelExplainer(model.predict_proba, background)
-            shap_values = explainer.shap_values(explain_target)
-
-            if isinstance(shap_values, list):
-                shap_values_for_plot = np.array(shap_values[1])  # binary: class 1
-            else:
-                shap_values_for_plot = np.array(shap_values)
-
-            shap_data = np.array(explain_target)
-
-            # 修正 shape 避免 summary_plot 出錯
-            if shap_values_for_plot.ndim == 3 and shap_values_for_plot.shape[-1] == 2:
-                shap_values_for_plot = shap_values_for_plot[..., 1]
-
-                # 其他模型（Tree-based or compatible）
+        if hasattr(shap_values, "values") and shap_values.values.ndim == 3:
+            shap_values_for_plot = shap_values.values[..., 1]
         else:
-            explainer = shap.Explainer(model, x_test)
-            shap_values = explainer(x_test)
+            shap_values_for_plot = shap_values.values
 
-            if hasattr(shap_values, "values") and shap_values.values.ndim == 3:
-                shap_values_for_plot = shap_values.values[..., 1]
-            else:
-                shap_values_for_plot = shap_values.values
-
-            shap_data = shap_values.data
+        shap_data = shap_values.data
 
         # 平均重要度
         shap_importance = np.abs(shap_values_for_plot).mean(axis=0)
@@ -265,7 +212,10 @@ def evaluate_model(y_test, y_pred, model, x_test):
     except Exception as e:
         result["shap_error"] = str(e)
 
-    # === LIME Explain (單一筆) ===
+    return result
+
+def explain_with_lime(model, x_test, y_test):
+    result = {}
     try:
         lime_explainer = LimeTabularExplainer(
             training_data=x_test,
@@ -424,16 +374,6 @@ def plot_accuracy(evals_result):
 #     }
 #     return result
 
-class NumpyEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, (np.integer, int)):
-            return int(obj)
-        elif isinstance(obj, (np.floating, float)):
-            return float(obj)
-        elif isinstance(obj, np.ndarray):
-            return obj.tolist()
-        return super().default(obj)
-
 def main(file_path, label_column, split_strategy, split_value, model_name, n_estimators, learning_rate, max_depth):
     try:
         x, y = prepare_data(file_path, label_column)
@@ -453,6 +393,10 @@ def main(file_path, label_column, split_strategy, split_value, model_name, n_est
         results = evaluate_model(y_test, y_pred, model, x_test)
         results["loss_plot"] = plot_loss(evals_result)
         results["accuracy_plot"] = plot_accuracy(evals_result)
+        shap_result = explain_with_shap(model, x_test)
+        results.update(shap_result)
+        lime_result = explain_with_lime(model, x_test, y_test)
+        results.update(lime_result)
     # elif split_strategy == "k_fold":
     #     # 重新打包 train function，這樣就不用傳遞超參數
     #     def train_xgb_wrapped(x_train, y_train, model_name):
