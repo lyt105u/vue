@@ -850,6 +850,7 @@ export default {
     openRFExplainModal() {
       this.modal.title = this.$t('lblRandomForest')
       this.modal.content = this.$t('msgRandomForestExplain')
+      this.modal.icon = 'info'
       this.openModalNotification()
     },
 
