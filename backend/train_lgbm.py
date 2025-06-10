@@ -29,9 +29,6 @@ subprocess.check_call(
 )
 import shap
 from lime.lime_tabular import LimeTabularExplainer
-from sklearn.pipeline import Pipeline
-# from pytorch_tabnet.tab_model import TabNetClassifier
-from sklearn.neural_network import MLPClassifier
 
 def train_lgbm(x_train, y_train, x_val, y_val, model_name, n_estimators, learning_rate, max_depth, num_leaves):
     evals_result = {}
@@ -44,6 +41,9 @@ def train_lgbm(x_train, y_train, x_val, y_val, model_name, n_estimators, learnin
     )
     lightgbm.fit(
         x_train, y_train,
+        eval_set=[(x_train, y_train), (x_val, y_val)],
+        eval_names=["training", "validation"],
+        eval_metric=["binary_logloss", "binary_error"],
         callbacks=[lgb.log_evaluation, lgb.record_evaluation(evals_result)]
     )
     
@@ -183,52 +183,17 @@ def explain_with_shap(model, x_test):
     try:
         x_test = np.array(x_test, dtype=np.float32)
         
-        # Pipeline (Logistic Regression)
-        if isinstance(model, Pipeline) and "logisticregression" in model.named_steps:
-            estimator = model.named_steps["logisticregression"]
-            scaler = model.named_steps["standardscaler"]
-            x_scaled = scaler.transform(x_test)
+        # 使用 SHAP.Explainer，禁用加總檢查
+        explainer = shap.Explainer(model, x_test)
+        shap_values = explainer(x_test, check_additivity=False)
 
-            explainer = shap.LinearExplainer(estimator, x_scaled, feature_perturbation="interventional")
-            shap_values = explainer.shap_values(x_scaled)
-
-            if isinstance(shap_values, list):
-                shap_values_for_plot = shap_values[1]
-            else:
-                shap_values_for_plot = shap_values
-
-            shap_data = x_scaled
-
-        elif isinstance(model, MLPClassifier):
-            # 只取少量資料以避免 KernelExplainer 過慢
-            background = x_test[:10]
-            explain_target = x_test[:5]
-
-            explainer = shap.KernelExplainer(model.predict_proba, background)
-            shap_values = explainer.shap_values(explain_target)
-
-            if isinstance(shap_values, list):
-                shap_values_for_plot = np.array(shap_values[1])  # binary: class 1
-            else:
-                shap_values_for_plot = np.array(shap_values)
-
-            shap_data = np.array(explain_target)
-
-            # 修正 shape 避免 summary_plot 出錯
-            if shap_values_for_plot.ndim == 3 and shap_values_for_plot.shape[-1] == 2:
-                shap_values_for_plot = shap_values_for_plot[..., 1]
-
-                # 其他模型（Tree-based or compatible）
+        # 處理 SHAP 輸出
+        if hasattr(shap_values, "values") and shap_values.values.ndim == 3:
+            shap_values_for_plot = shap_values.values[..., 1]  # binary classification class 1
         else:
-            explainer = shap.Explainer(model, x_test)
-            shap_values = explainer(x_test)
+            shap_values_for_plot = shap_values.values
 
-            if hasattr(shap_values, "values") and shap_values.values.ndim == 3:
-                shap_values_for_plot = shap_values.values[..., 1]
-            else:
-                shap_values_for_plot = shap_values.values
-
-            shap_data = shap_values.data
+        shap_data = shap_values.data
 
         # 平均重要度
         shap_importance = np.abs(shap_values_for_plot).mean(axis=0)
@@ -291,8 +256,8 @@ def explain_with_lime(model, x_test, y_test):
     return result
 
 def plot_loss(evals_result):
-    logloss_train = evals_result['training']['logloss']
-    logloss_val = evals_result['validation']['logloss']
+    logloss_train = evals_result['training']['binary_logloss']
+    logloss_val = evals_result['validation']['binary_logloss']
     epochs = range(1, len(logloss_train) + 1)
 
     plt.figure()
@@ -314,8 +279,10 @@ def plot_loss(evals_result):
     return image_base64
 
 def plot_accuracy(evals_result):
-    acc_train = evals_result['training']['accuracy']
-    acc_val = evals_result['validation']['accuracy']
+    error_train = evals_result['training']['binary_error']
+    error_val = evals_result['validation']['binary_error']
+    acc_train = [1 - e for e in error_train]
+    acc_val = [1 - e for e in error_val]
     epochs = range(1, len(acc_train) + 1)
 
     plt.figure()
@@ -353,8 +320,8 @@ def main(file_path, label_column, split_strategy, split_value, model_name, n_est
         model, evals_result = train_lgbm(x_train, y_train, x_test, y_test, model_name, n_estimators, learning_rate, max_depth, num_leaves)
         y_pred = model.predict(x_test)
         results = evaluate_model(y_test, y_pred, model, x_test)
-        # results["loss_plot"] = plot_loss(evals_result)
-        # results["accuracy_plot"] = plot_accuracy(evals_result)
+        results["loss_plot"] = plot_loss(evals_result)
+        results["accuracy_plot"] = plot_accuracy(evals_result)
         shap_result = explain_with_shap(model, x_test)
         results.update(shap_result)
         lime_result = explain_with_lime(model, x_test, y_test)
