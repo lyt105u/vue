@@ -184,15 +184,6 @@
           <div v-if="errors.C" class="text-danger small">{{ errors.C }}</div>
         </div>
         <div class="col-sm-2 form-floating">
-          <select v-model="selected.lr.solver" class="form-select" id="floatingLrSolver" :disabled="loading">
-            <option v-for="(label, value) in rfSolverOptions" :key="value" :value="value">
-              {{ label }}
-            </option>
-          </select>
-          <label for="floatingLrSolver" style="margin-left:9px;"> solver </label>
-          <div v-if="errors.solver" class="text-danger small">{{ errors.solver }}</div>
-        </div>
-        <div class="col-sm-2 form-floating">
           <input v-model="selected.lr.max_iter"
             type="text" 
             class="form-control" 
@@ -647,13 +638,6 @@ export default {
         elasticnet: 'elasticnet',
         none: 'none'
       },
-      rfSolverOptions: {
-        lbfgs: 'lbfgs',
-        liblinear: 'liblinear',
-        'newton-cg': 'newton-cg',
-        sag: 'sag',
-        saga: 'saga'
-      },
       mlpActivactionOptions: {
         relu: 'relu',
         tanh: 'tanh',
@@ -686,7 +670,6 @@ export default {
         lr: {
           penalty: 'l2',    // L2 正歸化
           C: '1.0',         // 正歸化強度
-          solver: 'lbfgs',
           max_iter: '500', 
         },
         tabnet: {
@@ -986,10 +969,6 @@ export default {
           this.errors.C = this.$t('msgValFloatOnly')
           isValid = false
         }
-        if (!this.selected.lr.solver) {
-          this.errors.solver = this.$t('msgValRequired')
-          isValid = false
-        }
         if (!this.selected.lr.max_iter || !this.isInt(this.selected.lr.max_iter)) {
           this.errors.max_iter = this.$t('msgValIntOnly')
           isValid = false
@@ -1131,7 +1110,6 @@ export default {
           api = "run-train-lr"
           payload["penalty"] = this.selected.lr.penalty
           payload["C"] = this.selected.lr.C
-          payload["solver"] = this.selected.lr.solver
           payload["max_iter"] = this.selected.lr.max_iter
         } else if (this.selected.model_type == "tabnet") {
           api = "run-train-tabnet"
