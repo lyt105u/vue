@@ -33,15 +33,15 @@
 import { SidebarMenu } from 'vue-sidebar-menu'
 import 'vue-sidebar-menu/dist/vue-sidebar-menu.css'
 
-// import { h } from 'vue'
+import { h } from 'vue'
 // import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
-// const separator = h('hr', {
-//   style: {
-//     borderColor: 'rgba(0, 0, 0, 0.1)',
-//     margin: '20px',
-//   },
-// })
+const separator = h('hr', {
+  style: {
+    borderColor: 'gray',
+    margin: '20px',
+  },
+})
 
 // const faIcon = (props) => {
 //   return {
@@ -69,6 +69,9 @@ export default {
           icon: 'fa fa-home'
         },
         {
+          component: separator,
+        },
+        {
           href: '/upload',
           title: this.$t('lblUpload'),
           icon: 'fa fa-upload'
@@ -79,9 +82,20 @@ export default {
           icon: 'fa fa-cogs'
         },
         {
-          href: '/predict',
           title: this.$t('lblPredict'),
-          icon: 'fa fa-line-chart'
+          icon: 'fa fa-line-chart',
+          child: [
+            {
+              href: '/predict',
+              title: 'Sub Link',
+              icon: 'fa fa-book',
+            },
+            {
+              href: '/predict',
+              title: 'Sub Link',
+              icon: 'fa fa-stethoscope',
+            },
+          ]
         }
       ]
     }
