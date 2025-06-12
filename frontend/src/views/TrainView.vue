@@ -297,6 +297,16 @@
           <label for="floatingMlpMaxIter" style="margin-left:9px;"> max_iter </label>
           <div v-if="errors.max_iter" class="text-danger small">{{ errors.max_iter }}</div>
         </div>
+        <div class="col-sm-2 form-floating">
+          <input v-model="selected.mlp.n_iter_no_change"
+            type="text" 
+            class="form-control" 
+            id="floatingMlpMaxIter" 
+            :disabled="loading"
+          />
+          <label for="floatingMlpMaxIter" style="margin-left:9px;"> n_iter_no_change </label>
+          <div v-if="errors.n_iter_no_change" class="text-danger small">{{ errors.n_iter_no_change }}</div>
+        </div>
       </div>
     </template>
 
@@ -636,12 +646,16 @@
       </li>
       <li>{{ $t('lblMultiLayerPerceptron') }}
         <ol type="i">
+          <li>{{ $t('msgTrainNoteMlp8') }}</li>
+          <li>{{ $t('msgTrainNoteMlp9') }}</li>
+          <li>{{ $t('msgTrainNoteMlp10') }}</li>
           <li><code>hidden_layer_1</code>{{ $t('msgTrainNoteMlp1') }}</li>
           <li><code>hidden_layer_2</code>{{ $t('msgTrainNoteMlp2') }}</li>
           <li><code>hidden_layer_3</code>{{ $t('msgTrainNoteMlp3') }}</li>
           <li><code>activation</code>{{ $t('msgTrainNoteMlp4') }}</li>
           <li><code>learning_rate_init</code>{{ $t('msgTrainNoteMlp5') }}</li>
           <li><code>max_iter</code>{{ $t('msgTrainNoteMlp6') }}</li>
+          <li><code>n_iter_no_change</code>{{ $t('msgTrainNoteMlp7') }}</li>
         </ol>
       </li>
     </ol>
@@ -742,6 +756,7 @@ export default {
           activation: 'relu',
           learning_rate_init: '0.001',
           max_iter: '300',
+          n_iter_no_change: '50'
         }
       },
       watched: {
@@ -1068,6 +1083,10 @@ export default {
           this.errors.max_iter = this.$t('msgValIntOnly')
           isValid = false
         }
+        if (!this.selected.mlp.n_iter_no_change || !this.isInt(this.selected.mlp.n_iter_no_change)) {
+          this.errors.n_iter_no_change = this.$t('msgValIntOnly')
+          isValid = false
+        }
       }
 
       // File Selection (data)
@@ -1175,6 +1194,7 @@ export default {
           payload["activation"] = this.selected.mlp.activation
           payload["learning_rate_init"] = this.selected.mlp.learning_rate_init
           payload["max_iter"] = this.selected.mlp.max_iter
+          payload["n_iter_no_change"] = this.selected.mlp.n_iter_no_change
         } else {
           this.output = {
             "status": "error",
