@@ -595,8 +595,55 @@
   <div class="about text-body-secondary">
     <h6>{{ $t('lblNote') }}</h6>
     <ol class="h6">
-      <li>{{ $t('msgRandomForestExplain') }}</li>
-      <li>{{ $t('msgTabnetShapLimit') }}</li>
+      <li>{{ $t('lblXgb') }}
+        <ol type="i">
+          <li><code>n_estimators</code>{{ $t('msgTrainNoteXgb1') }}</li>
+          <li><code>learning_rate</code>{{ $t('msgTrainNoteXgb2') }}</li>
+          <li><code>max_depth</code>{{ $t('msgTrainNoteXgb3') }}</li>
+        </ol>
+      </li>
+      <li>{{ $t('lblLightGBM') }}
+        <ol type="i">
+          <li><code>n_estimators</code>{{ $t('msgTrainNoteLgbm1') }}</li>
+          <li><code>learning_rate</code>{{ $t('msgTrainNoteLgbm2') }}</li>
+          <li><code>max_depth</code>{{ $t('msgTrainNoteLgbm3') }}</li>
+          <li><code>num_leaves</code>{{ $t('msgTrainNoteLgbm4') }}</li>
+        </ol>
+      </li>
+      <li>{{ $t('lblRandomForest') }}
+        <ol type="i">
+          <li>{{ $t('msgTrainNoteRf1') }}</li>
+          <li><code>n_estimators</code>{{ $t('msgTrainNoteRf2') }}</li>
+          <li><code>max_depth</code>{{ $t('msgTrainNoteRf3') }}</li>
+          <li><code>random_state</code>{{ $t('msgTrainNoteRf4') }}</li>
+          <li><code>n_jobs</code>{{ $t('msgTrainNoteRf5') }}</li>
+        </ol>
+      </li>
+      <li>{{ $t('lblLogisticRegression') }}
+        <ol type="i">
+          <li><code>penalty</code>{{ $t('msgTrainNoteRf2') }}</li>
+          <li><code>C</code>{{ $t('msgTrainNoteRf3') }}</li>
+          <li><code>max_iter</code>{{ $t('msgTrainNoteRf4') }}</li>
+        </ol>
+      </li>
+      <li>{{ $t('lblTabNet') }}
+        <ol type="i">
+          <li>{{ $t('msgTrainNoteTabnet1') }}</li>
+          <li><code>batch_size</code>{{ $t('msgTrainNoteTabnet2') }}</li>
+          <li><code>max_epochs</code>{{ $t('msgTrainNoteTabnet3') }}</li>
+          <li><code>patience</code>{{ $t('msgTrainNoteTabnet4') }}</li>
+        </ol>
+      </li>
+      <li>{{ $t('lblMultiLayerPerceptron') }}
+        <ol type="i">
+          <li><code>hidden_layer_1</code>{{ $t('msgTrainNoteMlp1') }}</li>
+          <li><code>hidden_layer_2</code>{{ $t('msgTrainNoteMlp2') }}</li>
+          <li><code>hidden_layer_3</code>{{ $t('msgTrainNoteMlp3') }}</li>
+          <li><code>activation</code>{{ $t('msgTrainNoteMlp4') }}</li>
+          <li><code>learning_rate_init</code>{{ $t('msgTrainNoteMlp5') }}</li>
+          <li><code>max_iter</code>{{ $t('msgTrainNoteMlp6') }}</li>
+        </ol>
+      </li>
     </ol>
   </div>
 
