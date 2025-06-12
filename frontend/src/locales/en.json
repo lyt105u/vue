@@ -72,7 +72,11 @@
   "msgUploadNote2": "For model files: only PKL, JSON, or ZIP formats are supported.",
   "msgUploadNote3": "Make sure the file is not open in other programs before uploading.",
   "msgUploadNote4": "If uploading from Samba, ensure you have access permissions and correct file path.",
-
+  "msgPredictDescription": "Select a trained model and predict using either a file (without answer) or manual input.",
+  "msgPredictNote1": "Ensure the selected model matches the uploaded file format, and the input file must not contain the answer column (e.g., label or target).",
+  "msgPredictNote2": "In manual input mode, please enter data in the exact feature order used during model training. Incorrect order may lead to inaccurate predictions.",
+  "msgPredictNote3": "The prediction file will be downloaded automatically. You can specify the filename.",
+  
   "msgValRequired": "This field is required.",
   "msgValIntOnly": "Integer only.",
   "msgValFloatOnly": "Floating point only.",

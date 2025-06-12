@@ -72,6 +72,10 @@
   "msgUploadNote2": "模型檔案僅支援 PKL、JSON 或 ZIP 格式。",
   "msgUploadNote3": "請確認上傳前檔案未被其他程式佔用。",
   "msgUploadNote4": "若使用 Samba 上傳，請確認擁有存取權限並填寫正確的檔案路徑。",
+  "msgPredictDescription": "請選擇已訓練的模型，並以檔案（無答案）或手動方式輸入資料，進行預測分析。",
+  "msgPredictNote1": "請確認所選模型與上傳的檔案格式一致，且資料中不得包含答案欄（例如 label 或 target 欄）。",
+  "msgPredictNote2": "手動輸入模式請依照模型訓練時的欄位順序輸入資料，順序錯誤可能導致預測結果不正確。",
+  "msgPredictNote3": "預測結果將自動下載至本機，檔名可自訂。",
 
   "msgValRequired": "此為必填欄位",
   "msgValIntOnly": "僅允許整數",

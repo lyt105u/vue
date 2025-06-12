@@ -1,6 +1,7 @@
 <template>
   <div class="about">
     <h1>{{ $t('lblPredict') }}</h1>
+    <h6 class="text-body-secondary">{{ $t('msgPredictDescription') }}</h6>
   </div>
 
   <div class="bd-example-snippet bd-code-snippet">
@@ -162,6 +163,22 @@
       {{ $t('lblPredictionResult') }}
     </h3>
     {{ modal.content }}
+  </div>
+
+  <div class="bd-example-snippet bd-code-snippet">
+    <div class="bd-example m-0 border-0">
+      <hr>
+    </div>
+  </div>
+
+  <!-- Note -->
+  <div class="about text-body-secondary">
+    <h6>{{ $t('lblNote') }}</h6>
+    <ol class="h6">
+      <li>{{ $t('msgPredictNote1') }}</li>
+      <li>{{ $t('msgPredictNote2') }}</li>
+      <li>{{ $t('msgPredictNote3') }}</li>
+    </ol>
   </div>
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
