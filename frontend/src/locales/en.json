@@ -67,6 +67,11 @@
   "msgRandomForestExplain": "Random Forest algorithm trains multiple independent decision trees simultaneously. Therefore it cannot generate loss or accuracy curves over epochs.",
   "msgTrainDescription": "Please select a model type, set the parameters, and choose the dataset and label column to start training the model.",
   "msgTabnetShapLimit": "To speed up interpretation, SHAP for TabNet uses only the first 20 samples as background and explains the first 5. This limitation applies to TabNet only.",
+  "msgUploadDescription": "Please select a file from your local device or connect to a Samba server to upload a remote file.",
+  "msgUploadNote1": "For data files: only CSV or Excel (.csv, .xlsx) formats are allowed.",
+  "msgUploadNote2": "For model files: only PKL, JSON, or ZIP formats are supported.",
+  "msgUploadNote3": "Make sure the file is not open in other programs before uploading.",
+  "msgUploadNote4": "If uploading from Samba, ensure you have access permissions and correct file path.",
 
   "msgValRequired": "This field is required.",
   "msgValIntOnly": "Integer only.",

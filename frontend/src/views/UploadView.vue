@@ -1,6 +1,7 @@
 <template>
   <div class="about">
     <h1>{{ $t('lblUpload') }}</h1>
+    <h6 class="text-body-secondary">{{ $t('msgUploadDescription') }}</h6>
   </div>
 
   <!-- tab -->
@@ -74,6 +75,23 @@
       </button>
     </div>
   </form>
+
+  <div class="bd-example-snippet bd-code-snippet">
+    <div class="bd-example m-0 border-0">
+      <hr>
+    </div>
+  </div>
+
+  <!-- Note -->
+  <div class="about text-body-secondary">
+    <h6>{{ $t('lblNote') }}</h6>
+    <ol class="h6">
+      <li>{{ $t('msgUploadNote1') }}</li>
+      <li>{{ $t('msgUploadNote2') }}</li>
+      <li>{{ $t('msgUploadNote3') }}</li>
+      <li>{{ $t('msgUploadNote4') }}</li>
+    </ol>
+  </div>
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
   <ModalNotification ref="modalNotification" :title="modal.title" :content="modal.content" :icon="modal.icon" />

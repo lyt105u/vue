@@ -67,6 +67,11 @@
   "msgRandomForestExplain": "Random Forest 在訓練過程中會同時建立多棵獨立的決策樹，因此無法產生逐個 epoch 的 loss 或 accuracy 曲線。",
   "msgTrainDescription": "請依序選擇模型種類、輸入參數、訓練資料與標籤欄位，即可開始訓練模型。",
   "msgTabnetShapLimit": "為加快解釋速度，TabNet 模型的 SHAP 僅使用前 20 筆資料作為背景，並解釋前 5 筆樣本。此限制僅適用於 TabNet 模型。",
+  "msgUploadDescription": "請從本地設備選擇檔案，或連接 Samba 伺服器以上傳遠端檔案。",
+  "msgUploadNote1": "表格資料僅支援 CSV 或 Excel（.csv, .xlsx）格式。",
+  "msgUploadNote2": "模型檔案僅支援 PKL、JSON 或 ZIP 格式。",
+  "msgUploadNote3": "請確認上傳前檔案未被其他程式佔用。",
+  "msgUploadNote4": "若使用 Samba 上傳，請確認擁有存取權限並填寫正確的檔案路徑。",
 
   "msgValRequired": "此為必填欄位",
   "msgValIntOnly": "僅允許整數",
