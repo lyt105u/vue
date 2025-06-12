@@ -591,6 +591,7 @@
     </div>
   </div>
 
+  <!-- Note -->
   <div class="about text-body-secondary">
     <h6>{{ $t('lblNote') }}</h6>
     <ol class="h6">
