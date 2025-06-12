@@ -1,6 +1,7 @@
 <template>
   <div class="about">
     <h1>{{ $t('lblTrain') }}</h1>
+    <h6 class="text-body-secondary">{{ $t('msgTrainDescription') }}</h6>
   </div>
   
   <div class="bd-example-snippet bd-code-snippet">
@@ -20,11 +21,6 @@
           </option>
         </select>
         <div v-if="errors.model_type" class="text-danger small">{{ errors.model_type }}</div>
-      </div>
-      <div v-if="selected.model_type=='random_forest'" class="col-sm-1">
-        <button type="button" style="border: none; background: none; cursor: pointer;" @click="openRFExplainModal">
-          <i class="fa fa-question-circle" style="font-size:24px; color:lightblue"></i>
-        </button>
       </div>
     </div>
 
@@ -589,6 +585,20 @@
     </div>
   </div>
 
+  <div class="bd-example-snippet bd-code-snippet">
+    <div class="bd-example m-0 border-0">
+      <hr>
+    </div>
+  </div>
+
+  <div class="about text-body-secondary">
+    <h6>{{ $t('lblNote') }}</h6>
+    <ol class="h6">
+      <li>{{ $t('msgRandomForestExplain') }}</li>
+      <li>{{ $t('msgTabnetShapLimit') }}</li>
+    </ol>
+  </div>
+
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"> <!-- question mark icon -->
   <ModalNotification ref="modalNotification" :title="modal.title" :content="modal.content" :icon="modal.icon" />
   <ModalNotification ref="modalMissingDataRef" :title="modal.title" :content="modal.content" :icon="modal.icon" :primaryButton="modalMissingData.primary" :secondaryButton="modalMissingData.secondary" :onUserDismiss="closeModalMissingData"/>
@@ -828,13 +838,6 @@ export default {
         this.openModalNotification()
       }
       this.loading = false
-    },
-
-    openRFExplainModal() {
-      this.modal.title = this.$t('lblRandomForest')
-      this.modal.content = this.$t('msgRandomForestExplain')
-      this.modal.icon = 'info'
-      this.openModalNotification()
     },
 
     async deleteMissingData() {

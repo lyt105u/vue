@@ -49,6 +49,7 @@
   "lblLogisticRegression": "Logistic Regression",
   "lblTabNet": "TabNet",
   "lblMultiLayerPerceptron": "Multi-Layer Perceptron",
+  "lblNote": "Note:",
   
   "msgPreviewCaption": "Showing first 10 rows (total:{count} rows)",
   "msgUploadSuccess": "Upload `{filename}` successfully.",
@@ -63,7 +64,9 @@
   "msgConfirmDeleteRows": "Do you want to delete these rows?",
   "msgFileDownloaded": "Prediction result file has been downloaded.",
   "msgHiddenLayerHint": "Leave hidden_layer_2 or 3 blank if not needed.",
-  "msgRandomForestExplain": "The Random Forest algorithm is a type of ensemble method based on bagging, which trains multiple independent decision trees simultaneously and aggregates their predictions via majority voting.\nUnlike iterative models such as LightGBM or XGBoost, Random Forest does not have a sequential training process, and therefore it cannot generate traditional loss or accuracy curves over epochs.",
+  "msgRandomForestExplain": "Random Forest algorithm trains multiple independent decision trees simultaneously. Therefore it cannot generate loss or accuracy curves over epochs.",
+  "msgTrainDescription": "Please select a model type, set the parameters, and choose the dataset and label column to start training the model.",
+  "msgTabnetShapLimit": "To speed up interpretation, SHAP for TabNet uses only the first 20 samples as background and explains the first 5. This limitation applies to TabNet only.",
 
   "msgValRequired": "This field is required.",
   "msgValIntOnly": "Integer only.",
