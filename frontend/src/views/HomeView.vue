@@ -10,7 +10,7 @@
   </div>
   <div class="container">
     <footer class="flex-wrap align-items-center py-3 my-4 border-top">
-      <p class="text-center text-body-secondary">&copy; 2025 Network & System Lab, NSYSU | Designed by Yen-Ting Lai</p>
+      <p class="text-center text-body-secondary" v-html="this.$t('msgFooter')"></p>
     </footer>
   </div>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">

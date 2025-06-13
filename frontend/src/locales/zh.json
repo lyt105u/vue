@@ -110,6 +110,7 @@
   "msgEvaluateDescription": "請選擇已訓練完成的模型與資料檔案（有答案），系統將評估此模型，並且下載預測結果檔案。",
   "msgMissingDataNote": "若資料中有缺失值，系統將提示刪除相關列。",
   "msgEvaluateNote1": "請確認所選模型與上傳的檔案格式一致，且資料中必須包含真實答案欄。",
+  "msgFooter": "&copy; 2025 網路與系統實驗室，國立中山大學 &#124; 賴彥廷",
 
   "msgValRequired": "此為必填欄位",
   "msgValIntOnly": "僅允許整數",

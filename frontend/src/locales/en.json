@@ -110,6 +110,7 @@
   "msgEvaluateDescription": "Select a trained model and a data file (with answer). The system will evaluate this model, and download the prediction file.",
   "msgMissingDataNote": "If missing values are found, the system will prompt to remove the affected rows.",
   "msgEvaluateNote1": "Ensure the selected model matches the uploaded file format, and the input file must contain the true label column.",
+  "msgFooter": "&copy; 2025 Network & System Lab, NSYSU &#124; Designed by Yen-Ting Lai",
 
   "msgValRequired": "This field is required.",
   "msgValIntOnly": "Integer only.",
