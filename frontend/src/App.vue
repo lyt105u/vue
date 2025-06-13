@@ -86,13 +86,13 @@ export default {
           icon: 'fa fa-line-chart',
           child: [
             {
-              href: '/predict',
-              title: 'Sub Link',
+              href: '/evaluate',
+              title: this.$t('lblModelEvaluation'),
               icon: 'fa fa-book',
             },
             {
               href: '/predict',
-              title: 'Sub Link',
+              title: this.$t('lblClinicalPrediction'),
               icon: 'fa fa-stethoscope',
             },
           ]

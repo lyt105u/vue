@@ -381,7 +381,43 @@ def run_predict():
             "status": "error",
             "message": str(e)
         })
+
+@app.route('/run-evaluate', methods=['POST'])
+def run_evaluate():
+    data = request.get_json()
+    model_path = data.get('model_path')  # 模型路徑
+    data_path = data.get('data_path')   # 輸入檔案路徑
+    output_name = data.get('output_name')  # 輸出檔案名稱
+    label_column = data.get('label_column')
+    pred_column = data.get('pred_column')
+
+    try:
+        fetch_result = subprocess.run(
+            ['python', 'evaluate.py', model_path, data_path, output_name, label_column, pred_column],
+            # capture_output=True,  # 捕獲標準輸出和標準錯誤
+            stdout=subprocess.PIPE,     # 只捕獲標準輸出
+            stderr=subprocess.DEVNULL,  # 忽略標準錯誤
+            text=True                   # 將輸出轉換為字符串
+        )
+        
+        # debug 用
+        # print("STDOUT:", fetch_result.stdout)  # 打印标准输出
+        # print("STDERR:", fetch_result.stderr)  # 打印标准错误
+        
+        if fetch_result.returncode != 0:
+            return jsonify({
+                "status": "error",
+                "message": fetch_result.stderr,
+            })
+
+        return jsonify(json.loads(fetch_result.stdout))
     
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        })
+
 @app.route('/delete-tabular-rows', methods=['POST'])
 def delete_tabular_rows():
     data = request.get_json()
