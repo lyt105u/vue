@@ -1,6 +1,6 @@
 <template>
   <div class="about">
-    <h1>{{ $t('lblPredict') }}</h1>
+    <h1>{{ $t('lblClinicalPrediction') }}</h1>
     <h6 class="text-body-secondary">{{ $t('msgPredictDescription') }}</h6>
   </div>
 
@@ -89,6 +89,15 @@
         </div>
       </div>
 
+      <!-- Predict Column -->
+      <div class="row mb-3">
+        <label for="inputEmail3" class="col-sm-3 col-form-label">{{ $t('lblPredictionColumn') }}</label>
+        <div class="col-sm-8">
+          <input v-model="selected.label_column" class="form-control" type="text" :disabled="loading">
+          <div v-if="errors.label_column" class="text-danger small">{{ errors.label_column }}</div>
+        </div>
+      </div>
+
       <!-- Results Saved as -->
       <div class="row mb-3">
         <label for="inputEmail3" class="col-sm-3 col-form-label">{{ $t('lblResultsSavedAs') }}</label>
@@ -98,15 +107,6 @@
             <span class="input-group-text">{{ watched.file_extension }}</span>
           </div>
           <div v-if="errors.output_name" class="text-danger small">{{ errors.output_name }}</div>
-        </div>
-      </div>
-      
-      <!-- Outcome Column -->
-      <div class="row mb-3">
-        <label for="inputEmail3" class="col-sm-3 col-form-label">{{ $t('lblOutcomeColumn') }}</label>
-        <div class="col-sm-8">
-          <input v-model="selected.label_column" class="form-control" type="text" :disabled="loading">
-          <div v-if="errors.label_column" class="text-danger small">{{ errors.label_column }}</div>
         </div>
       </div>
     </template>
@@ -176,8 +176,10 @@
     <h6>{{ $t('lblNote') }}</h6>
     <ol class="h6">
       <li>{{ $t('msgPredictNote1') }}</li>
+      <li>{{ $t('msgMissingDataNote') }}</li>
       <li>{{ $t('msgPredictNote2') }}</li>
       <li>{{ $t('msgPredictNote3') }}</li>
+      <li>{{ $t('msgPredictNote4') }}</li>
     </ol>
   </div>
 
