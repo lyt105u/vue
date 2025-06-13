@@ -353,7 +353,7 @@
       </div>
     </div>
 
-    <!-- Outcome 欄位 -->
+    <!-- True Label Column 欄位 -->
     <div class="row mb-3">
       <label for="inputEmail3" class="col-sm-3 col-form-label">{{ $t('lblOutcomeColumn') }}</label>
       <div class="col-sm-8">
@@ -605,6 +605,7 @@
   <div class="about text-body-secondary">
     <h6>{{ $t('lblNote') }}</h6>
     <ol class="h6">
+      <li>{{ $t('msgMissingDataNote') }}</li>
       <li>{{ $t('lblXgb') }}
         <ol type="i">
           <li><code>n_estimators</code>{{ $t('msgTrainNoteXgb1') }}</li>
