@@ -174,6 +174,7 @@ export default {
       if (typeof this.onUserDismiss === 'function') {
         this.onUserDismiss()
       } else {
+        this.hideTriggeredByCode = true
         this.modalInstance?.hide() // 預設行為：關閉 modal
       }
     },
