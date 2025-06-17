@@ -4,7 +4,7 @@
   "lblUpload": "上傳",
   "lblTrain": "訓練",
   "lblPredict": "預測",
-  "lblTrainedModel": "訓練模型",
+  "lblTrainedModel": "已訓練模型",
   "lblPredictionType": "預測類型",
   "lblFilePrediction": "檔案預測",
   "lblManualInput": "手動輸入",
