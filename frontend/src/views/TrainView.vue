@@ -638,7 +638,7 @@
 
         <!-- ROC -->
         <div class="col">
-          <div class="card mb-4 rounded-3 shadow-sm" @click="openModalImage('ROC', fold.roc)" style="cursor: pointer;">
+          <div class="card mb-4 rounded-3 shadow-sm" @click="openModalImage('ROC', `data:image/png;base64,${fold.roc}`)" style="cursor: pointer;">
             <div class="card-header py-3">
               <h4 class="my-0 fw-normal">ROC</h4>
             </div>
@@ -648,7 +648,7 @@
 
         <!-- Loss -->
         <div class="col" v-if="fold.loss_plot">
-          <div class="card mb-4 rounded-3 shadow-sm" @click="openModalImage('Loss', fold.loss_plot)" style="cursor: pointer;">
+          <div class="card mb-4 rounded-3 shadow-sm" @click="openModalImage('Loss', `data:image/png;base64,${fold.loss_plot}`)" style="cursor: pointer;">
             <div class="card-header py-3">
               <h4 class="my-0 fw-normal">Loss</h4>
             </div>
@@ -658,7 +658,7 @@
 
         <!-- Accuracy -->
         <div class="col" v-if="fold.accuracy_plot">
-          <div class="card mb-4 rounded-3 shadow-sm" @click="openModalImage('Accuracy', fold.accuracy_plot)" style="cursor: pointer;">
+          <div class="card mb-4 rounded-3 shadow-sm" @click="openModalImage('Accuracy', `data:image/png;base64,${fold.accuracy_plot}`)" style="cursor: pointer;">
             <div class="card-header py-3">
               <h4 class="my-0 fw-normal">Accuracy</h4>
             </div>
