@@ -882,7 +882,7 @@ export default {
     async listFiles() {
       this.loading = true
       try {
-        const response = await axios.post('http://127.0.0.1:5000/list-files', {
+        const response = await axios.post(`${process.env.VUE_APP_API_URL}/list-files`, {
           folder_path: 'upload', // upload/
           ext1: 'csv',
           ext2: 'xlsx',
@@ -929,7 +929,7 @@ export default {
 
       // delete-Tabular-Rows 成功才會執行 preview-tabular
       try {
-        const response = await axios.post('http://127.0.0.1:5000/delete-tabular-rows', {
+        const response = await axios.post(`${process.env.VUE_APP_API_URL}/delete-tabular-rows`, {
           file_path: `upload/${this.selected.data}`, // upload/
           rows: rowsToDelete
         })
@@ -1114,7 +1114,7 @@ export default {
     async previewTab() {
       this.loading = true
       try {
-        const response = await axios.post('http://127.0.0.1:5000/preview-tabular', {
+        const response = await axios.post(`${process.env.VUE_APP_API_URL}/preview-tabular`, {
           file_path: `upload/${this.selected.data}`, // upload/
         })
         if (response.data.status == "success") {
@@ -1206,7 +1206,7 @@ export default {
 
         console.log(payload)
 
-        const response = await axios.post(`http://127.0.0.1:5000/${api}`, payload)
+        const response = await axios.post(`${process.env.VUE_APP_API_URL}/${api}`, payload)
         this.output = response.data
         this.imageRoc = `data:image/png;base64,${this.output.roc}`
         this.imageLoss = `data:image/png;base64,${this.output.loss_plot}`
@@ -1247,7 +1247,7 @@ export default {
 
     async downloadFile(path) {
       try {
-        const response = await axios.post('http://127.0.0.1:5000/download', {
+        const response = await axios.post(`${process.env.VUE_APP_API_URL}/download`, {
           download_path: path
         }, {
           responseType: 'blob' // 關鍵：支援二進位檔案格式
@@ -1332,7 +1332,7 @@ export default {
         if (this.selected.model_type === "tabnet") extension = ".zip"
         else if (this.selected.model_type === "xgb") extension = ".json"
         // 將訓練好暫存在 model/ 的模型複製到 upload/ 中，假裝上傳
-        const response = await axios.post('http://127.0.0.1:5000/copy-local-file', {
+        const response = await axios.post(`${process.env.VUE_APP_API_URL}/copy-local-file`, {
           source_path: `model/${this.selected.model_name}${extension}`,
           target_folder: 'upload' // upload/
         })

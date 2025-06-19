@@ -284,7 +284,7 @@ export default {
     async listFiles() {
       this.loading = true
       try {
-        const response = await axios.post('http://127.0.0.1:5000/list-files', {
+        const response = await axios.post(`${process.env.VUE_APP_API_URL}/list-files`, {
           folder_path: 'upload', // upload/
           ext1: 'pkl',
           ext2: 'zip',
@@ -310,7 +310,7 @@ export default {
       }
 
       try {
-        const response = await axios.post('http://127.0.0.1:5000/list-files', {
+        const response = await axios.post(`${process.env.VUE_APP_API_URL}/list-files`, {
           folder_path: 'upload', // upload/
           ext1: 'csv',
           ext2: 'xlsx',
@@ -346,7 +346,7 @@ export default {
       this.selected.input_values = []
       if (this.selected.model_name) {
         try {
-          const response = await axios.post('http://127.0.0.1:5000/get-field-number', {
+          const response = await axios.post(`${process.env.VUE_APP_API_URL}/get-field-number`, {
             model_path: `upload/${this.selected.model_name}`, // upload/
           })
           if (response.data.status == "success") {
@@ -370,7 +370,7 @@ export default {
     async previewTab() {
       this.loading = true
       try {
-        const response = await axios.post('http://127.0.0.1:5000/preview-tabular', {
+        const response = await axios.post(`${process.env.VUE_APP_API_URL}/preview-tabular`, {
           file_path: `upload/${this.selected.data_name}`, // upload/
         })
         if (response.data.status == "success") {
@@ -430,7 +430,7 @@ export default {
 
       // delete-Tabular-Rows 成功才會執行 preview-Tabula
       try {
-        const response = await axios.post('http://127.0.0.1:5000/delete-tabular-rows', {
+        const response = await axios.post(`${process.env.VUE_APP_API_URL}/delete-tabular-rows`, {
           file_path: `upload/${this.selected.data_name}`, // upload/
           rows: rowsToDelete
         })
@@ -513,7 +513,7 @@ export default {
       this.output = null
 
       try {
-        const response = await axios.post('http://127.0.0.1:5000/run-predict', {
+        const response = await axios.post(`${process.env.VUE_APP_API_URL}/run-predict`, {
           model_path: `upload/${this.selected.model_name}`, // upload/
           mode: this.selected.mode,
           data_path: `upload/${this.selected.data_name}`, // upload/
@@ -557,7 +557,7 @@ export default {
 
     async downloadFile(path) {
       try {
-        const response = await axios.post('http://127.0.0.1:5000/download', {
+        const response = await axios.post(`${process.env.VUE_APP_API_URL}/download`, {
           download_path: path
         }, {
           responseType: 'blob' // 關鍵：支援二進位檔案格式

@@ -205,7 +205,7 @@ export default {
         const formData = new FormData()
         formData.append("file", file)
         formData.append("folder", folder)
-        const response = await axios.post('http://127.0.0.1:5000/upload-local-file', formData, {
+        const response = await axios.post(`${process.env.VUE_APP_API_URL}/upload-local-file`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data'
           }
@@ -240,7 +240,7 @@ export default {
       this.loading = true
       try {
         this.loading = true
-        const response = await axios.post('http://127.0.0.1:5000/upload-samba-file', {
+        const response = await axios.post(`${process.env.VUE_APP_API_URL}/upload-samba-file`, {
           username: this.selected.username,
           password: this.selected.password,
           remote_path: this.selected.remote_path,
