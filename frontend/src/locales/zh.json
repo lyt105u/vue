@@ -53,6 +53,7 @@
   "lblModelEvaluation": "模型評估",
   "lblClinicalPrediction": "臨床預測",
   "lblPredictionColumn": "預測結果欄位",
+  "lblAverage": "平均",
   
   "msgPreviewCaption": "顯示前 10 筆資料（總共：{count} 筆）",
   "msgUploadSuccess": "成功上傳 `{filename}`。",

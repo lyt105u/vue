@@ -53,6 +53,7 @@
   "lblModelEvaluation": "Model Evaluation",
   "lblClinicalPrediction": "Clinical Prediction",
   "lblPredictionColumn": "Prediction Column",
+  "lblAverage": "Average",
   
   "msgPreviewCaption": "Showing first 10 rows (total:{count} rows)",
   "msgUploadSuccess": "Upload `{filename}` successfully.",
