@@ -8,6 +8,17 @@ RUN npm install && npm run build
 FROM python:3.11-slim
 WORKDIR /app
 
+# 安裝必要系統依賴，給 C/C++ 編譯用
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    libboost-dev \
+    libssl-dev \
+    libffi-dev \
+    git \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
 # 安裝 Python 套件
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
