@@ -367,7 +367,7 @@
     </div>
 
     <!-- 切分訓練集 -->
-    <!-- <div class="row mb-3">
+    <div class="row mb-3">
       <label for="inputEmail3" class="col-sm-3 col-form-label">Data Split</label>
       <div class="col-sm-4">
         <div class="form-check">
@@ -385,10 +385,10 @@
           </label>
         </div>
       </div>
-    </div> -->
+    </div>
 
     <!-- Range 拉桿 -->
-    <!-- <div v-if="selected.split_strategy=='train_test_split'" class="row mb-3">
+    <div v-if="selected.split_strategy=='train_test_split'" class="row mb-3">
       <label for="inputEmail3" class="col-sm-3 col-form-label"></label>
       <div class="col-sm-4 d-flex align-items-center">
         <input v-model="selected.split_value" type="range" class="form-range" min="0.5" max="0.9" step="0.1" :disabled="loading">
@@ -409,10 +409,10 @@
           cv_folds: <strong>{{ selected.split_value}}</strong>
         </span>
       </div>
-    </div> -->
+    </div>
 
     <!-- 只留 train_test_split -->
-    <div class="row mb-3">
+    <!-- <div class="row mb-3">
       <label for="inputEmail3" class="col-sm-3 col-form-label">{{ $t('lblTrainTestSplit') }}</label>
       <div class="col-sm-4 d-flex align-items-center">
         <input v-model="selected.split_value" type="range" class="form-range" min="0.5" max="0.9" step="0.1" :disabled="loading">
@@ -422,7 +422,7 @@
           {{ $t('lblTrain') }}: <strong>{{ selected.split_value}}</strong>, {{ $t('lblTest') }}: {{ watched.test_size }}
         </span>
       </div>
-    </div>
+    </div> -->
 
     <!-- Model 儲存檔名 -->
     <div v-if="selected.split_strategy=='train_test_split'" class="row mb-3">
@@ -464,45 +464,46 @@
   
   <!-- 訓練結果 -->
   <div v-if="output" class="row row-cols-1 row-cols-md-3 mb-3 text-center">
-    <div class="col">
-      <div class="card mb-4 rounded-3 shadow-sm">
-        <div class="card-header py-3">
-          <h4 class="my-0 fw-normal">{{ $t('lblTrainingResult') }}</h4>
-        </div>
-        <div class="card-body">
-          <ul class="list-unstyled mt-3 mb-4">
-            <div class="bd-example-snippet bd-code-snippet">
-              <div class="bd-example m-0 border-0">
-                <table class="table table-sm table-bordered">
-                  <thead>
-                    <tr>
-                      <th scope="col" colspan="2">{{ $t('lblConfusionMatrix') }}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>{{ output.confusion_matrix.true_positive }}</td>
-                      <td>{{ output.confusion_matrix.false_negative }}</td>
-                    </tr>
-                    <tr>
-                      <td>{{ output.confusion_matrix.false_positive }}</td>
-                      <td>{{ output.confusion_matrix.true_negative }}</td>
-                    </tr>
-                  </tbody>
-                </table>
+    <!-- train_test_split -->
+    <template v-if="selected.split_strategy === 'train_test_split'">
+      <div class="col">
+        <div class="card mb-4 rounded-3 shadow-sm">
+          <div class="card-header py-3">
+            <h4 class="my-0 fw-normal">{{ $t('lblTrainingResult') }}</h4>
+          </div>
+          <div class="card-body">
+            <ul class="list-unstyled mt-3 mb-4">
+              <div class="bd-example-snippet bd-code-snippet">
+                <div class="bd-example m-0 border-0">
+                  <table class="table table-sm table-bordered">
+                    <thead>
+                      <tr>
+                        <th scope="col" colspan="2">{{ $t('lblConfusionMatrix') }}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>{{ output.confusion_matrix.true_positive }}</td>
+                        <td>{{ output.confusion_matrix.false_negative }}</td>
+                      </tr>
+                      <tr>
+                        <td>{{ output.confusion_matrix.false_positive }}</td>
+                        <td>{{ output.confusion_matrix.true_negative }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
-            <li>Accuracy : {{ output.metrics.accuracy.toFixed(2) }}%</li>
-            <li>Recall : {{ output.metrics.recall.toFixed(2) }}%</li>
-            <li>Precision : {{ output.metrics.precision.toFixed(2) }}%</li>
-            <li>F1_score : {{ output.metrics.f1_score.toFixed(2) }}%</li>
-          </ul>
+              <li>Accuracy : {{ output.metrics.accuracy.toFixed(2) }}%</li>
+              <li>Recall : {{ output.metrics.recall.toFixed(2) }}%</li>
+              <li>Precision : {{ output.metrics.precision.toFixed(2) }}%</li>
+              <li>F1_score : {{ output.metrics.f1_score.toFixed(2) }}%</li>
+            </ul>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Recall 列表 -->
-    <template v-if="selected.split_strategy === 'train_test_split'">
+      <!-- Recall 列表 -->
       <div class="col" v-for="recall in recallLevels" :key="recall.level">
         <div class="card mb-4 rounded-3 shadow-sm">
           <div class="card-header py-3">
@@ -542,57 +543,169 @@
           </div>
         </div>
       </div>
+
+      <!-- ROC 曲線 -->
+      <div class="col">
+        <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalImage($t('lblRocCurve'), imageRoc)" style="cursor: pointer;">
+          <div class="card-header py-3">
+            <h4 class="my-0 fw-normal">{{ $t('lblRocCurve') }}</h4>
+          </div>
+          <img :src="imageRoc" :alt="$t('lblRocCurve')" />
+        </div>
+      </div>
+
+      <!-- Loss 曲線 -->
+      <div v-if="output.loss_plot" class="col">
+        <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalImage('Loss', imageLoss)" style="cursor: pointer;">
+          <div class="card-header py-3">
+            <h4 class="my-0 fw-normal">Loss</h4>
+          </div>
+          <img :src="imageLoss" alt="Loss" />
+        </div>
+      </div>
+
+      <!-- Accuracy 曲線 -->
+      <div v-if="output.accuracy_plot" class="col">
+        <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalImage('Accuracy', imageAccuracy)" style="cursor: pointer;">
+          <div class="card-header py-3">
+            <h4 class="my-0 fw-normal">Accuracy</h4>
+          </div>
+          <img :src="imageAccuracy" alt="Accuracy" />
+        </div>
+      </div>
+
+      <!-- SHAP -->
+      <div v-if="!output.shap_error" class="col">
+        <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalShap(imageShap, output.shap_importance)" style="cursor: pointer;">
+          <div class="card-header py-3">
+            <h4 class="my-0 fw-normal">{{ $t('lblShap') }}</h4>
+          </div>
+          <img :src="imageShap" :alt="$t('lblShap')" />
+        </div>
+      </div>
+
+      <!-- LIME -->
+      <div v-if="!output.lime_error" class="col">
+        <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalLime(imageLime, output.lime_example_0)" style="cursor: pointer;">
+          <div class="card-header py-3">
+            <h4 class="my-0 fw-normal">{{ $t('lblLime') }}</h4>
+          </div>
+          <img :src="imageLime" :alt="$t('lblLime')" />
+        </div>
+      </div>
     </template>
 
-    <!-- ROC 曲線 -->
-    <div class="col">
-      <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalImage($t('lblRocCurve'), imageRoc)" style="cursor: pointer;">
-        <div class="card-header py-3">
-          <h4 class="my-0 fw-normal">{{ $t('lblRocCurve') }}</h4>
+    <template v-if="selected.split_strategy === 'k_fold'">
+      <!-- 每個 fold -->
+      <div v-for="fold in output.folds" :key="fold.fold">
+        <div class="col">
+          <div class="card mb-4 rounded-3 shadow-sm">
+            <div class="card-header py-3">
+              <h4 class="my-0 fw-normal">Fold {{ fold.fold }}</h4>
+            </div>
+            <div class="card-body">
+              <ul class="list-unstyled mt-3 mb-4">
+                <div class="bd-example-snippet bd-code-snippet">
+                  <div class="bd-example m-0 border-0">
+                    <table class="table table-sm table-bordered">
+                      <thead>
+                        <tr>
+                          <th scope="col" colspan="2">{{ $t('lblConfusionMatrix') }}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>{{ fold.confusion_matrix.true_positive }}</td>
+                          <td>{{ fold.confusion_matrix.false_negative }}</td>
+                        </tr>
+                        <tr>
+                          <td>{{ fold.confusion_matrix.false_positive }}</td>
+                          <td>{{ fold.confusion_matrix.true_negative }}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <li>Accuracy : {{ fold.metrics.accuracy.toFixed(2) }}%</li>
+                <li>Recall : {{ fold.metrics.recall.toFixed(2) }}%</li>
+                <li>Precision : {{ fold.metrics.precision.toFixed(2) }}%</li>
+                <li>F1_score : {{ fold.metrics.f1_score.toFixed(2) }}%</li>
+                <li>AUC : {{ fold.metrics.auc.toFixed(2) }}%</li>
+              </ul>
+            </div>
+          </div>
         </div>
-        <img :src="imageRoc" :alt="$t('lblRocCurve')" />
-      </div>
-    </div>
-    
-    <!-- Loss 曲線 -->
-    <div v-if="output.loss_plot" class="col">
-      <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalImage('Loss', imageLoss)" style="cursor: pointer;">
-        <div class="card-header py-3">
-          <h4 class="my-0 fw-normal">Loss</h4>
-        </div>
-        <img :src="imageLoss" alt="Loss" />
-      </div>
-    </div>
 
-    <!-- Accuracy 曲線 -->
-    <div v-if="output.accuracy_plot" class="col">
-      <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalImage('Accuracy', imageAccuracy)" style="cursor: pointer;">
-        <div class="card-header py-3">
-          <h4 class="my-0 fw-normal">Accuracy</h4>
+        <!-- ROC -->
+        <div class="col">
+          <div class="card mb-4 rounded-3 shadow-sm" @click="openModalImage('ROC', fold.roc)" style="cursor: pointer;">
+            <div class="card-header py-3">
+              <h4 class="my-0 fw-normal">ROC</h4>
+            </div>
+            <img :src="`data:image/png;base64,${fold.roc}`" alt="ROC" />
+          </div>
         </div>
-        <img :src="imageAccuracy" alt="Accuracy" />
-      </div>
-    </div>
 
-    <!-- SHAP -->
-    <div v-if="!output.shap_error" class="col">
-      <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalShap(imageShap, output.shap_importance)" style="cursor: pointer;">
-        <div class="card-header py-3">
-          <h4 class="my-0 fw-normal">{{ $t('lblShap') }}</h4>
+        <!-- Loss -->
+        <div class="col" v-if="fold.loss_plot">
+          <div class="card mb-4 rounded-3 shadow-sm" @click="openModalImage('Loss', fold.loss_plot)" style="cursor: pointer;">
+            <div class="card-header py-3">
+              <h4 class="my-0 fw-normal">Loss</h4>
+            </div>
+            <img :src="`data:image/png;base64,${fold.loss_plot}`" alt="Loss" />
+          </div>
         </div>
-        <img :src="imageShap" :alt="$t('lblShap')" />
-      </div>
-    </div>
 
-    <!-- LIME -->
-    <div v-if="!output.lime_error" class="col">
-      <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalLime(imageLime, output.lime_example_0)" style="cursor: pointer;">
-        <div class="card-header py-3">
-          <h4 class="my-0 fw-normal">{{ $t('lblLime') }}</h4>
+        <!-- Accuracy -->
+        <div class="col" v-if="fold.accuracy_plot">
+          <div class="card mb-4 rounded-3 shadow-sm" @click="openModalImage('Accuracy', fold.accuracy_plot)" style="cursor: pointer;">
+            <div class="card-header py-3">
+              <h4 class="my-0 fw-normal">Accuracy</h4>
+            </div>
+            <img :src="`data:image/png;base64,${fold.accuracy_plot}`" alt="Accuracy" />
+          </div>
         </div>
-        <img :src="imageLime" :alt="$t('lblLime')" />
       </div>
-    </div>
+
+      <!-- 平均值結果 -->
+      <div class="col">
+        <div class="card mb-4 rounded-3 shadow-sm">
+          <div class="card-header py-3">
+            <h4 class="my-0 fw-normal">{{ $t('lblAverage') }}</h4>
+          </div>
+          <div class="card-body">
+            <ul class="list-unstyled mt-3 mb-4">
+              <div class="bd-example-snippet bd-code-snippet">
+                <div class="bd-example m-0 border-0">
+                  <table class="table table-sm table-bordered">
+                    <thead>
+                      <tr>
+                        <th scope="col" colspan="2">{{ $t('lblConfusionMatrix') }}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>{{ output.average.confusion_matrix.true_positive }}</td>
+                        <td>{{ output.average.confusion_matrix.false_negative }}</td>
+                      </tr>
+                      <tr>
+                        <td>{{ output.average.confusion_matrix.false_positive }}</td>
+                        <td>{{ output.average.confusion_matrix.true_negative }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <li>Accuracy : {{ output.average.accuracy.toFixed(2) }}%</li>
+              <li>Recall : {{ output.average.recall.toFixed(2) }}%</li>
+              <li>Precision : {{ output.average.precision.toFixed(2) }}%</li>
+              <li>F1_score : {{ output.average.f1_score.toFixed(2) }}%</li>
+              <li>AUC : {{ output.average.auc.toFixed(2) }}%</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </template>
   </div>
 
   <div class="bd-example-snippet bd-code-snippet">
@@ -1103,7 +1216,7 @@ export default {
       }
 
       // Model Saved as (model_name)
-      if (!this.selected.model_name) {
+      if (this.selected.split_strategy=="train_test_split" && !this.selected.model_name) {
         this.errors.model_name = this.$t('msgValRequired')
         isValid = false
       }
@@ -1208,12 +1321,6 @@ export default {
 
         const response = await axios.post(`${process.env.VUE_APP_API_URL}/${api}`, payload)
         this.output = response.data
-        this.imageRoc = `data:image/png;base64,${this.output.roc}`
-        this.imageLoss = `data:image/png;base64,${this.output.loss_plot}`
-        this.imageAccuracy = `data:image/png;base64,${this.output.accuracy_plot}`
-        this.imageShap = `data:image/png;base64,${this.output.shap_plot}`
-        this.imageLime = `data:image/png;base64,${this.output.lime_plot}`
-
       } catch (error) {
         this.output = {
           "status": "error",
@@ -1221,19 +1328,32 @@ export default {
         }
       } finally {
         if (this.output.status == 'success') {
-          // download api
-          let extension = ".pkl"
-          if (this.selected.model_type === "tabnet") extension = ".zip"
-          else if (this.selected.model_type === "xgb") extension = ".json"
-          // 訓練好的模型會暫存在 model/ 資料夾中，再去把它載下來
-          // 懶得改了QQ，要改的話要去每一個 train_xxx.py 改
-          const path = `model/${this.selected.model_name}${extension}`
-          await this.downloadFile(path)
+          if (this.selected.split_strategy == "train_test_split") {
+            this.imageRoc = `data:image/png;base64,${this.output.roc}`
+            this.imageLoss = `data:image/png;base64,${this.output.loss_plot}`
+            this.imageAccuracy = `data:image/png;base64,${this.output.accuracy_plot}`
+            this.imageShap = `data:image/png;base64,${this.output.shap_plot}`
+            this.imageLime = `data:image/png;base64,${this.output.lime_plot}`
+            // download api
+            let extension = ".pkl"
+            if (this.selected.model_type === "tabnet") extension = ".zip"
+            else if (this.selected.model_type === "xgb") extension = ".json"
+            // 訓練好的模型會暫存在 model/ 資料夾中，再去把它載下來
+            // 懶得改了QQ，要改的話要去每一個 train_xxx.py 改
+            const path = `model/${this.selected.model_name}${extension}`
+            await this.downloadFile(path)
 
-          this.modal.title = this.$t('lblTrainingCompleted')
-          this.modal.content = this.$t('msgTrainingCompleted')
-          this.modal.icon = 'success'
-          this.openModalFinishTraining()
+            this.modal.title = this.$t('lblTrainingCompleted')
+            this.modal.content = this.$t('msgTrainingCompleted')
+            this.modal.icon = 'success'
+            this.openModalFinishTraining()
+          } else if (this.selected.split_strategy == "k_fold") {
+            this.modal.title = this.$t('lblTrainingCompleted')
+            this.modal.content = this.$t('lblTrainingCompleted')
+            this.modal.icon = 'success'
+            this.openModalNotification()
+          }
+          
         } else if (this.output.status == 'error') {
           this.modal.title = this.$t('lblError')
           this.modal.content = this.output.message

@@ -1,3 +1,5 @@
+# usage: python train_xgb.py upload/高醫訓練csv.csv label train_test_split 0.8 xgb_model 100 0.300000012 6
+# usage: python train_xgb.py upload/高醫訓練csv.csv label k_fold 2 "" 100 0.300000012 6 
 import json
 import argparse
 import os
@@ -300,79 +302,108 @@ def plot_accuracy(evals_result):
 
     return image_base64
 
-# def kfold_evaluation(X, y, split_value, train_function):
-#     cv_folds = int(split_value)
-#     skf = StratifiedKFold(n_splits=cv_folds, shuffle=True, random_state=30)
+def kfold_evaluation(X, y, split_value, train_function):
+    cv_folds = int(split_value)
+    skf = StratifiedKFold(n_splits=cv_folds, shuffle=True, random_state=30)
+    folds_result = []
+    y_test_all = []
+    y_pred_proba_all = []
 
-#     total_tn, total_fp, total_fn, total_tp = 0, 0, 0, 0
-#     tpr_list = []
-#     fpr_list = []
-#     auc_list = []
-#     y_test_all = []
-#     y_pred_proba_all = []
+    all_metrics = {
+        "accuracy": [],
+        "recall": [],
+        "precision": [],
+        "f1_score": [],
+        "auc": []
+    }
 
-#     for fold, (train_index, test_index) in enumerate(skf.split(X, y), 1):
-#         X_train, X_test = X[train_index], X[test_index]
-#         y_train, y_test = y[train_index], y[test_index]
+    total_tn = total_fp = total_fn = total_tp = 0
 
-#         model = train_function(X_train, y_train, '')
+    for fold, (train_index, test_index) in enumerate(skf.split(X, y), 1):
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+        model, evals_result = train_function(X_train, y_train, X_test, y_test)
+        y_pred_proba = model.predict_proba(X_test)[:, 1]
+        y_pred = (y_pred_proba >= 0.5).astype(int)
+        tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
 
-#         y_pred_proba = model.predict_proba(X_test)[:, 1]
-#         y_pred = (y_pred_proba >= 0.5).astype(int)
+        total_tn += tn
+        total_fp += fp
+        total_fn += fn
+        total_tp += tp
 
-#         tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
-#         total_tn += tn
-#         total_fp += fp
-#         total_fn += fn
-#         total_tp += tp
+        accuracy = (tp + tn) / (tp + tn + fp + fn)
+        recall = tp / (tp + fn) if (tp + fn) > 0 else 0
+        precision = tp / (tp + fp) if (tp + fp) > 0 else 0
+        f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0
+        fpr, tpr, _ = roc_curve(y_test, y_pred_proba)
+        auc_score = auc(fpr, tpr)
 
-#         fpr, tpr, _ = roc_curve(y_test, y_pred_proba)
-#         auc_score = auc(fpr, tpr)
-#         tpr_list.append(tpr)
-#         fpr_list.append(fpr)
-#         auc_list.append(auc_score)
+        all_metrics["accuracy"].append(accuracy)
+        all_metrics["recall"].append(recall)
+        all_metrics["precision"].append(precision)
+        all_metrics["f1_score"].append(f1)
+        all_metrics["auc"].append(auc_score)
 
-#         y_test_all.extend(y_test)
-#         y_pred_proba_all.extend(y_pred_proba)
+        plt.figure()
+        plt.plot(fpr, tpr, color='m', label=f"ROC curve (AUC = {auc_score:.2f})")
+        plt.plot([0, 1], [0, 1], color='0', linestyle="--")
+        plt.xlabel("False Positive Rate")
+        plt.ylabel("True Positive Rate")
+        plt.legend(loc="lower right")
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png')
+        buf.seek(0)
+        roc_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+        buf.close()
+        plt.close()
 
-#     avg_accuracy = (total_tp + total_tn) / (total_tp + total_tn + total_fp + total_fn)
-#     avg_recall = total_tp / (total_tp + total_fn) if (total_tp + total_fn) > 0 else 0
-#     avg_precision = total_tp / (total_tp + total_fp) if (total_tp + total_fp) > 0 else 0
-#     avg_f1 = 2 * avg_precision * avg_recall / (avg_precision + avg_recall) if (avg_precision + avg_recall) > 0 else 0
-#     avg_auc = np.mean(auc_list)
+        loss_base64 = plot_loss(evals_result)
+        acc_base64 = plot_accuracy(evals_result)
 
-#     fpr_agg, tpr_agg, _ = roc_curve(y_test_all, y_pred_proba_all)
-#     plt.figure()
-#     plt.plot(fpr_agg, tpr_agg, color='m', label=f"ROC curve (AUC = {avg_auc:.2f})")
-#     plt.plot([0, 1], [0, 1], color='0', linestyle="--")
-#     plt.xlabel("False Positive Rate")
-#     plt.ylabel("True Positive Rate")
-#     plt.legend(loc="lower right")
+        folds_result.append({
+            "fold": fold,
+            "metrics": {
+                "accuracy": accuracy * 100,
+                "recall": recall * 100,
+                "precision": precision * 100,
+                "f1_score": f1 * 100,
+                "auc": auc_score * 100,
+            },
+            "confusion_matrix": {
+                "true_negative": tn,
+                "false_positive": fp,
+                "false_negative": fn,
+                "true_positive": tp,
+            },
+            "roc": roc_base64,
+            "loss_plot": loss_base64,
+            "accuracy_plot": acc_base64
+        })
 
-#     buf = io.BytesIO()
-#     plt.savefig(buf, format='png')
-#     buf.seek(0)
-#     roc_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
-#     buf.close()
+        y_test_all.extend(y_test)
+        y_pred_proba_all.extend(y_pred_proba)
 
-#     result = {
-#         "status": "success",
-#         "metrics": {
-#             "accuracy": avg_accuracy * 100,
-#             "recall": avg_recall * 100,
-#             "precision": avg_precision * 100,
-#             "f1_score": avg_f1 * 100,
-#             "auc": avg_auc * 100
-#         },
-#         "confusion_matrix": {
-#             "true_negative": total_tn,
-#             "false_positive": total_fp,
-#             "false_negative": total_fn,
-#             "true_positive": total_tp,
-#         },
-#         "roc": roc_base64
-#     }
-#     return result
+    avg_result = {
+        "accuracy": float(np.mean(all_metrics["accuracy"])) * 100,
+        "recall": float(np.mean(all_metrics["recall"])) * 100,
+        "precision": float(np.mean(all_metrics["precision"])) * 100,
+        "f1_score": float(np.mean(all_metrics["f1_score"])) * 100,
+        "auc": float(np.mean(all_metrics["auc"])) * 100,
+        "confusion_matrix": {
+            "true_negative": total_tn,
+            "false_positive": total_fp,
+            "false_negative": total_fn,
+            "true_positive": total_tp,
+        }
+    }
+
+    result = {
+        "status": "success",
+        "folds": folds_result,
+        "average": avg_result
+    }
+    return result
 
 def main(file_path, label_column, split_strategy, split_value, model_name, n_estimators, learning_rate, max_depth):
     try:
@@ -397,26 +428,12 @@ def main(file_path, label_column, split_strategy, split_value, model_name, n_est
         results.update(shap_result)
         lime_result = explain_with_lime(model, x_test, y_test)
         results.update(lime_result)
-    # elif split_strategy == "k_fold":
-    #     # 重新打包 train function，這樣就不用傳遞超參數
-    #     def train_xgb_wrapped(x_train, y_train, model_name):
-    #         xgb = XGBClassifier(base_score=0.5, booster='gbtree', colsample_bylevel=1,
-    #                             colsample_bynode=1, colsample_bytree=1, enable_categorical=False,
-    #                             gamma=0, device='cpu', importance_type=None,
-    #                             interaction_constraints='', learning_rate=learning_rate,
-    #                             max_delta_step=0, max_depth=max_depth, min_child_weight=1,
-    #                             monotone_constraints='()', n_estimators=n_estimators, n_jobs=72,
-    #                             num_parallel_tree=1, random_state=0,
-    #                             reg_alpha=0, reg_lambda=1, scale_pos_weight=1, subsample=1,
-    #                             tree_method='exact', validate_parameters=1, verbosity=None)
-    #         xgb.fit(x_train, y_train)
-            
-    #         if model_name:
-    #             os.makedirs("model", exist_ok=True)
-    #             xgb.save_model(f"model/{model_name}.json")
+    elif split_strategy == "k_fold":
+        # 重新打包 train function，這樣就不用傳遞超參數
+        def train_xgb_wrapped(x_train, y_train, x_val, y_val):
+            return train_xgb(x_train, y_train, x_val, y_val, "", n_estimators, learning_rate, max_depth)
 
-    #         return xgb
-    #     results = kfold_evaluation(x, y, split_value, train_xgb_wrapped)
+        results = kfold_evaluation(x, y, split_value, train_xgb_wrapped)
     else:
         print(json.dumps({
             "status": "error",
