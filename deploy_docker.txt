@@ -1,0 +1,20 @@
+# 停用舊容器（若已存在）
+docker stop m123040053_mlas_container
+
+# 刪除舊容器（若已存在）
+docker rm m123040053_mlas_container
+
+# 建立 Docker image（名稱為 m123040053_mlas）
+docker build -t m123040053_mlas:latest .
+
+# 啟動新容器，對外開放 8081 port，內部對應 Flask 的 5000
+docker run -d -p 8081:5000 --name m123040053_mlas_container m123040053_mlas:latest
+
+# 6. 查看是否啟動成功（容器清單）
+docker ps
+
+# 7. 查看容器內部日誌（可用來除錯）
+docker logs m123040053_mlas_container
+
+# 8. 若需要重啟容器（不中斷部署時）
+docker restart m123040053_mlas_container

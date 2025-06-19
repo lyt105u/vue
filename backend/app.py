@@ -6,7 +6,7 @@
 
 
 
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, send_from_directory
 from flask_cors import CORS
 import subprocess
 import json
@@ -14,8 +14,19 @@ import os
 import mimetypes
 import shutil
 
-app = Flask(__name__)
+# 建立 Flask 應用，指定靜態資源位置（給 Vue build 後的檔案用）
+app = Flask(__name__, static_folder='static', static_url_path='')
 CORS(app)  # 啟用跨域支持
+
+# 當訪問 "/" 時，回傳 index.html
+@app.route('/')
+def index():
+    return send_from_directory(app.static_folder, 'index.html')
+
+# 支援前端 Vue Router：讓 404 fallback 到 index.html
+@app.errorhandler(404)
+def not_found(e):
+    return send_from_directory(app.static_folder, 'index.html')
 
 @app.route('/list-files', methods=['POST'])
 def list_files():
