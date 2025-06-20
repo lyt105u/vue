@@ -54,6 +54,9 @@
   "lblClinicalPrediction": "Clinical Prediction",
   "lblPredictionColumn": "Prediction Column",
   "lblAverage": "Average",
+  "lblDataSplit": "Data Split",
+  "lblSplitTestTrain": "Split into test and train",
+  "lblKfoldValid": "K-fold Cross Validation",
   
   "msgPreviewCaption": "Showing first 10 rows (total:{count} rows)",
   "msgUploadSuccess": "Upload `{filename}` successfully.",

@@ -368,12 +368,12 @@
 
     <!-- 切分訓練集 -->
     <div class="row mb-3">
-      <label for="inputEmail3" class="col-sm-3 col-form-label">Data Split</label>
+      <label for="inputEmail3" class="col-sm-3 col-form-label">{{ $t('lblDataSplit') }}</label>
       <div class="col-sm-4">
         <div class="form-check">
           <input v-model="selected.split_strategy" class="form-check-input" type="radio" name="gridRadios" id="gridRadios1" value="train_test_split" :disabled="loading">
           <label class="form-check-label" for="gridRadios1">
-            Split into Train and Test
+            {{ $t('lblSplitTestTrain') }}
           </label>
         </div>
       </div>
@@ -381,7 +381,7 @@
         <div class="form-check">
           <input v-model="selected.split_strategy" class="form-check-input" type="radio" name="gridRadios" id="gridRadios1" value="k_fold" :disabled="loading">
           <label class="form-check-label" for="gridRadios1">
-            K-Fold Cross Validation
+            {{ $t('lblKfoldValid') }}
           </label>
         </div>
       </div>
@@ -395,7 +395,7 @@
       </div>
       <div class="col-sm-4 d-flex align-items-center">
         <span id="passwordHelpInline" class="form-text">
-          Train: <strong>{{ selected.split_value}}</strong>, Test: {{ watched.test_size }}
+          {{ $t('lblTrain') }}: <strong>{{ selected.split_value}}</strong>, {{ $t('lblTest') }}: {{ watched.test_size }}
         </span>
       </div>
     </div>
