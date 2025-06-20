@@ -1352,6 +1352,12 @@ export default {
               this.modal.icon = 'error'
               this.openModalNotification()
             }
+            if (errorFlag == false) {
+              this.modal.title = this.$t('lblTrainingCompleted')
+              this.modal.content = this.$t('msgTrainingCompleted')
+              this.modal.icon = 'success'
+              this.openModalFinishTraining()
+            }
           } else if (this.selected.split_strategy == "k_fold") {
             for (let i=1; i<= this.selected.split_value; i++) {
               const path = `model/${this.selected.model_name}_fold_${i}${extension}`
@@ -1365,12 +1371,12 @@ export default {
                 this.openModalNotification()
               }
             }
-          }
-          if (errorFlag == false) {
-            this.modal.title = this.$t('lblTrainingCompleted')
-            this.modal.content = this.$t('msgTrainingCompleted')
-            this.modal.icon = 'success'
-            this.openModalFinishTraining()
+            if (errorFlag == false) {
+              this.modal.title = this.$t('lblTrainingCompleted')
+              this.modal.content = this.$t('lblTrainingCompleted')
+              this.modal.icon = 'success'
+              this.openModalNotification()
+            }
           }
         } else if (this.output.status == 'error') {
           this.modal.title = this.$t('lblError')
