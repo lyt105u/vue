@@ -425,7 +425,7 @@
     </div> -->
 
     <!-- Model 儲存檔名 -->
-    <div v-if="selected.split_strategy=='train_test_split'" class="row mb-3">
+    <div class="row mb-3">
       <label for="inputEmail3" class="col-sm-3 col-form-label">{{ $t('lblModelSavedAs') }}</label>
       <div class="col-sm-8">
         <div class="input-group">
@@ -1216,7 +1216,7 @@ export default {
       }
 
       // Model Saved as (model_name)
-      if (this.selected.split_strategy=="train_test_split" && !this.selected.model_name) {
+      if (!this.selected.model_name) {
         this.errors.model_name = this.$t('msgValRequired')
         isValid = false
       }
@@ -1327,7 +1327,12 @@ export default {
           "message": error,
         }
       } finally {
+        let errorFlag = false
         if (this.output.status == 'success') {
+          let extension = ".pkl"
+          if (this.selected.model_type === "tabnet") extension = ".zip"
+          else if (this.selected.model_type === "xgb") extension = ".json"
+
           if (this.selected.split_strategy == "train_test_split") {
             this.imageRoc = `data:image/png;base64,${this.output.roc}`
             this.imageLoss = `data:image/png;base64,${this.output.loss_plot}`
@@ -1335,25 +1340,38 @@ export default {
             this.imageShap = `data:image/png;base64,${this.output.shap_plot}`
             this.imageLime = `data:image/png;base64,${this.output.lime_plot}`
             // download api
-            let extension = ".pkl"
-            if (this.selected.model_type === "tabnet") extension = ".zip"
-            else if (this.selected.model_type === "xgb") extension = ".json"
             // 訓練好的模型會暫存在 model/ 資料夾中，再去把它載下來
             // 懶得改了QQ，要改的話要去每一個 train_xxx.py 改
             const path = `model/${this.selected.model_name}${extension}`
-            await this.downloadFile(path)
-
+            try {
+              await this.downloadFile(path)
+            } catch (error) {
+              errorFlag = true
+              this.modal.title = this.$t('lblError')
+              this.modal.content = this.output.message
+              this.modal.icon = 'error'
+              this.openModalNotification()
+            }
+          } else if (this.selected.split_strategy == "k_fold") {
+            for (let i=1; i<= this.selected.split_value; i++) {
+              const path = `model/${this.selected.model_name}_fold_${i}${extension}`
+              try {
+                await this.downloadFile(path)
+              } catch (error) {
+                errorFlag = true
+                this.modal.title = this.$t('lblError')
+                this.modal.content = this.output.message
+                this.modal.icon = 'error'
+                this.openModalNotification()
+              }
+            }
+          }
+          if (errorFlag == false) {
             this.modal.title = this.$t('lblTrainingCompleted')
             this.modal.content = this.$t('msgTrainingCompleted')
             this.modal.icon = 'success'
             this.openModalFinishTraining()
-          } else if (this.selected.split_strategy == "k_fold") {
-            this.modal.title = this.$t('lblTrainingCompleted')
-            this.modal.content = this.$t('lblTrainingCompleted')
-            this.modal.icon = 'success'
-            this.openModalNotification()
           }
-          
         } else if (this.output.status == 'error') {
           this.modal.title = this.$t('lblError')
           this.modal.content = this.output.message

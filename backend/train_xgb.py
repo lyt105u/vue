@@ -302,12 +302,9 @@ def plot_accuracy(evals_result):
 
     return image_base64
 
-def kfold_evaluation(X, y, split_value, train_function):
-    cv_folds = int(split_value)
+def kfold_evaluation(X, y, cv_folds, model_name, n_estimators, learning_rate, max_depth):
     skf = StratifiedKFold(n_splits=cv_folds, shuffle=True, random_state=30)
     folds_result = []
-    y_test_all = []
-    y_pred_proba_all = []
 
     all_metrics = {
         "accuracy": [],
@@ -322,7 +319,10 @@ def kfold_evaluation(X, y, split_value, train_function):
     for fold, (train_index, test_index) in enumerate(skf.split(X, y), 1):
         X_train, X_test = X[train_index], X[test_index]
         y_train, y_test = y[train_index], y[test_index]
-        model, evals_result = train_function(X_train, y_train, X_test, y_test)
+
+        model_fold_name = f"{model_name}_fold_{fold}"
+        model, evals_result = train_xgb(X_train, y_train, X_test, y_test, model_fold_name , n_estimators, learning_rate, max_depth)
+        
         y_pred_proba = model.predict_proba(X_test)[:, 1]
         y_pred = (y_pred_proba >= 0.5).astype(int)
         tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
@@ -381,8 +381,6 @@ def kfold_evaluation(X, y, split_value, train_function):
             "accuracy_plot": acc_base64
         })
 
-        y_test_all.extend(y_test)
-        y_pred_proba_all.extend(y_pred_proba)
 
     avg_result = {
         "accuracy": float(np.mean(all_metrics["accuracy"])) * 100,
@@ -430,10 +428,7 @@ def main(file_path, label_column, split_strategy, split_value, model_name, n_est
         results.update(lime_result)
     elif split_strategy == "k_fold":
         # 重新打包 train function，這樣就不用傳遞超參數
-        def train_xgb_wrapped(x_train, y_train, x_val, y_val):
-            return train_xgb(x_train, y_train, x_val, y_val, "", n_estimators, learning_rate, max_depth)
-
-        results = kfold_evaluation(x, y, split_value, train_xgb_wrapped)
+        results = kfold_evaluation(x, y, int(split_value), model_name, n_estimators, learning_rate, max_depth)
     else:
         print(json.dumps({
             "status": "error",
