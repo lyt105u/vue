@@ -243,6 +243,101 @@ def explain_with_lime(model, x_test, y_test):
         
     return result
 
+def kfold_evaluation(X, y, cv_folds, model_name, n_estimators, max_depth, random_state, n_jobs):
+    skf = StratifiedKFold(n_splits=cv_folds, shuffle=True, random_state=30)
+    folds_result = []
+
+    all_metrics = {
+        "accuracy": [],
+        "recall": [],
+        "precision": [],
+        "f1_score": [],
+        "auc": []
+    }
+
+    total_tn = total_fp = total_fn = total_tp = 0
+
+    for fold, (train_index, test_index) in enumerate(skf.split(X, y), 1):
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+
+        model_fold_name = f"{model_name}_fold_{fold}"
+        model = train_rf(X_train, y_train, model_fold_name, n_estimators, max_depth, random_state, n_jobs)
+
+        y_pred_proba = model.predict_proba(X_test)[:, 1]
+        y_pred = (y_pred_proba >= 0.5).astype(int)
+        tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
+
+        total_tn += tn
+        total_fp += fp
+        total_fn += fn
+        total_tp += tp
+
+        accuracy = accuracy_score(y_test, y_pred)
+        recall = recall_score(y_test, y_pred)
+        precision = precision_score(y_test, y_pred)
+        f1 = f1_score(y_test, y_pred)
+        fpr, tpr, _ = roc_curve(y_test, y_pred_proba)
+        auc_score = auc(fpr, tpr)
+
+        all_metrics["accuracy"].append(accuracy)
+        all_metrics["recall"].append(recall)
+        all_metrics["precision"].append(precision)
+        all_metrics["f1_score"].append(f1)
+        all_metrics["auc"].append(auc_score)
+
+        plt.figure()
+        plt.plot(fpr, tpr, color='m', label=f"ROC curve (AUC = {auc_score:.2f})")
+        plt.plot([0, 1], [0, 1], color='0', linestyle="--")
+        plt.xlabel("False Positive Rate")
+        plt.ylabel("True Positive Rate")
+        plt.legend(loc="lower right")
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png')
+        buf.seek(0)
+        roc_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+        buf.close()
+        plt.close()
+
+        folds_result.append({
+            "fold": fold,
+            "metrics": {
+                "accuracy": accuracy * 100,
+                "recall": recall * 100,
+                "precision": precision * 100,
+                "f1_score": f1 * 100,
+                "auc": auc_score * 100,
+            },
+            "confusion_matrix": {
+                "true_negative": tn,
+                "false_positive": fp,
+                "false_negative": fn,
+                "true_positive": tp,
+            },
+            "roc": roc_base64
+        })
+
+    avg_result = {
+        "accuracy": float(np.mean(all_metrics["accuracy"])) * 100,
+        "recall": float(np.mean(all_metrics["recall"])) * 100,
+        "precision": float(np.mean(all_metrics["precision"])) * 100,
+        "f1_score": float(np.mean(all_metrics["f1_score"])) * 100,
+        "auc": float(np.mean(all_metrics["auc"])) * 100,
+        "confusion_matrix": {
+            "true_negative": total_tn,
+            "false_positive": total_fp,
+            "false_negative": total_fn,
+            "true_positive": total_tp,
+        }
+    }
+
+    result = {
+        "status": "success",
+        "folds": folds_result,
+        "average": avg_result
+    }
+    return result
+
 def main(file_path, label_column, split_strategy, split_value, model_name, n_estimators, max_depth, random_state, n_jobs):
     try:
         x, y = prepare_data(file_path, label_column)
@@ -264,6 +359,10 @@ def main(file_path, label_column, split_strategy, split_value, model_name, n_est
         results.update(shap_result)
         lime_result = explain_with_lime(model, x_test, y_test)
         results.update(lime_result)
+    elif split_strategy == "k_fold":
+        results = kfold_evaluation(
+            x, y, int(split_value), model_name, n_estimators, max_depth, random_state, n_jobs
+        )
     else:
         print(json.dumps({
             "status": "error",
