@@ -34,13 +34,15 @@ def train_xgb(x_train, y_train, x_val, y_val, model_name, n_estimators, learning
     evals_result = {}
     xgb = XGBClassifier(base_score=0.5, booster='gbtree', colsample_bylevel=1,
                         colsample_bynode=1, colsample_bytree=1, enable_categorical=False,
-                        gamma=0, device='cpu', importance_type=None,
+                        gamma=0, device='cuda', importance_type=None,
                         interaction_constraints='', learning_rate=learning_rate,
                         max_delta_step=0, max_depth=max_depth, min_child_weight=1,
                         monotone_constraints='()', n_estimators=n_estimators, n_jobs=72,
                         num_parallel_tree=1, random_state=0,
                         reg_alpha=0, reg_lambda=1, scale_pos_weight=1, subsample=1,
-                        tree_method='exact', validate_parameters=1, verbosity=None, eval_metric=['logloss', 'error'])
+                        validate_parameters=1, verbosity=None, eval_metric=['logloss', 'error'],
+                        tree_method='gpu_hist',
+                        predictor='gpu_predictor')
     xgb.fit(
         x_train, y_train,
         eval_set=[(x_train, y_train), (x_val, y_val)],

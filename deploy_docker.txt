@@ -12,7 +12,7 @@ docker build -t m123040053_mlas:latest .
 docker build --no-cache --progress=plain -t m123040053_mlas:latest .
 
 # 啟動新容器，對外開放 8081 port，內部對應 Flask 的 5000
-docker run -d -p 8081:5000 --name m123040053_mlas_container m123040053_mlas:latest
+docker run --gpus all -d -p 8081:5000 --name m123040053_mlas_container m123040053_mlas:latest
 
 # 6. 查看是否啟動成功（容器清單）
 docker ps
