@@ -961,8 +961,32 @@ export default {
         this.previewTab()
       }
     },
+    loading(newVal) {
+      if (newVal === true) {
+        window.addEventListener('beforeunload', this.handleBeforeUnload)
+      } else {
+        window.removeEventListener('beforeunload', this.handleBeforeUnload)
+      }
+    }
+  },
+  beforeRouteLeave(to, from, next) {
+    if (this.loading) {
+      const answer = window.confirm('模型正在訓練中，確定要離開嗎？')
+      if (answer) {
+        next()
+      } else {
+        next(false)
+      }
+    } else {
+      next()
+    }
   },
   methods: {
+    handleBeforeUnload(event) {
+      event.preventDefault()
+      event.returnValue = '' // 必需，讓瀏覽器顯示警示對話框
+    },
+
     initPreviewData() {
       this.preview_data = {
         columns: [],
