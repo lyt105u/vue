@@ -303,7 +303,7 @@ def plot_accuracy(evals_result):
 
     return image_base64
 
-def kfold_evaluation(x, y, cv_folds, n_estimators, learning_rate, max_depth, num_leaves):
+def kfold_evaluation(x, y, cv_folds, model_name, n_estimators, learning_rate, max_depth, num_leaves):
     skf = StratifiedKFold(n_splits=cv_folds, shuffle=True, random_state=30)
     folds_result = []
     all_metrics = {
@@ -321,7 +321,8 @@ def kfold_evaluation(x, y, cv_folds, n_estimators, learning_rate, max_depth, num
         x_train, x_val = x[train_index], x[val_index]
         y_train, y_val = y[train_index], y[val_index]
 
-        model, evals_result = train_lgbm(x_train, y_train, x_val, y_val, None, n_estimators, learning_rate, max_depth, num_leaves)
+        model_fold_name = f"{model_name}_fold_{fold_index}"
+        model, evals_result = train_lgbm(x_train, y_train, x_val, y_val, model_fold_name, n_estimators, learning_rate, max_depth, num_leaves)
         y_pred_proba = model.predict_proba(x_val)[:, 1]
         y_pred = (y_pred_proba >= 0.5).astype(int)
 
@@ -432,6 +433,7 @@ def main(file_path, label_column, split_strategy, split_value, model_name, n_est
         results = kfold_evaluation(
             x, y,
             int(split_value),  # split_value 為 fold 數
+            model_name,
             n_estimators, learning_rate, max_depth, num_leaves
         )
 
