@@ -541,6 +541,7 @@ def run_predict():
 
 @app.route('/run-evaluate', methods=['POST'])
 def run_evaluate():
+    global current_process
     data = request.get_json()
     model_path = data.get('model_path')  # 模型路徑
     data_path = data.get('data_path')   # 輸入檔案路徑
@@ -549,25 +550,44 @@ def run_evaluate():
     pred_column = data.get('pred_column')
 
     try:
-        fetch_result = subprocess.run(
-            ['python', 'evaluate.py', model_path, data_path, output_name, label_column, pred_column],
-            # capture_output=True,  # 捕獲標準輸出和標準錯誤
-            stdout=subprocess.PIPE,     # 只捕獲標準輸出
-            stderr=subprocess.DEVNULL,  # 忽略標準錯誤
-            text=True                   # 將輸出轉換為字符串
+        # fetch_result = subprocess.run(
+        #     ['python', 'evaluate.py', model_path, data_path, output_name, label_column, pred_column],
+        #     # capture_output=True,  # 捕獲標準輸出和標準錯誤
+        #     stdout=subprocess.PIPE,     # 只捕獲標準輸出
+        #     stderr=subprocess.DEVNULL,  # 忽略標準錯誤
+        #     text=True                   # 將輸出轉換為字符串
+        # )
+        
+        # # debug 用
+        # # print("STDOUT:", fetch_result.stdout)  # 打印标准输出
+        # # print("STDERR:", fetch_result.stderr)  # 打印标准错误
+        
+        # if fetch_result.returncode != 0:
+        #     return jsonify({
+        #         "status": "error",
+        #         "message": fetch_result.stderr,
+        #     })
+
+        # return jsonify(json.loads(fetch_result.stdout))
+
+        args = [
+            'python', 'evaluate.py',
+            model_path, data_path, output_name, label_column, pred_column
+        ]
+        # 執行 Python 訓練腳本（非阻塞，可終止）
+        current_process = subprocess.Popen(
+            args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True
         )
-        
-        # debug 用
-        # print("STDOUT:", fetch_result.stdout)  # 打印标准输出
-        # print("STDERR:", fetch_result.stderr)  # 打印标准错误
-        
-        if fetch_result.returncode != 0:
+        stdout, stderr = current_process.communicate()
+        if current_process.returncode != 0:
             return jsonify({
                 "status": "error",
-                "message": fetch_result.stderr,
+                "message": stderr
             })
-
-        return jsonify(json.loads(fetch_result.stdout))
+        return jsonify(json.loads(stdout))
     
     except Exception as e:
         return jsonify({

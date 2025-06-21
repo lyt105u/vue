@@ -4,6 +4,7 @@
     <h6 class="text-body-secondary">{{ $t('msgEvaluateDescription') }}</h6>
   </div>
 
+  <!-- hr -->
   <div class="bd-example-snippet bd-code-snippet">
     <div class="bd-example m-0 border-0">
       <hr>
@@ -226,6 +227,7 @@
     </div>
   </div>
 
+  <!-- hr -->
   <div class="bd-example-snippet bd-code-snippet">
     <div class="bd-example m-0 border-0">
       <hr>
@@ -296,12 +298,21 @@ export default {
         { level: 95, key: 'recall_95' }
       ],
       imageRoc: null,
+      controller: null,
+      isAborted: false,
     }
   },
   created() {
     this.listFiles()
   },
-  mounted() {},
+  mounted() {
+    window.addEventListener('beforeunload', this.handleBeforeUnload)  // 嘗試離開時觸發（重整或按叉）
+    window.addEventListener('pagehide', this.handlePageHide)  // 在真的離開時觸發
+  },
+  beforeUnmount() {
+    window.removeEventListener('beforeunload', this.handleBeforeUnload)
+    window.removeEventListener('pagehide', this.handlePageHide)
+  },
   computed: {
     modalButtons() {
       return {
@@ -315,7 +326,6 @@ export default {
         }
       }
     }
-
   },
   watch: {
     async "selected.model_name"() {
@@ -338,7 +348,40 @@ export default {
       }
     },
   },
+  beforeRouteLeave(to, from, next) {
+    if (this.loading) {
+      const answer = window.confirm(this.$t('msgSysRunning'))
+      if (answer) {
+        if (this.controller) {
+          this.controller.abort()
+          this.isAborted = true
+          navigator.sendBeacon(`${process.env.VUE_APP_API_URL}/cancel`)
+        }
+        next()
+      } else {
+        next(false)
+      }
+    } else {
+      next()
+    }
+  },
   methods: {
+    handleBeforeUnload(event) {
+      // 僅提示，若確認離開則觸發 handlePageHide
+      if (this.loading) {
+        event.preventDefault()
+        event.returnValue = '' // 必需，讓瀏覽器顯示警示對話框
+      }
+    },
+
+    handlePageHide() {
+      if (this.loading && this.controller) {
+        this.controller.abort()
+        this.isAborted = true
+        navigator.sendBeacon(`${process.env.VUE_APP_API_URL}/cancel`)
+      }
+    },
+
     // list both model and tabular files
     async listFiles() {
       this.loading = true
@@ -533,19 +576,25 @@ export default {
       if (!this.validateForm()) {
         return
       }
-
+      this.isAborted = false
+      this.controller = new AbortController()
       this.loading = true
       this.output = null
 
       try {
-        const response = await axios.post(`${process.env.VUE_APP_API_URL}/run-evaluate`, {
-          model_path: `upload/${this.selected.model_name}`, // upload/
-          data_path: `upload/${this.selected.data_name}`, // upload/
-          output_name: this.selected.output_name,
-          label_column: this.selected.label_column,
-          pred_column: this.selected.pred_column,
-        })
-        if (response.data.status == "success") {
+        const response = await axios.post(`${process.env.VUE_APP_API_URL}/run-evaluate`,
+          {
+            model_path: `upload/${this.selected.model_name}`, // upload/
+            data_path: `upload/${this.selected.data_name}`, // upload/
+            output_name: this.selected.output_name,
+            label_column: this.selected.label_column,
+            pred_column: this.selected.pred_column,
+          },
+          {
+            signal: this.controller.signal
+          }
+        )
+        if (response.data.status == "success" && !this.isAborted) {
           this.output = response.data
           this.imageRoc = `data:image/png;base64,${this.output.roc}`
           this.modal.title = this.$t('lblPredictionCompleted')
@@ -563,6 +612,11 @@ export default {
           this.openModalNotification()
         }
       } catch (error) {
+        if (axios.isCancel(error)) {
+          console.warn("Prediction aborted")
+          this.isAborted = true
+          return
+        }
         this.output = {
           status: 'error',
           message: error,
@@ -571,9 +625,9 @@ export default {
         this.modal.icon = 'error'
         this.modal.content = error
         this.openModalNotification()
+      } finally {
+        this.loading = false
       }
-
-      this.loading = false
     },
 
     async downloadFile(path) {
