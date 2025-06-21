@@ -115,6 +115,7 @@
   "msgMissingDataNote": "If missing values are found, the system will prompt to remove the affected rows.",
   "msgEvaluateNote1": "Ensure the selected model matches the uploaded file format, and the input file must contain the true label column.",
   "msgFooter": "&copy; 2025 Network & System Lab, NSYSU &#124; Designed by Yen-Ting Lai",
+  "msgSysRunning": "The system is still running. Are you sure you want to leave?",
 
   "msgValRequired": "This field is required.",
   "msgValIntOnly": "Integer only.",
