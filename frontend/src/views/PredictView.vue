@@ -227,12 +227,21 @@ export default {
       },
       modelOptions: [],
       fileOptions: [],
+      controller: null,
+      isAborted: false,
     }
   },
   created() {
     this.listFiles()
   },
-  mounted() {},
+  mounted() {
+    window.addEventListener('beforeunload', this.handleBeforeUnload)  // 嘗試離開時觸發（重整或按叉）
+    window.addEventListener('pagehide', this.handlePageHide)  // 在真的離開時觸發
+  },
+  beforeUnmount() {
+    window.removeEventListener('beforeunload', this.handleBeforeUnload)
+    window.removeEventListener('pagehide', this.handlePageHide)
+  },
   computed: {
     rows() {
       const result = [];
@@ -279,7 +288,40 @@ export default {
       }
     },
   },
+  beforeRouteLeave(to, from, next) {
+    if (this.loading) {
+      const answer = window.confirm(this.$t('msgSysRunning'))
+      if (answer) {
+        if (this.controller) {
+          this.controller.abort()
+          this.isAborted = true
+          navigator.sendBeacon(`${process.env.VUE_APP_API_URL}/cancel`)
+        }
+        next()
+      } else {
+        next(false)
+      }
+    } else {
+      next()
+    }
+  },
   methods: {
+    handleBeforeUnload(event) {
+      // 僅提示，若確認離開則觸發 handlePageHide
+      if (this.loading) {
+        event.preventDefault()
+        event.returnValue = '' // 必需，讓瀏覽器顯示警示對話框
+      }
+    },
+
+    handlePageHide() {
+      if (this.loading && this.controller) {
+        this.controller.abort()
+        this.isAborted = true
+        navigator.sendBeacon(`${process.env.VUE_APP_API_URL}/cancel`)
+      }
+    },
+
     // list both model and tabular files
     async listFiles() {
       this.loading = true
@@ -342,14 +384,21 @@ export default {
     },
 
     async getFieldNumber() {
-      this.loading = true
+      this.isAborted = false
+      this.controller = new AbortController()
       this.selected.input_values = []
       if (this.selected.model_name) {
+        this.loading = true
         try {
-          const response = await axios.post(`${process.env.VUE_APP_API_URL}/get-field-number`, {
-            model_path: `upload/${this.selected.model_name}`, // upload/
-          })
-          if (response.data.status == "success") {
+          const response = await axios.post(`${process.env.VUE_APP_API_URL}/get-field-number`,
+            {
+              model_path: `upload/${this.selected.model_name}`, // upload/
+            },
+            {
+              signal: this.controller.signal
+            }
+          )
+          if (response.data.status == "success" && !this.isAborted) {
             this.selected.input_values = Array(response.data.field_count).fill("");
           } else if (response.data.status == "error") {
             this.modal.title = this.$t('lblError')
@@ -358,13 +407,19 @@ export default {
             this.openModalNotification()
           }
         } catch (error) {
+          if (axios.isCancel(error)) {
+            console.warn("Prediction aborted")
+            this.isAborted = true
+            return
+          }
           this.modal.title = this.$t('lblError')
           this.modal.content = error
           this.modal.icon = 'error'
           this.openModalNotification()
+        } finally {
+          this.loading = false
         }
       }
-      this.loading = false
     },
 
     async previewTab() {
@@ -509,19 +564,26 @@ export default {
         return
       }
 
+      this.isAborted = false
+      this.controller = new AbortController()
       this.loading = true
       this.output = null
 
       try {
-        const response = await axios.post(`${process.env.VUE_APP_API_URL}/run-predict`, {
-          model_path: `upload/${this.selected.model_name}`, // upload/
-          mode: this.selected.mode,
-          data_path: `upload/${this.selected.data_name}`, // upload/
-          output_name: this.selected.output_name,
-          input_values: this.selected.input_values,
-          label_column: this.selected.label_column,
-        })
-        if (response.data.status == "success") {
+        const response = await axios.post(`${process.env.VUE_APP_API_URL}/run-predict`,
+          {
+            model_path: `upload/${this.selected.model_name}`, // upload/
+            mode: this.selected.mode,
+            data_path: `upload/${this.selected.data_name}`, // upload/
+            output_name: this.selected.output_name,
+            input_values: this.selected.input_values,
+            label_column: this.selected.label_column,
+          },
+          {
+            signal: this.controller.signal
+          }
+        )
+        if (response.data.status == "success" && !this.isAborted) {
           this.output = response.data
           this.modal.title = this.$t('lblPredictionCompleted')
           this.modal.icon = 'success'
@@ -542,6 +604,11 @@ export default {
           this.openModalNotification()
         }
       } catch (error) {
+        if (axios.isCancel(error)) {
+          console.warn("Prediction aborted")
+          this.isAborted = true
+          return
+        }
         this.output = {
           status: 'error',
           message: error,
@@ -550,9 +617,9 @@ export default {
         this.modal.icon = 'error'
         this.modal.content = error
         this.openModalNotification()
+      } finally {
+        this.loading = false
       }
-
-      this.loading = false
     },
 
     async downloadFile(path) {

@@ -78,6 +78,7 @@ def list_files():
 
 @app.route('/get-field-number', methods=['POST'])
 def get_field_number():
+    global current_process
     model_path = request.json.get('model_path', None)
     if not model_path:
         return jsonify({
@@ -86,25 +87,44 @@ def get_field_number():
         })
     
     try:
-        fetch_result = subprocess.run(
-            ['python', 'getFieldNumber.py', model_path],
-            # capture_output=True,  # 捕獲標準輸出和標準錯誤
-            stdout=subprocess.PIPE,     # 只捕獲標準輸出
-            stderr=subprocess.DEVNULL,  # 忽略標準錯誤
-            text=True                   # 將輸出轉換為字符串
+        # fetch_result = subprocess.run(
+        #     ['python', 'getFieldNumber.py', model_path],
+        #     # capture_output=True,  # 捕獲標準輸出和標準錯誤
+        #     stdout=subprocess.PIPE,     # 只捕獲標準輸出
+        #     stderr=subprocess.DEVNULL,  # 忽略標準錯誤
+        #     text=True                   # 將輸出轉換為字符串
+        # )
+        
+        # # debug 用
+        # # print("STDOUT:", result.stdout)  # 打印标准输出
+        # # print("STDERR:", result.stderr)  # 打印标准错误
+        
+        # if fetch_result.returncode != 0:
+        #     return jsonify({
+        #         "status": "error",
+        #         "message": fetch_result.stderr,
+        #     })
+
+        # return jsonify(json.loads(fetch_result.stdout))
+
+        args = [
+            'python', 'getFieldNumber.py',
+            model_path
+        ]
+        # 執行 Python 訓練腳本（非阻塞，可終止）
+        current_process = subprocess.Popen(
+            args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True
         )
-        
-        # debug 用
-        # print("STDOUT:", result.stdout)  # 打印标准输出
-        # print("STDERR:", result.stderr)  # 打印标准错误
-        
-        if fetch_result.returncode != 0:
+        stdout, stderr = current_process.communicate()
+        if current_process.returncode != 0:
             return jsonify({
                 "status": "error",
-                "message": fetch_result.stderr,
+                "message": stderr
             })
-
-        return jsonify(json.loads(fetch_result.stdout))
+        return jsonify(json.loads(stdout))
     
     except Exception as e:
         return jsonify({
@@ -117,10 +137,10 @@ def cancel_train():
     global current_process
     if current_process and current_process.poll() is None:
         current_process.terminate()
-        print("Canceled!")
+        print("API Canceled!")
         return jsonify({"status": "terminated"})
     else:
-        print("Cancel failed!")
+        print("Cancel API failed!")
         return jsonify({"status": "no active process"})
 
 @app.route('/run-train-xgb', methods=['POST'])
@@ -492,6 +512,7 @@ def run_train_mlp():
 
 @app.route('/run-predict', methods=['POST'])
 def run_predict():
+    global current_process
     data = request.get_json()
     model_path = data.get('model_path')  # 模型路徑
     mode = data.get('mode')             # 模式：file 或 input
@@ -514,24 +535,47 @@ def run_predict():
         command.extend(['--input_values'] + list(map(str, input_values)))
 
     try:
-        # 呼叫子進程執行腳本
-        result = subprocess.run(
+        # # 呼叫子進程執行腳本
+        # result = subprocess.run(
+        #     command,
+        #     stdout=subprocess.PIPE,
+        #     stderr=subprocess.PIPE,
+        #     text=True
+        # )
+
+        # # print("STDOUT:", result.stdout)  # 打印标准输出
+        # # print("STDERR:", result.stderr)  # 打印标准错误
+
+        # if result.returncode != 0:
+        #     return jsonify({
+        #         "status": "error",
+        #         "message": result.stderr
+        #     })
+        
+        # return jsonify(json.loads(result.stdout))
+
+        # 使用 Popen 開啟子進程
+        current_process = subprocess.Popen(
             command,
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
             text=True
         )
 
-        # print("STDOUT:", result.stdout)  # 打印标准输出
-        # print("STDERR:", result.stderr)  # 打印标准错误
+        # 等待子進程結束並接收輸出
+        stdout, stderr = current_process.communicate()
 
-        if result.returncode != 0:
+        # --- DEBUG 輸出（如需印出，請取消註解） ---
+        # print("STDOUT:", stdout, flush=True)
+        # print("STDERR:", stderr, flush=True)
+
+        if current_process.returncode != 0:
             return jsonify({
                 "status": "error",
-                "message": result.stderr
+                "message": stderr
             })
-        
-        return jsonify(json.loads(result.stdout))
+
+        return jsonify(json.loads(stdout))
     
     except Exception as e:
         return jsonify({
