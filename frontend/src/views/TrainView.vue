@@ -907,7 +907,14 @@ export default {
     this.updateFileExtension()
     this.listFiles()
   },
-  mounted() {},
+  mounted() {
+    window.addEventListener('beforeunload', this.handleBeforeUnload)
+    window.addEventListener('pagehide', this.handlePageHide)
+  },
+  beforeUnmount() {
+    window.removeEventListener('beforeunload', this.handleBeforeUnload)
+    window.removeEventListener('pagehide', this.handlePageHide)
+  },
   computed: {
     modalMissingData() {
       return {
@@ -963,13 +970,6 @@ export default {
         this.previewTab()
       }
     },
-    loading(newVal) {
-      if (newVal === true) {
-        window.addEventListener('beforeunload', this.handleBeforeUnload)
-      } else {
-        window.removeEventListener('beforeunload', this.handleBeforeUnload)
-      }
-    }
   },
   beforeRouteLeave(to, from, next) {
     if (this.loading) {
@@ -990,13 +990,19 @@ export default {
   },
   methods: {
     handleBeforeUnload(event) {
-      if (this.controller) {
+      // 僅提示，若確認離開則觸發 handlePageHide
+      if (this.loading) {
+        event.preventDefault()
+        event.returnValue = '' // 必需，讓瀏覽器顯示警示對話框
+      }
+    },
+
+    handlePageHide() {
+      if (this.loading && this.controller) {
         this.controller.abort()
         this.isAborted = true
         navigator.sendBeacon(`${process.env.VUE_APP_API_URL}/cancel`)
       }
-      event.preventDefault()
-      event.returnValue = '' // 必需，讓瀏覽器顯示警示對話框
     },
 
     initPreviewData() {
