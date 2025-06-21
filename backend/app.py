@@ -18,6 +18,8 @@ import shutil
 app = Flask(__name__, static_folder='static', static_url_path='')
 CORS(app)  # 啟用跨域支持
 
+current_process = None
+
 # 當訪問 "/" 時，回傳 index.html
 @app.route('/')
 def index():
@@ -109,9 +111,21 @@ def get_field_number():
             "status": "error",
             "message": str(e)
         })
+    
+@app.route('/cancel', methods=['POST'])
+def cancel_train():
+    global current_process
+    if current_process and current_process.poll() is None:
+        current_process.terminate()
+        print("Canceled!")
+        return jsonify({"status": "terminated"})
+    else:
+        print("Cancel failed!")
+        return jsonify({"status": "no active process"})
 
 @app.route('/run-train-xgb', methods=['POST'])
 def run_train_xgb():
+    global current_process
     data = request.get_json()
     file_path = data.get('file_path')
     label_column = data.get('label_column')
@@ -123,24 +137,45 @@ def run_train_xgb():
     max_depth = data.get('max_depth')
 
     try:
-        result = subprocess.run(
-            ['python', 'train_xgb.py', file_path, label_column, split_strategy, split_value, model_name, n_estimators, learning_rate, max_depth],
-            # capture_output=True,        # 捕獲標準輸出和標準錯誤
-            stdout=subprocess.PIPE,     # 只捕獲標準輸出
-            stderr=subprocess.DEVNULL,  # 忽略標準錯誤
-            text=True                   # 將輸出轉換為字符串
+        # result = subprocess.run(
+        #     ['python', 'train_xgb.py', file_path, label_column, split_strategy, split_value, model_name, n_estimators, learning_rate, max_depth],
+        #     # capture_output=True,        # 捕獲標準輸出和標準錯誤
+        #     stdout=subprocess.PIPE,     # 只捕獲標準輸出
+        #     stderr=subprocess.DEVNULL,  # 忽略標準錯誤
+        #     text=True                   # 將輸出轉換為字符串
+        # )
+
+        # # print("STDOUT:", result.stdout)  # 印出標準輸出
+        # # print("STDERR:", result.stderr)  # 印出標準錯誤
+
+        # if result.returncode != 0:
+        #     return jsonify({
+        #         "status": "error",
+        #         "message": result.stderr,
+        #     })
+        
+        # return jsonify(json.loads(result.stdout))
+
+        args = [
+            'python', 'train_xgb.py',
+            file_path, label_column, split_strategy,
+            split_value, model_name,
+            n_estimators, learning_rate, max_depth
+        ]
+        # 執行 Python 訓練腳本（非阻塞，可終止）
+        current_process = subprocess.Popen(
+            args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True
         )
-
-        # print("STDOUT:", result.stdout)  # 印出標準輸出
-        # print("STDERR:", result.stderr)  # 印出標準錯誤
-
-        if result.returncode != 0:
+        stdout, stderr = current_process.communicate()
+        if current_process.returncode != 0:
             return jsonify({
                 "status": "error",
-                "message": result.stderr,
+                "message": stderr
             })
-        
-        return jsonify(json.loads(result.stdout))
+        return jsonify(json.loads(stdout))
     
     except Exception as e:
         return jsonify({
@@ -150,6 +185,7 @@ def run_train_xgb():
     
 @app.route('/run-train-lgbm', methods=['POST'])
 def run_train_lgbm():
+    global current_process
     data = request.get_json()
     file_path = data.get('file_path')
     label_column = data.get('label_column')
@@ -162,24 +198,45 @@ def run_train_lgbm():
     num_leaves = data.get('num_leaves')
 
     try:
-        result = subprocess.run(
-            ['python', 'train_lgbm.py', file_path, label_column, split_strategy, split_value, model_name, n_estimators, learning_rate, max_depth, num_leaves],
-            # capture_output=True,        # 捕獲標準輸出和標準錯誤
-            stdout=subprocess.PIPE,     # 只捕獲標準輸出
-            stderr=subprocess.DEVNULL,  # 忽略標準錯誤
-            text=True                   # 將輸出轉換為字符串
+        # result = subprocess.run(
+        #     ['python', 'train_lgbm.py', file_path, label_column, split_strategy, split_value, model_name, n_estimators, learning_rate, max_depth, num_leaves],
+        #     # capture_output=True,        # 捕獲標準輸出和標準錯誤
+        #     stdout=subprocess.PIPE,     # 只捕獲標準輸出
+        #     stderr=subprocess.DEVNULL,  # 忽略標準錯誤
+        #     text=True                   # 將輸出轉換為字符串
+        # )
+
+        # # print("STDOUT:", result.stdout)  # 印出標準輸出
+        # # print("STDERR:", result.stderr)  # 印出標準錯誤
+
+        # if result.returncode != 0:
+        #     return jsonify({
+        #         "status": "error",
+        #         "message": result.stderr
+        #     })
+        
+        # return jsonify(json.loads(result.stdout))
+
+        args = [
+            'python', 'train_lgbm.py',
+            file_path, label_column, split_strategy,
+            split_value, model_name,
+            n_estimators, learning_rate, max_depth, num_leaves
+        ]
+        # 執行 Python 訓練腳本（非阻塞，可終止）
+        current_process = subprocess.Popen(
+            args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True
         )
-
-        # print("STDOUT:", result.stdout)  # 印出標準輸出
-        # print("STDERR:", result.stderr)  # 印出標準錯誤
-
-        if result.returncode != 0:
+        stdout, stderr = current_process.communicate()
+        if current_process.returncode != 0:
             return jsonify({
                 "status": "error",
-                "message": result.stderr
+                "message": stderr
             })
-        
-        return jsonify(json.loads(result.stdout))
+        return jsonify(json.loads(stdout))
     
     except Exception as e:
         return jsonify({
@@ -189,6 +246,7 @@ def run_train_lgbm():
     
 @app.route('/run-train-rf', methods=['POST'])
 def run_train_rf():
+    global current_process
     data = request.get_json()
     file_path = data.get('file_path')
     label_column = data.get('label_column')
@@ -201,24 +259,45 @@ def run_train_rf():
     n_jobs = data.get('n_jobs')
 
     try:
-        result = subprocess.run(
-            ['python', 'train_rf.py', file_path, label_column, split_strategy, split_value, model_name, n_estimators, max_depth, random_state, n_jobs],
-            # capture_output=True,        # 捕獲標準輸出和標準錯誤
-            stdout=subprocess.PIPE,     # 只捕獲標準輸出
-            stderr=subprocess.DEVNULL,  # 忽略標準錯誤
-            text=True                   # 將輸出轉換為字符串
+        # result = subprocess.run(
+        #     ['python', 'train_rf.py', file_path, label_column, split_strategy, split_value, model_name, n_estimators, max_depth, random_state, n_jobs],
+        #     # capture_output=True,        # 捕獲標準輸出和標準錯誤
+        #     stdout=subprocess.PIPE,     # 只捕獲標準輸出
+        #     stderr=subprocess.DEVNULL,  # 忽略標準錯誤
+        #     text=True                   # 將輸出轉換為字符串
+        # )
+
+        # # print("STDOUT:", result.stdout)  # 印出標準輸出
+        # # print("STDERR:", result.stderr)  # 印出標準錯誤
+
+        # if result.returncode != 0:
+        #     return jsonify({
+        #         "status": "error",
+        #         "message": result.stderr
+        #     })
+        
+        # return jsonify(json.loads(result.stdout))
+
+        args = [
+            'python', 'train_rf.py',
+            file_path, label_column, split_strategy,
+            split_value, model_name,
+            n_estimators, max_depth, random_state, n_jobs
+        ]
+        # 執行 Python 訓練腳本（非阻塞，可終止）
+        current_process = subprocess.Popen(
+            args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True
         )
-
-        # print("STDOUT:", result.stdout)  # 印出標準輸出
-        # print("STDERR:", result.stderr)  # 印出標準錯誤
-
-        if result.returncode != 0:
+        stdout, stderr = current_process.communicate()
+        if current_process.returncode != 0:
             return jsonify({
                 "status": "error",
-                "message": result.stderr
+                "message": stderr
             })
-        
-        return jsonify(json.loads(result.stdout))
+        return jsonify(json.loads(stdout))
     
     except Exception as e:
         return jsonify({
@@ -228,6 +307,7 @@ def run_train_rf():
 
 @app.route('/run-train-lr', methods=['POST'])
 def run_train_lr():
+    global current_process
     data = request.get_json()
     file_path = data.get('file_path')
     label_column = data.get('label_column')
@@ -239,24 +319,45 @@ def run_train_lr():
     max_iter = data.get('max_iter')
 
     try:
-        result = subprocess.run(
-            ['python', 'train_lr.py', file_path, label_column, split_strategy, split_value, model_name, penalty, C, max_iter],
-            # capture_output=True,        # 捕獲標準輸出和標準錯誤
-            stdout=subprocess.PIPE,     # 只捕獲標準輸出
-            stderr=subprocess.DEVNULL,  # 忽略標準錯誤
-            text=True                   # 將輸出轉換為字符串
+        # result = subprocess.run(
+        #     ['python', 'train_lr.py', file_path, label_column, split_strategy, split_value, model_name, penalty, C, max_iter],
+        #     # capture_output=True,        # 捕獲標準輸出和標準錯誤
+        #     stdout=subprocess.PIPE,     # 只捕獲標準輸出
+        #     stderr=subprocess.DEVNULL,  # 忽略標準錯誤
+        #     text=True                   # 將輸出轉換為字符串
+        # )
+
+        # # print("STDOUT:", result.stdout)  # 印出標準輸出
+        # # print("STDERR:", result.stderr)  # 印出標準錯誤
+
+        # if result.returncode != 0:
+        #     return jsonify({
+        #         "status": "error",
+        #         "message": result.stderr
+        #     })
+        
+        # return jsonify(json.loads(result.stdout))
+
+        args = [
+            'python', 'train_lr.py',
+            file_path, label_column, split_strategy,
+            split_value, model_name,
+            penalty, C, max_iter
+        ]
+        # 執行 Python 訓練腳本（非阻塞，可終止）
+        current_process = subprocess.Popen(
+            args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True
         )
-
-        # print("STDOUT:", result.stdout)  # 印出標準輸出
-        # print("STDERR:", result.stderr)  # 印出標準錯誤
-
-        if result.returncode != 0:
+        stdout, stderr = current_process.communicate()
+        if current_process.returncode != 0:
             return jsonify({
                 "status": "error",
-                "message": result.stderr
+                "message": stderr
             })
-        
-        return jsonify(json.loads(result.stdout))
+        return jsonify(json.loads(stdout))
     
     except Exception as e:
         return jsonify({
@@ -266,6 +367,7 @@ def run_train_lr():
     
 @app.route('/run-train-tabnet', methods=['POST'])
 def run_train_tabnet():
+    global current_process
     data = request.get_json()
     file_path = data.get('file_path')
     label_column = data.get('label_column')
@@ -277,24 +379,45 @@ def run_train_tabnet():
     patience = data.get('patience')
 
     try:
-        result = subprocess.run(
-            ['python', 'train_tabnet.py', file_path, label_column, split_strategy, split_value, model_name, batch_size, max_epochs, patience],
-            # capture_output=True,        # 捕獲標準輸出和標準錯誤
-            stdout=subprocess.PIPE,     # 只捕獲標準輸出
-            stderr=subprocess.DEVNULL,  # 忽略標準錯誤
-            text=True                   # 將輸出轉換為字符串
+        # result = subprocess.run(
+        #     ['python', 'train_tabnet.py', file_path, label_column, split_strategy, split_value, model_name, batch_size, max_epochs, patience],
+        #     # capture_output=True,        # 捕獲標準輸出和標準錯誤
+        #     stdout=subprocess.PIPE,     # 只捕獲標準輸出
+        #     stderr=subprocess.DEVNULL,  # 忽略標準錯誤
+        #     text=True                   # 將輸出轉換為字符串
+        # )
+
+        # # print("STDOUT:", result.stdout)  # 印出標準輸出
+        # # print("STDERR:", result.stderr)  # 印出標準錯誤
+
+        # if result.returncode != 0:
+        #     return jsonify({
+        #         "status": "error",
+        #         "message": result.stderr
+        #     })
+        
+        # return jsonify(json.loads(result.stdout))
+
+        args = [
+            'python', 'train_tabnet.py',
+            file_path, label_column, split_strategy,
+            split_value, model_name,
+            batch_size, max_epochs, patience
+        ]
+        # 執行 Python 訓練腳本（非阻塞，可終止）
+        current_process = subprocess.Popen(
+            args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True
         )
-
-        # print("STDOUT:", result.stdout)  # 印出標準輸出
-        # print("STDERR:", result.stderr)  # 印出標準錯誤
-
-        if result.returncode != 0:
+        stdout, stderr = current_process.communicate()
+        if current_process.returncode != 0:
             return jsonify({
                 "status": "error",
-                "message": result.stderr
+                "message": stderr
             })
-        
-        return jsonify(json.loads(result.stdout))
+        return jsonify(json.loads(stdout))
     
     except Exception as e:
         return jsonify({
@@ -304,6 +427,7 @@ def run_train_tabnet():
     
 @app.route('/run-train-mlp', methods=['POST'])
 def run_train_mlp():
+    global current_process
     data = request.get_json()
     file_path = data.get('file_path')
     label_column = data.get('label_column')
@@ -319,24 +443,46 @@ def run_train_mlp():
     n_iter_no_change = data.get('n_iter_no_change')
 
     try:
-        result = subprocess.run(
-            ['python', 'train_mlp.py', file_path, label_column, split_strategy, split_value, model_name, hidden_layer_1, hidden_layer_2, hidden_layer_3, activation, learning_rate_init, max_iter, n_iter_no_change],
-            # capture_output=True,        # 捕獲標準輸出和標準錯誤
-            stdout=subprocess.PIPE,     # 只捕獲標準輸出
-            stderr=subprocess.DEVNULL,  # 忽略標準錯誤
-            text=True                   # 將輸出轉換為字符串
+        # result = subprocess.run(
+        #     ['python', 'train_mlp.py', file_path, label_column, split_strategy, split_value, model_name, hidden_layer_1, hidden_layer_2, hidden_layer_3, activation, learning_rate_init, max_iter, n_iter_no_change],
+        #     # capture_output=True,        # 捕獲標準輸出和標準錯誤
+        #     stdout=subprocess.PIPE,     # 只捕獲標準輸出
+        #     stderr=subprocess.DEVNULL,  # 忽略標準錯誤
+        #     text=True                   # 將輸出轉換為字符串
+        # )
+
+        # # print("STDOUT:", result.stdout)  # 印出標準輸出
+        # # print("STDERR:", result.stderr)  # 印出標準錯誤
+
+        # if result.returncode != 0:
+        #     return jsonify({
+        #         "status": "error",
+        #         "message": result.stderr
+        #     })
+        
+        # return jsonify(json.loads(result.stdout))
+
+        args = [
+            'python', 'train_mlp.py',
+            file_path, label_column, split_strategy,
+            split_value, model_name,
+            hidden_layer_1, hidden_layer_2, hidden_layer_3,
+            activation, learning_rate_init, max_iter, n_iter_no_change
+        ]
+        # 執行 Python 訓練腳本（非阻塞，可終止）
+        current_process = subprocess.Popen(
+            args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True
         )
-
-        # print("STDOUT:", result.stdout)  # 印出標準輸出
-        # print("STDERR:", result.stderr)  # 印出標準錯誤
-
-        if result.returncode != 0:
+        stdout, stderr = current_process.communicate()
+        if current_process.returncode != 0:
             return jsonify({
                 "status": "error",
-                "message": result.stderr
+                "message": stderr
             })
-        
-        return jsonify(json.loads(result.stdout))
+        return jsonify(json.loads(stdout))
     
     except Exception as e:
         return jsonify({

@@ -898,6 +898,8 @@ export default {
       imageLime: null,
       errors: {}, // 檢核用
       fileOptions: [],
+      controller: null,
+      isAborted: false,
     }
   },
   created() {
@@ -971,8 +973,13 @@ export default {
   },
   beforeRouteLeave(to, from, next) {
     if (this.loading) {
-      const answer = window.confirm('模型正在訓練中，確定要離開嗎？')
+      const answer = window.confirm(this.$t('msgSysRunning'))
       if (answer) {
+        if (this.controller) {
+          this.controller.abort()
+          this.isAborted = true
+          navigator.sendBeacon(`${process.env.VUE_APP_API_URL}/cancel`)
+        }
         next()
       } else {
         next(false)
@@ -983,6 +990,11 @@ export default {
   },
   methods: {
     handleBeforeUnload(event) {
+      if (this.controller) {
+        this.controller.abort()
+        this.isAborted = true
+        navigator.sendBeacon(`${process.env.VUE_APP_API_URL}/cancel`)
+      }
       event.preventDefault()
       event.returnValue = '' // 必需，讓瀏覽器顯示警示對話框
     },
@@ -1284,7 +1296,8 @@ export default {
       if (!this.validateForm()) {
         return
       }
-
+      this.isAborted = false
+      this.controller = new AbortController()
       try {
         this.loading = true
         this.output = null
@@ -1343,48 +1356,39 @@ export default {
 
         console.log(payload)
 
-        const response = await axios.post(`${process.env.VUE_APP_API_URL}/${api}`, payload)
+        const response = await axios.post(`${process.env.VUE_APP_API_URL}/${api}`, payload, {
+          signal: this.controller.signal
+        })
         this.output = response.data
       } catch (error) {
+        if (axios.isCancel(error)) {
+          this.output = null
+          this.isAborted = true
+          console.warn("Request aborted")
+          return // 跳出 early
+        }
         this.output = {
           "status": "error",
           "message": error,
         }
       } finally {
-        let errorFlag = false
-        if (this.output.status == 'success') {
-          let extension = ".pkl"
-          if (this.selected.model_type === "tabnet") extension = ".zip"
-          else if (this.selected.model_type === "xgb") extension = ".json"
+        if (!this.isAborted) {
+          let errorFlag = false
+          if (this.output.status == 'success') {
+            let extension = ".pkl"
+            if (this.selected.model_type === "tabnet") extension = ".zip"
+            else if (this.selected.model_type === "xgb") extension = ".json"
 
-          if (this.selected.split_strategy == "train_test_split") {
-            this.imageRoc = `data:image/png;base64,${this.output.roc}`
-            this.imageLoss = `data:image/png;base64,${this.output.loss_plot}`
-            this.imageAccuracy = `data:image/png;base64,${this.output.accuracy_plot}`
-            this.imageShap = `data:image/png;base64,${this.output.shap_plot}`
-            this.imageLime = `data:image/png;base64,${this.output.lime_plot}`
-            // download api
-            // 訓練好的模型會暫存在 model/ 資料夾中，再去把它載下來
-            // 懶得改了QQ，要改的話要去每一個 train_xxx.py 改
-            const path = `model/${this.selected.model_name}${extension}`
-            try {
-              await this.downloadFile(path)
-            } catch (error) {
-              errorFlag = true
-              this.modal.title = this.$t('lblError')
-              this.modal.content = this.output.message
-              this.modal.icon = 'error'
-              this.openModalNotification()
-            }
-            if (errorFlag == false) {
-              this.modal.title = this.$t('lblTrainingCompleted')
-              this.modal.content = this.$t('msgTrainingCompleted')
-              this.modal.icon = 'success'
-              this.openModalFinishTraining()
-            }
-          } else if (this.selected.split_strategy == "k_fold") {
-            for (let i=1; i<= this.selected.split_value; i++) {
-              const path = `model/${this.selected.model_name}_fold_${i}${extension}`
+            if (this.selected.split_strategy == "train_test_split") {
+              this.imageRoc = `data:image/png;base64,${this.output.roc}`
+              this.imageLoss = `data:image/png;base64,${this.output.loss_plot}`
+              this.imageAccuracy = `data:image/png;base64,${this.output.accuracy_plot}`
+              this.imageShap = `data:image/png;base64,${this.output.shap_plot}`
+              this.imageLime = `data:image/png;base64,${this.output.lime_plot}`
+              // download api
+              // 訓練好的模型會暫存在 model/ 資料夾中，再去把它載下來
+              // 懶得改了QQ，要改的話要去每一個 train_xxx.py 改
+              const path = `model/${this.selected.model_name}${extension}`
               try {
                 await this.downloadFile(path)
               } catch (error) {
@@ -1394,20 +1398,39 @@ export default {
                 this.modal.icon = 'error'
                 this.openModalNotification()
               }
+              if (errorFlag == false) {
+                this.modal.title = this.$t('lblTrainingCompleted')
+                this.modal.content = this.$t('msgTrainingCompleted')
+                this.modal.icon = 'success'
+                this.openModalFinishTraining()
+              }
+            } else if (this.selected.split_strategy == "k_fold") {
+              for (let i=1; i<= this.selected.split_value; i++) {
+                const path = `model/${this.selected.model_name}_fold_${i}${extension}`
+                try {
+                  await this.downloadFile(path)
+                } catch (error) {
+                  errorFlag = true
+                  this.modal.title = this.$t('lblError')
+                  this.modal.content = this.output.message
+                  this.modal.icon = 'error'
+                  this.openModalNotification()
+                }
+              }
+              if (errorFlag == false) {
+                this.modal.title = this.$t('lblTrainingCompleted')
+                this.modal.content = this.$t('lblTrainingCompleted')
+                this.modal.icon = 'success'
+                this.openModalNotification()
+              }
             }
-            if (errorFlag == false) {
-              this.modal.title = this.$t('lblTrainingCompleted')
-              this.modal.content = this.$t('lblTrainingCompleted')
-              this.modal.icon = 'success'
-              this.openModalNotification()
-            }
+          } else if (this.output.status == 'error') {
+            this.modal.title = this.$t('lblError')
+            this.modal.content = this.output.message
+            this.modal.icon = 'error'
+            this.openModalNotification()
+            this.output = null
           }
-        } else if (this.output.status == 'error') {
-          this.modal.title = this.$t('lblError')
-          this.modal.content = this.output.message
-          this.modal.icon = 'error'
-          this.openModalNotification()
-          this.output = null
         }
         this.loading = false
       }
