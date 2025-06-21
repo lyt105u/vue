@@ -115,6 +115,7 @@
   "msgMissingDataNote": "若資料中有缺失值，系統將提示刪除相關列。",
   "msgEvaluateNote1": "請確認所選模型與上傳的檔案格式一致，且資料中必須包含真實答案欄。",
   "msgFooter": "&copy; 2025 網路與系統實驗室，國立中山大學 &#124; 賴彥廷",
+  "msgSysRunning": "系統運行中，確定要離開嗎？",
 
   "msgValRequired": "此為必填欄位",
   "msgValIntOnly": "僅允許整數",
