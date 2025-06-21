@@ -4,6 +4,7 @@
     <h6 class="text-body-secondary">{{ $t('msgTrainDescription') }}</h6>
   </div>
   
+  <!-- 橫線 -->
   <div class="bd-example-snippet bd-code-snippet">
     <div class="bd-example m-0 border-0">
       <hr>
@@ -325,6 +326,14 @@
         <button v-if="preview_data.columns != 0" class="btn btn-outline-primary" style="white-space: nowrap" type="button" @click="toggleCollapse" :disabled="loading">{{ $t('lblPreview') }}</button>
       </div>
     </div>
+
+    <!-- 推薦 model -->
+    <template v-if="preview_data && recommendedMsg">
+      <div class="row mb-3">
+        <label class="col-sm-3 col-form-label"></label>
+        <label class="col-sm-9 col-form-label"><small>{{ recommendedMsg }}</small></label>
+      </div>
+    </template>
 
     <!-- Preview -->
     <div v-if="preview_data.total_rows != 0" class="row mb-3">
@@ -737,6 +746,7 @@
       <li>{{ $t('lblRandomForest') }}
         <ol type="i">
           <li>{{ $t('msgTrainNoteRf1') }}</li>
+          <li><u>{{ $t('msgTrainLonger') }}</u></li>
           <li><code>n_estimators</code>{{ $t('msgTrainNoteRf2') }}</li>
           <li><code>max_depth</code>{{ $t('msgTrainNoteRf3') }}</li>
           <li><code>random_state</code>{{ $t('msgTrainNoteRf4') }}</li>
@@ -900,6 +910,7 @@ export default {
       fileOptions: [],
       controller: null,
       isAborted: false,
+      recommendedMsg: '',
     }
   },
   created() {
@@ -965,6 +976,7 @@ export default {
     },
     "selected.data"() {
       this.selected.label_column = ''
+      this.recommendedMsg = ''
       this.initPreviewData()
       if (this.selected.data != '') {
         this.previewTab()
@@ -1296,6 +1308,13 @@ export default {
         this.selected.data = ''
       }
       this.loading = false
+
+      // to recommend model
+      if (this.preview_data.total_rows<1000 && this.preview_data.total_columns<10) {
+        this.recommendedMsg = this.$t('lblRecommendedModel') + ' ' + this.$t('lblLogisticRegression')
+      } else {
+        this.recommendedMsg = this.$t('lblRecommendedModel') + ' ' + this.$t('lblXgb')
+      }
     },
     
     async runTrain() {
@@ -1361,6 +1380,14 @@ export default {
         }
 
         console.log(payload)
+
+        // 提示 Random Forest 很耗時
+        if (this.selected.model_type == 'random_forest') {
+          this.modal.title = this.$t('lblRandomForest')
+          this.modal.content = this.$t('msgTrainLonger')
+          this.modal.icon = 'info'
+          this.openModalNotification()
+        }
 
         const response = await axios.post(`${process.env.VUE_APP_API_URL}/${api}`, payload, {
           signal: this.controller.signal

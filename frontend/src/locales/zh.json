@@ -57,6 +57,7 @@
   "lblDataSplit": "資料切分方式",
   "lblSplitTestTrain": "切分為訓練集與測試集",
   "lblKfoldValid": "K-fold 交叉驗證",
+  "lblRecommendedModel": "推薦模型：",
   
   "msgPreviewCaption": "顯示前 10 筆資料（總共：{count} 筆）",
   "msgUploadSuccess": "成功上傳 `{filename}`。",
@@ -116,6 +117,7 @@
   "msgEvaluateNote1": "請確認所選模型與上傳的檔案格式一致，且資料中必須包含真實答案欄。",
   "msgFooter": "&copy; 2025 網路與系統實驗室，國立中山大學 &#124; 賴彥廷",
   "msgSysRunning": "系統運行中，確定要離開嗎？",
+  "msgTrainLonger": "訓練耗時將比其他模型還要來得久。",
 
   "msgValRequired": "此為必填欄位",
   "msgValIntOnly": "僅允許整數",
