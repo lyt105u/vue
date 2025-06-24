@@ -249,6 +249,7 @@
   <ModalNotification ref="modalNotification" :title="modal.title" :content="modal.content" :icon="modal.icon" />
   <ModalNotification ref="modalMissingDataRef" :title="modal.title" :content="modal.content" :icon="modal.icon" :primaryButton="modalButtons.primary" :secondaryButton="modalButtons.secondary" :onUserDismiss="closeModalMissingData" />
   <ModalFormulaExplain ref="formulaExplainModal" />
+  <ModalImage ref="modalImageRef" :title="modal.title" :imageSrc="modal.content"/>
 </template>
 
 <script>
@@ -257,11 +258,13 @@ import axios from 'axios';
 import ModalNotification from "@/components/ModalNotification.vue"
 import { Collapse } from 'bootstrap'
 import ModalFormulaExplain from "@/components/ModalFormulaExplain.vue"
+import ModalImage from "@/components/ModalImage.vue"
 
 export default {
   components: {
     ModalNotification,
     ModalFormulaExplain,
+    ModalImage,
   },
   data() {
     return {
@@ -672,6 +675,14 @@ export default {
         this.$refs.formulaExplainModal.openModal()
       } else {
         console.error("ModalFormulaExplain component not found.")
+      }
+    },
+
+    openModalImage(title, imageSrc) {
+      if (this.$refs.modalImageRef) {
+        this.modal.title = title
+        this.modal.content = imageSrc
+        this.$refs.modalImageRef.openModal()
       }
     },
   },
