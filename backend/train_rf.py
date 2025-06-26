@@ -299,6 +299,9 @@ def kfold_evaluation(X, y, cv_folds, model_name, n_estimators, max_depth, random
         buf.close()
         plt.close()
 
+        shap_result = explain_with_shap(model, X_test)
+        lime_result = explain_with_lime(model, X_test, y_test)
+
         folds_result.append({
             "fold": fold,
             "metrics": {
@@ -314,7 +317,11 @@ def kfold_evaluation(X, y, cv_folds, model_name, n_estimators, max_depth, random
                 "false_negative": fn,
                 "true_positive": tp,
             },
-            "roc": roc_base64
+            "roc": roc_base64,
+            "shap_plot": shap_result.get("shap_plot"),
+            "shap_importance": shap_result.get("shap_importance"),
+            "lime_plot": lime_result.get("lime_plot"),
+            "lime_example_0": lime_result.get("lime_example_0")
         })
 
     avg_result = {
