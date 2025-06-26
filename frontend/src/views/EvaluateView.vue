@@ -225,6 +225,26 @@
         <img :src="imageRoc" :alt="$t('lblRocCurve')" />
       </div>
     </div>
+
+    <!-- SHAP -->
+    <div v-if="output.shap_plot" class="col">
+      <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalShap(`data:image/png;base64,${output.shap_plot}`, output.shap_importance)" style="cursor: pointer;">
+        <div class="card-header py-3">
+          <h4 class="my-0 fw-normal">{{ $t('lblShap') }}</h4>
+        </div>
+        <img :src="`data:image/png;base64,${output.shap_plot}`" :alt="$t('lblShap')" />
+      </div>
+    </div>
+
+    <!-- LIME -->
+    <div v-if="output.lime_plot" class="col">
+      <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalLime(`data:image/png;base64,${output.lime_plot}`, output.lime_example_0)" style="cursor: pointer;">
+        <div class="card-header py-3">
+          <h4 class="my-0 fw-normal">{{ $t('lblLime') }}</h4>
+        </div>
+        <img :src="`data:image/png;base64,${output.lime_plot}`" :alt="$t('lblLime')" />
+      </div>
+    </div>
   </div>
 
   <!-- hr -->
@@ -250,6 +270,8 @@
   <ModalNotification ref="modalMissingDataRef" :title="modal.title" :content="modal.content" :icon="modal.icon" :primaryButton="modalButtons.primary" :secondaryButton="modalButtons.secondary" :onUserDismiss="closeModalMissingData" />
   <ModalFormulaExplain ref="formulaExplainModal" />
   <ModalImage ref="modalImageRef" :title="modal.title" :imageSrc="modal.content"/>
+  <ModalShap ref="modalShapRef" :imageSrc="modal.content" :shapImportance="modal.shap_importance" :columns="preview_data.columns"/>
+  <ModalLime ref="modalLimeRef" :imageSrc="modal.content" :lime_example_0="modal.lime_example_0" :columns="preview_data.columns"/>
 </template>
 
 <script>
@@ -259,12 +281,16 @@ import ModalNotification from "@/components/ModalNotification.vue"
 import { Collapse } from 'bootstrap'
 import ModalFormulaExplain from "@/components/ModalFormulaExplain.vue"
 import ModalImage from "@/components/ModalImage.vue"
+import ModalShap from "@/components/ModalShap.vue"
+import ModalLime from "@/components/ModalLime.vue"
 
 export default {
   components: {
     ModalNotification,
     ModalFormulaExplain,
     ModalImage,
+    ModalShap,
+    ModalLime,
   },
   data() {
     return {
@@ -283,6 +309,7 @@ export default {
         title: '',
         content: '',
         icon: 'info',
+        shap_importance: {},
       },
       loading: false,
       errors: {}, // for validation
@@ -569,7 +596,7 @@ export default {
       }
       // Pred Column
       if (!this.selected.pred_column) {
-        this.errors.label_column = this.$t('msgValRequired')
+        this.errors.pred_column = this.$t('msgValRequired')
       }
 
       return isValid
@@ -683,6 +710,22 @@ export default {
         this.modal.title = title
         this.modal.content = imageSrc
         this.$refs.modalImageRef.openModal()
+      }
+    },
+
+    openModalShap(imageSrc, shap_importance) {
+      if (this.$refs.modalShapRef) {
+        this.modal.content = imageSrc
+        this.modal.shap_importance = shap_importance
+        this.$refs.modalShapRef.openModal()
+      }
+    },
+
+    openModalLime(imageSrc, lime_example_0) {
+      if (this.$refs.modalLimeRef) {
+        this.modal.content = imageSrc
+        this.modal.lime_example_0 = lime_example_0
+        this.$refs.modalLimeRef.openModal()
       }
     },
   },

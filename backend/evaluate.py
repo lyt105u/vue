@@ -28,6 +28,8 @@ import matplotlib.pyplot as plt
 import io
 import base64
 from tool_train import NumpyEncoder
+import shap
+from lime.lime_tabular import LimeTabularExplainer
 
 def load_model(model_path):
     if model_path.lower().endswith(".json"):  # .json 結尾
@@ -210,6 +212,80 @@ def evaluate_model(y_test, y_pred, model, x_test):
     result['roc'] = image_base64
     return result
 
+def explain_with_shap(model, x_test):
+    result = {}
+    try:
+        x_test = np.array(x_test, dtype=np.float32)
+        explainer = shap.Explainer(model, x_test)
+        shap_values = explainer(x_test)
+
+        if hasattr(shap_values, "values") and shap_values.values.ndim == 3:
+            shap_values_for_plot = shap_values.values[..., 1]
+        else:
+            shap_values_for_plot = shap_values.values
+
+        shap_data = shap_values.data
+
+        # 平均重要度
+        shap_importance = np.abs(shap_values_for_plot).mean(axis=0)
+        result["shap_importance"] = {
+            f"feature_{i}": float(val) for i, val in enumerate(shap_importance)
+        }
+
+        # beeswarm plot
+        plt.figure(figsize=(10, 6))
+        shap.summary_plot(shap_values_for_plot, shap_data, show=False)
+        plt.tight_layout()
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png')
+        buf.seek(0)
+        result["shap_plot"] = base64.b64encode(buf.getvalue()).decode("utf-8")
+        buf.close()
+        plt.close()
+
+    except Exception as e:
+        result["shap_error"] = str(e)
+
+    return result
+
+def explain_with_lime(model, x_test, y_test):
+    result = {}
+    try:
+        lime_explainer = LimeTabularExplainer(
+            training_data=x_test,
+            mode="classification",
+            training_labels=y_test,
+            feature_names=[f"feature_{i}" for i in range(x_test.shape[1])],
+            class_names=["class_0", "class_1"],
+            discretize_continuous=True,
+        )
+
+        lime_result = lime_explainer.explain_instance(
+            x_test[0],  # 第0筆樣本
+            model.predict_proba,
+            num_features=10
+            # num_features=len(x_test[0])
+        )
+
+        # 儲存圖片到記憶體 buffer
+        fig = lime_result.as_pyplot_figure()
+        fig.set_size_inches(10, 6)  # 改變圖的尺寸
+        fig.tight_layout()  # 自動調整 layout
+        buf = io.BytesIO()
+        fig.savefig(buf, format='png')
+        buf.seek(0)
+        result["lime_plot"] = base64.b64encode(buf.getvalue()).decode('utf-8')
+        buf.close()
+        plt.close(fig)  # 關閉圖避免重疊
+
+        # 同時保留文字格式
+        result["lime_example_0"] = lime_result.as_list()
+
+    except Exception as e:
+        result["lime_error"] = str(e)
+        
+    return result
+
 def main(model_path, data_path, output_name, label_column, pred_column):
     try:
         model = load_model(model_path)
@@ -217,6 +293,10 @@ def main(model_path, data_path, output_name, label_column, pred_column):
         x_test, y_test, y_pred, data_with_preds = predict_labels(model, model_path, data, label_column, pred_column)
         save_predictions(data_with_preds, data_path, output_name)
         results = evaluate_model(y_test, y_pred, model, x_test)
+        shap_result = explain_with_shap(model, x_test)
+        results.update(shap_result)
+        lime_result = explain_with_lime(model, x_test, y_test)
+        results.update(lime_result)
         print(json.dumps(results, indent=4, cls=NumpyEncoder))
     except Exception as e:
         print(json.dumps({
