@@ -158,11 +158,35 @@
   </div>
 
   <!-- output -->
-  <div v-if="output" class="about">
-    <h3>
-      {{ $t('lblPredictionResult') }}
-    </h3>
-    {{ modal.content }}
+  <div v-if="output" class="row row-cols-1 row-cols-md-3 mb-3 text-center">
+    <div v-if="output.status=='success'" class="col">
+      <div class="card mb-4 rounded-3 shadow-sm">
+        <div class="card-header py-3">
+          <h4 class="my-0 fw-normal">{{ $t('lblPredictionResult') }}</h4>
+        </div>
+        {{ msgResult }}
+      </div>
+    </div>
+
+    <!-- SHAP -->
+    <div v-if="output.shap_plot" class="col">
+      <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalShap(`data:image/png;base64,${output.shap_plot}`, output.shap_importance)" style="cursor: pointer;">
+        <div class="card-header py-3">
+          <h4 class="my-0 fw-normal">{{ $t('lblShap') }}</h4>
+        </div>
+        <img :src="`data:image/png;base64,${output.shap_plot}`" :alt="$t('lblShap')" />
+      </div>
+    </div>
+
+    <!-- LIME -->
+    <div v-if="output.lime_plot" class="col">
+      <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalLime(`data:image/png;base64,${output.lime_plot}`, output.lime_example_0)" style="cursor: pointer;">
+        <div class="card-header py-3">
+          <h4 class="my-0 fw-normal">{{ $t('lblLime') }}</h4>
+        </div>
+        <img :src="`data:image/png;base64,${output.lime_plot}`" :alt="$t('lblLime')" />
+      </div>
+    </div>
   </div>
 
   <div class="bd-example-snippet bd-code-snippet">
@@ -186,17 +210,23 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
   <ModalNotification ref="modalNotification" :title="modal.title" :content="modal.content" :icon="modal.icon" />
   <ModalNotification ref="modalMissingDataRef" :title="modal.title" :content="modal.content" :icon="modal.icon" :primaryButton="modalButtons.primary" :secondaryButton="modalButtons.secondary" :onUserDismiss="closeModalMissingData" />
+  <ModalShap ref="modalShapRef" :imageSrc="modal.content" :shapImportance="modal.shap_importance" :columns="preview_data.columns"/>
+  <ModalLime ref="modalLimeRef" :imageSrc="modal.content" :lime_example_0="modal.lime_example_0" :columns="preview_data.columns"/>
 </template>
 
 <script>
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import axios from 'axios';
 import ModalNotification from "@/components/ModalNotification.vue"
+import ModalShap from "@/components/ModalShap.vue"
+import ModalLime from "@/components/ModalLime.vue"
 import { Collapse } from 'bootstrap'
 
 export default {
   components: {
     ModalNotification,
+    ModalShap,
+    ModalLime,
   },
   data() {
     return {
@@ -216,6 +246,7 @@ export default {
         title: '',
         content: '',
         icon: 'info',
+        shap_importance: {},
       },
       loading: false,
       errors: {}, // for validation
@@ -229,6 +260,7 @@ export default {
       fileOptions: [],
       controller: null,
       isAborted: false,
+      msgResult: '',
     }
   },
   created() {
@@ -589,12 +621,14 @@ export default {
           this.modal.icon = 'success'
           if (this.selected.mode === 'file') {
             this.modal.content = this.$t('msgFileDownloaded')
+            this.msgResult = this.$t('msgFileDownloaded')
             // download api
             // 結果檔案會暫時存在 data/result/ 裡面，懶得改了，牽動到 predict.py，好麻煩
             const path = `data/result/${this.selected.output_name}${this.watched.file_extension}`
             await this.downloadFile(path)
           } else if (this.selected.mode === 'input') {
             this.modal.content = this.$t('lblPredictionResult') + ':' + this.output.message[0]
+            this.msgResult = this.$t('lblPredictionResult') + ':' + this.output.message[0]
           }
           this.openModalNotification()
         } else if (response.data.status == "error") {
@@ -656,6 +690,22 @@ export default {
         this.$refs.modalMissingDataRef.openModal()
       } else {
         console.error("ModalNotification component not found.")
+      }
+    },
+
+    openModalShap(imageSrc, shap_importance) {
+      if (this.$refs.modalShapRef) {
+        this.modal.content = imageSrc
+        this.modal.shap_importance = shap_importance
+        this.$refs.modalShapRef.openModal()
+      }
+    },
+
+    openModalLime(imageSrc, lime_example_0) {
+      if (this.$refs.modalLimeRef) {
+        this.modal.content = imageSrc
+        this.modal.lime_example_0 = lime_example_0
+        this.$refs.modalLimeRef.openModal()
       }
     },
   },

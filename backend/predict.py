@@ -23,6 +23,11 @@ import json
 import numpy as np
 from pytorch_tabnet.tab_model import TabNetClassifier
 import sys
+import io
+import base64
+import matplotlib.pyplot as plt
+import shap
+from lime.lime_tabular import LimeTabularExplainer
 
 def load_model(model_path):
     if model_path.lower().endswith(".json"):  # .json 結尾
@@ -52,6 +57,80 @@ def load_data(data_path):
     # print(f"Data loaded from {data_path}")
     return data
 
+def explain_with_shap(model, x_test):
+    result = {}
+    try:
+        x_test = np.array(x_test, dtype=np.float32)
+        explainer = shap.Explainer(model, x_test)
+        shap_values = explainer(x_test)
+
+        if hasattr(shap_values, "values") and shap_values.values.ndim == 3:
+            shap_values_for_plot = shap_values.values[..., 1]
+        else:
+            shap_values_for_plot = shap_values.values
+
+        shap_data = shap_values.data
+
+        # 平均重要度
+        shap_importance = np.abs(shap_values_for_plot).mean(axis=0)
+        result["shap_importance"] = {
+            f"feature_{i}": float(val) for i, val in enumerate(shap_importance)
+        }
+
+        # beeswarm plot
+        plt.figure(figsize=(10, 6))
+        shap.summary_plot(shap_values_for_plot, shap_data, show=False)
+        plt.tight_layout()
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png')
+        buf.seek(0)
+        result["shap_plot"] = base64.b64encode(buf.getvalue()).decode("utf-8")
+        buf.close()
+        plt.close()
+
+    except Exception as e:
+        result["shap_error"] = str(e)
+
+    return result
+
+def explain_with_lime(model, x_test, y_test):
+    result = {}
+    try:
+        lime_explainer = LimeTabularExplainer(
+            training_data=x_test,
+            mode="classification",
+            training_labels=y_test,
+            feature_names=[f"feature_{i}" for i in range(x_test.shape[1])],
+            class_names=["class_0", "class_1"],
+            discretize_continuous=True,
+        )
+
+        lime_result = lime_explainer.explain_instance(
+            x_test[0],  # 第0筆樣本
+            model.predict_proba,
+            num_features=10
+            # num_features=len(x_test[0])
+        )
+
+        # 儲存圖片到記憶體 buffer
+        fig = lime_result.as_pyplot_figure()
+        fig.set_size_inches(10, 6)  # 改變圖的尺寸
+        fig.tight_layout()  # 自動調整 layout
+        buf = io.BytesIO()
+        fig.savefig(buf, format='png')
+        buf.seek(0)
+        result["lime_plot"] = base64.b64encode(buf.getvalue()).decode('utf-8')
+        buf.close()
+        plt.close(fig)  # 關閉圖避免重疊
+
+        # 同時保留文字格式
+        result["lime_example_0"] = lime_result.as_list()
+
+    except Exception as e:
+        result["lime_error"] = str(e)
+        
+    return result
+
 def predict_labels(model, model_path, data, label_column):
     x_test = data.copy()
     if model_path.lower().endswith(".zip"): # tabnet 只吃 numpy array，不吃 object
@@ -60,7 +139,15 @@ def predict_labels(model, model_path, data, label_column):
         x_test = x_test.values
     y_pred = model.predict(x_test)
     data[label_column] = y_pred
-    return data
+
+    explain_result = {}
+    try:
+        explain_result["shap"] = explain_with_shap(model, x_test)
+        explain_result["lime"] = explain_with_lime(model, x_test, y_pred)
+    except Exception as e:
+        explain_result["explain_error"] = str(e)
+
+    return data, explain_result
 
 def save_predictions(data, data_path, output_name):
     result_dir = os.path.join("data", "result")
@@ -73,11 +160,7 @@ def save_predictions(data, data_path, output_name):
     elif data_path.endswith(".xlsx"):
         output_path = os.path.join(result_dir, f"{output_name}.xlsx")
         data.to_excel(output_path, index=False)
-    # print(f"Predictions saved to {output_path}")
-    print(json.dumps({
-        "status": "success",
-        "message": f"Predictions saved to {output_path}",
-    }))
+    return output_path
 
 def predict_input(model, model_path, input_values):
     # 將輸入值解析為適當的型態
@@ -115,8 +198,24 @@ def main(model_path, mode, data_path=None, output_name=None, input_values=None, 
 
         if mode == "file":
             data = load_data(data_path)
-            data_with_predictions = predict_labels(model, model_path, data, label_column)
-            save_predictions(data_with_predictions, data_path, output_name)
+            data_with_predictions, explanations = predict_labels(model, model_path, data, label_column)
+            output_path = save_predictions(data_with_predictions, data_path, output_name)
+            result = {
+                "status": "success",
+                "message": f"Predictions saved to {output_path}",
+            }
+            shap_result = explanations.get("shap", {})
+            if shap_result.get("shap_plot"):
+                result["shap_plot"] = shap_result["shap_plot"]
+            if shap_result.get("shap_importance"):
+                result["shap_importance"] = shap_result["shap_importance"]
+            lime_result = explanations.get("lime", {})
+            if lime_result.get("lime_plot"):
+                result["lime_plot"] = lime_result["lime_plot"]
+            if lime_result.get("lime_example_0"):
+                result["lime_example_0"] = lime_result["lime_example_0"]
+            print(json.dumps(result))
+            
         elif mode == "input":
             predict_input(model, model_path, input_values)
     except Exception as e:
