@@ -390,6 +390,8 @@ def kfold_evaluation(X, y, cv_folds, model_name, batch_size, max_epochs, patienc
 
         loss_base64 = plot_loss(evals_result)
         acc_base64 = plot_accuracy(evals_result)
+        shap_result = explain_with_shap(model, X_test)
+        lime_result = explain_with_lime(model, X_test, Y_test)
 
         folds_result.append({
             "fold": fold,
@@ -408,7 +410,11 @@ def kfold_evaluation(X, y, cv_folds, model_name, batch_size, max_epochs, patienc
             },
             "roc": roc_base64,
             "loss_plot": loss_base64,
-            "accuracy_plot": acc_base64
+            "accuracy_plot": acc_base64,
+            "shap_plot": shap_result.get("shap_plot"),
+            "shap_importance": shap_result.get("shap_importance"),
+            "lime_plot": lime_result.get("lime_plot"),
+            "lime_example_0": lime_result.get("lime_example_0")
         })
 
     avg_result = {
