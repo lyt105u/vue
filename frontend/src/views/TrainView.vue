@@ -674,6 +674,26 @@
             <img :src="`data:image/png;base64,${fold.accuracy_plot}`" alt="Accuracy" />
           </div>
         </div>
+
+        <!-- SHAP -->
+        <div v-if="fold.shap_plot" class="col">
+          <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalShap(`data:image/png;base64,${fold.shap_plot}`, fold.shap_importance)" style="cursor: pointer;">
+            <div class="card-header py-3">
+              <h4 class="my-0 fw-normal">{{ $t('lblShap') }}</h4>
+            </div>
+            <img :src="`data:image/png;base64,${fold.shap_plot}`" :alt="$t('lblShap')" />
+          </div>
+        </div>
+
+        <!-- LIME -->
+        <div v-if="fold.lime_plot" class="col">
+          <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalLime(`data:image/png;base64,${fold.lime_plot}`, fold.lime_example_0)" style="cursor: pointer;">
+            <div class="card-header py-3">
+              <h4 class="my-0 fw-normal">{{ $t('lblLime') }}</h4>
+            </div>
+            <img :src="`data:image/png;base64,${fold.lime_plot}`" :alt="$t('lblLime')" />
+          </div>
+        </div>
       </div>
 
       <!-- 平均值結果 -->
