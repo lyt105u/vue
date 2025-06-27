@@ -6,17 +6,21 @@
 
 
 
-from flask import Flask, request, jsonify, send_file, send_from_directory
+from flask import Flask, request, jsonify, send_file, send_from_directory, after_this_request
 from flask_cors import CORS
 import subprocess
 import json
 import os
 import mimetypes
 import shutil
+from datetime import datetime
+import base64
+import zipfile
+import io
 
 # 建立 Flask 應用，指定靜態資源位置（給 Vue build 後的檔案用）
 app = Flask(__name__, static_folder='static', static_url_path='')
-CORS(app)  # 啟用跨域支持
+CORS(app, expose_headers=["Content-Disposition"])  # 啟用跨域支持
 
 current_process = None
 
@@ -820,6 +824,76 @@ def copy_local_file():
     return jsonify({
         "status": "success",
     })
+
+def build_zip_in_memory(data):
+    # 建立 ZIP 並將 metrics.json + base64 圖片一起寫入記憶體
+    zip_buffer = io.BytesIO()
+    zipf = zipfile.ZipFile(zip_buffer, mode='w', compression=zipfile.ZIP_DEFLATED)
+
+    def process(obj, parent_key=""):
+        keys_to_remove = []
+
+        for key, value in obj.items():
+            current_key = f"{parent_key}_{key}" if parent_key else key
+
+            if isinstance(value, str) and value[:20].startswith("iVBORw0KGgo"):
+                try:
+                    image_bytes = base64.b64decode(value)
+                    zipf.writestr(f"{current_key}.png", image_bytes)
+                    # 刪除 metrics.json 裡的圖片plot
+                    keys_to_remove.append(key)
+                except Exception as e:
+                    print(f"[decode error] {current_key}: {e}")
+
+            elif isinstance(value, dict):
+                process(value, current_key)
+
+            elif isinstance(value, list):
+                for i, item in enumerate(value):
+                    if isinstance(item, dict):
+                        process(item, f"{current_key}_{i}")
+
+        for key in keys_to_remove:
+            del obj[key]
+
+    # 處理圖片並修改原始 JSON
+    data_copy = json.loads(json.dumps(data))  # 深複製，避免直接改到前端傳來的資料
+    process(data_copy)
+
+    # 寫入 JSON 檔案
+    zipf.writestr("metrics.json", json.dumps(data_copy, indent=4, ensure_ascii=False))
+    zipf.close()
+
+    zip_buffer.seek(0)
+    return zip_buffer
+
+@app.route('/download-report', methods=['POST'])
+def download_report():
+    try:
+        result = request.get_json()
+        if not result:
+            return jsonify({
+                "status": "error",
+                "message": "Missing JSON payload"
+            })
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"report_{timestamp}.zip"
+
+        memory_zip = build_zip_in_memory(result)
+
+        return send_file(
+            memory_zip,
+            as_attachment=True,
+            download_name=filename,
+            mimetype='application/zip'
+        )
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        })
 
 
 if __name__ == '__main__':

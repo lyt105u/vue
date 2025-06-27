@@ -462,13 +462,19 @@
   </div>
 
   <!-- Results 標題 -->
-  <div v-if="output" class="about">
-    <h3>
+  <div class="about d-flex align-items-center gap-2" style="padding-bottom:8px;">
+    <h3 class="mb-0 d-flex align-items-center">
       {{ $t('lblTrainingResult') }}
-      <button style="border: none; background: none; cursor: pointer;" @click="openFormulaExplainModal">
+      <button style="border: none; background: none; cursor: pointer;" @click="openFormulaExplainModal"  :disabled="loading">
         <i class="fa fa-question-circle" style="font-size:24px;color:lightblue"></i>
       </button>
     </h3>
+    <button v-if="!loading" @click="downloadReport" type="button" class="btn btn-outline-primary">
+      <i class="fa fa-download me-1"></i>{{ $t('lblDownload') }}
+    </button>
+    <button v-if="loading" class="btn btn-outline-primary" type="button" disabled>
+      <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+    </button>
   </div>
   
   <!-- 訓練結果 -->
@@ -1605,6 +1611,36 @@ export default {
       if (this.$refs.modalFinishTrainingRef) {
         this.$refs.modalFinishTrainingRef.closeModal()
       }
+    },
+
+    async downloadReport() {
+      this.loading = true
+      try {
+        const response = await axios.post(`${process.env.VUE_APP_API_URL}/download-report`, this.output, {
+          responseType: 'blob' // 關鍵：支援二進位檔案格式
+        })
+
+        // 從 Content-Disposition 擷取檔案名稱
+        let filename = 'report.zip' // 預設檔名
+        const disposition = response.headers['content-disposition']
+        if (disposition && disposition.includes('filename=')) {
+          const match = disposition.match(/filename="?([^"]+)"?/)
+          if (match) {
+            filename = decodeURIComponent(match[1]) // 使用後端提供的檔名（如：report_20250627_160500.zip）
+          }
+        }
+
+        const blob = response.data
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = filename
+        a.click()
+        URL.revokeObjectURL(url)
+      } catch (err) {
+        console.error('下載檔案失敗：', err)
+      }
+      this.loading = false
     },
   },
 }

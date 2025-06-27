@@ -58,6 +58,7 @@
   "lblSplitTestTrain": "切分為訓練集與測試集",
   "lblKfoldValid": "K-fold 交叉驗證",
   "lblRecommendedModel": "推薦模型：",
+  "lblDownload": "下載",
   
   "msgPreviewCaption": "顯示前 10 筆資料（總共：{count} 筆）",
   "msgUploadSuccess": "成功上傳 `{filename}`。",
