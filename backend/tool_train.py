@@ -294,7 +294,7 @@ def kfold_evaluation(X, y, split_value, train_function):
     y_test_all = []
     y_pred_proba_all = []
 
-    for fold, (train_index, test_index) in enumerate(skf.split(X, y), 1):
+    for fold, (train_index, test_index) in enumerate(skf.split(X, y)):
         X_train, X_test = X[train_index], X[test_index]
         y_train, y_test = y[train_index], y[test_index]
 

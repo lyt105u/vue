@@ -345,7 +345,7 @@ def kfold_evaluation(X, y, cv_folds, model_name, batch_size, max_epochs, patienc
 
     total_tn = total_fp = total_fn = total_tp = 0
 
-    for fold, (train_index, test_index) in enumerate(skf.split(X, y), 1):
+    for fold, (train_index, test_index) in enumerate(skf.split(X, y)):
         X_train, X_test = X[train_index], X[test_index]
         Y_train, Y_test = y[train_index], y[test_index]
 
