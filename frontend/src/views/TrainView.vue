@@ -462,7 +462,7 @@
   </div>
 
   <!-- Results 標題 -->
-  <div class="about d-flex align-items-center gap-2" style="padding-bottom:8px;">
+  <div v-if="output" class="about d-flex align-items-center gap-2" style="padding-bottom:12px;">
     <h3 class="mb-0 d-flex align-items-center">
       {{ $t('lblTrainingResult') }}
       <button style="border: none; background: none; cursor: pointer;" @click="openFormulaExplainModal"  :disabled="loading">
@@ -480,7 +480,7 @@
   <!-- 訓練結果 -->
   <div v-if="output" class="row row-cols-1 row-cols-md-3 mb-3 text-center">
     <!-- train_test_split -->
-    <template v-if="selected.split_strategy === 'train_test_split'">
+    <template v-if="output.split_strategy === 'train_test_split'">
       <div class="col">
         <div class="card mb-4 rounded-3 shadow-sm">
           <div class="card-header py-3">
@@ -610,7 +610,7 @@
       </div>
     </template>
 
-    <template v-if="selected.split_strategy === 'k_fold'">
+    <template v-if="output.split_strategy === 'k_fold'">
       <!-- 每個 fold -->
       <div v-for="fold in output.folds" :key="fold.fold">
         <div class="col">
@@ -983,10 +983,8 @@ export default {
     "selected.split_strategy"() {
       if (this.selected.split_strategy == 'train_test_split') {
         this.selected.split_value = '0.8'
-        this.output = null
       } else if (this.selected.split_strategy == 'k_fold') {
         this.selected.split_value = '5'
-        this.output = null
       }
     },
     "selected.split_value"() {
@@ -1419,6 +1417,8 @@ export default {
           signal: this.controller.signal
         })
         this.output = response.data
+        // 顯示用，讓切換 split_strategy 不會拿掉 results
+        this.output.split_strategy = this.selected.split_strategy
       } catch (error) {
         if (axios.isCancel(error)) {
           this.output = null
