@@ -121,6 +121,7 @@
   "msgFooter2": "Advisor: Prof. Chun-Hung Richard Lin",
   "msgSysRunning": "The system is still running. Are you sure you want to leave?",
   "msgTrainLonger": "The training process will take much longer than other models.",
+  "msgLabelColumnClass": "The True Label Column must contain at least two different classes.",
 
   "msgValRequired": "This field is required.",
   "msgValIntOnly": "Integer only.",

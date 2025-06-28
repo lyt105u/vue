@@ -911,6 +911,37 @@ def download_report():
             "message": str(e)
         })
 
+@app.route('/check-label-uniqueness', methods=['POST'])
+def check_label_uniqueness():
+    data = request.get_json()
+    file_path = data.get('file_path')
+    label_column = data.get('label_column')
+    try:
+        fetch_result = subprocess.run(
+            ['python', 'checkLabelUniqueness.py', file_path, label_column],
+            # capture_output=True,  # 捕獲標準輸出和標準錯誤
+            stdout=subprocess.PIPE,     # 只捕獲標準輸出
+            stderr=subprocess.DEVNULL,  # 忽略標準錯誤
+            text=True                   # 將輸出轉換為字符串
+        )
+        
+        # debug 用
+        # print("STDOUT:", result.stdout)  # 打印标准输出
+        # print("STDERR:", result.stderr)  # 打印标准错误
+        
+        if fetch_result.returncode != 0:
+            return jsonify({
+                "status": "error",
+                "message": fetch_result.stderr,
+            })
+
+        return jsonify(json.loads(fetch_result.stdout))
+    
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        })
 
 if __name__ == '__main__':
     app.run(debug=True)

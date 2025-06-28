@@ -121,6 +121,7 @@
   "msgFooter2": "指導教授：林俊宏教授",
   "msgSysRunning": "系統運行中，確定要離開嗎？",
   "msgTrainLonger": "訓練耗時將比其他模型還要來得久。",
+  "msgLabelColumnClass": "正確答案欄位中必須包含兩種以上的分類。",
 
   "msgValRequired": "此為必填欄位",
   "msgValIntOnly": "僅允許整數",

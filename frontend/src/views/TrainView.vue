@@ -753,7 +753,11 @@
   <div class="about text-body-secondary">
     <h6>{{ $t('lblNote') }}</h6>
     <ol class="h6">
-      <li>{{ $t('msgMissingDataNote') }}</li>
+      <li>{{ $t('lblFileSelection') }}</li>
+        <ol type="i">
+          <li>{{ $t('msgLabelColumnClass') }}</li>
+          <li>{{ $t('msgMissingDataNote') }}</li>
+        </ol>
       <li>{{ $t('lblXgb') }}
         <ol type="i">
           <li><code>n_estimators</code>{{ $t('msgTrainNoteXgb1') }}</li>
@@ -1345,10 +1349,42 @@ export default {
       if (!this.validateForm()) {
         return
       }
+
+      this.loading = true
+
+      // 檢查 label 是否只有一種 class
+      try {
+        const response = await axios.post(`${process.env.VUE_APP_API_URL}/check-label-uniqueness`, {
+          file_path: `upload/${this.selected.data}`, // upload/
+          label_column: this.selected.label_column
+        })
+        if (response.data.status == "errorUnique") {
+          this.modal.title = this.$t('lblError')
+          this.modal.content = this.$t('msgLabelColumnClass')
+          this.modal.icon = 'error'
+          this.openModalNotification()
+          this.loading = false
+          return
+        } else if (response.data.status == "error") {
+          this.modal.title = this.$t('lblError')
+          this.modal.content = response.data.message
+          this.modal.icon = 'error'
+          this.openModalNotification()
+          this.loading = false
+          return
+        }
+      } catch (error) {
+        this.modal.title = this.$t('lblError')
+        this.modal.content = error
+        this.modal.icon = 'error'
+        this.openModalNotification()
+        this.loading = false
+        return
+      }
+
       this.isAborted = false
       this.controller = new AbortController()
       try {
-        this.loading = true
         this.output = null
         let api = ''
         let payload = {
