@@ -25,9 +25,9 @@
       </div>
     </div>
 
-    <!-- File Selection -->
+    <!-- Tabular Data -->
     <div class="row mb-3">
-      <label for="inputEmail3" class="col-sm-3 col-form-label">{{ $t('lblFileSelection') }}</label>
+      <label for="inputEmail3" class="col-sm-3 col-form-label">{{ $t('lblTabularData') }}</label>
       <div class="col-sm-8">
         <select class="form-select" aria-label="Small select example" v-model="selected.data_name" :disabled="loading">
           <option v-for="file in fileOptions" :key="file" :value="file">

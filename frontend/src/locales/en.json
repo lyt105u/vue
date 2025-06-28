@@ -60,6 +60,7 @@
   "lblRecommendedModel": "Recommended model:",
   "lblDownload": "Download",
   "lblReleaseNote": "Release Note",
+  "lblTabularData": "Tabular Data",
   
   "msgPreviewCaption": "Showing first 10 rows (total:{count} rows)",
   "msgUploadSuccess": "Upload `{filename}` successfully.",

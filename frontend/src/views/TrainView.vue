@@ -311,9 +311,9 @@
       </div>
     </template>
 
-    <!-- 訓練資料 -->
+    <!-- 表格式資料 -->
     <div class="row mb-3">
-      <label class="col-sm-3 col-form-label">{{ $t('lblFileSelection') }}</label>
+      <label class="col-sm-3 col-form-label">{{ $t('lblTabularData') }}</label>
       <div class="col-sm-8">
         <select class="form-select" aria-label="Small select example" v-model="selected.data" :disabled="loading">
           <option v-for="file in fileOptions" :key="file" :value="file">
@@ -753,7 +753,7 @@
   <div class="about text-body-secondary">
     <h6>{{ $t('lblNote') }}</h6>
     <ol class="h6">
-      <li>{{ $t('lblFileSelection') }}</li>
+      <li>{{ $t('lblTabularData') }}</li>
         <ol type="i">
           <li>{{ $t('msgLabelColumnClass') }}</li>
           <li>{{ $t('msgMissingDataNote') }}</li>
