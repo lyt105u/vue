@@ -202,7 +202,7 @@ def main(model_path, mode, data_path=None, output_name=None, input_values=None, 
             output_path = save_predictions(data_with_predictions, data_path, output_name)
             result = {
                 "status": "success",
-                "message": f"Predictions saved to {output_path}",
+                # "message": f"Predictions saved to {output_path}",
             }
             shap_result = explanations.get("shap", {})
             if shap_result.get("shap_plot"):

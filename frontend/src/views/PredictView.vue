@@ -157,6 +157,17 @@
     </div>
   </div>
 
+  <!-- Results 標題 -->
+  <div v-if="output" class="about d-flex align-items-center gap-2" style="padding-bottom:12px;">
+    <h3 class="mb-0 d-flex align-items-center">{{ $t('lblPredictionResult') }}</h3>
+    <button v-if="!loading" @click="downloadReport" type="button" class="btn btn-outline-primary">
+      <i class="fa fa-download me-1"></i>{{ $t('lblDownload') }}
+    </button>
+    <button v-if="loading" class="btn btn-outline-primary" type="button" disabled>
+      <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+    </button>
+  </div>
+
   <!-- output -->
   <div v-if="output" class="row row-cols-1 row-cols-md-3 mb-3 text-center">
     <div v-if="output.status=='success'" class="col">
@@ -672,7 +683,10 @@ export default {
         a.click()
         URL.revokeObjectURL(url)
       } catch (err) {
-        console.error('下載檔案失敗：', err)
+        this.modal.title = this.$t('lblError')
+        this.modal.content = err
+        this.modal.icon = 'error'
+        this.openModalNotification()
       }
     },
 
@@ -707,6 +721,39 @@ export default {
         this.modal.lime_example_0 = lime_example_0
         this.$refs.modalLimeRef.openModal()
       }
+    },
+
+    async downloadReport() {
+      this.loading = true
+      try {
+        const response = await axios.post(`${process.env.VUE_APP_API_URL}/download-report`, this.output, {
+          responseType: 'blob' // 關鍵：支援二進位檔案格式
+        })
+
+        // 從 Content-Disposition 擷取檔案名稱
+        let filename = 'report.zip' // 預設檔名
+        const disposition = response.headers['content-disposition']
+        if (disposition && disposition.includes('filename=')) {
+          const match = disposition.match(/filename="?([^"]+)"?/)
+          if (match) {
+            filename = decodeURIComponent(match[1]) // 使用後端提供的檔名（如：report_20250627_160500.zip）
+          }
+        }
+
+        const blob = response.data
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = filename
+        a.click()
+        URL.revokeObjectURL(url)
+      } catch (err) {
+        this.modal.title = this.$t('lblError')
+        this.modal.content = err
+        this.modal.icon = 'error'
+        this.openModalNotification()
+      }
+      this.loading = false
     },
   },
 };
