@@ -26,6 +26,10 @@ import sys
 import io
 import base64
 import matplotlib.pyplot as plt
+import matplotlib
+# 設定 matplotlib 支援中文（自動找電腦上現有中文字型）
+matplotlib.rcParams['font.sans-serif'] = ['Microsoft JhengHei', 'SimHei', 'Arial Unicode MS']
+matplotlib.rcParams['axes.unicode_minus'] = False
 import shap
 from lime.lime_tabular import LimeTabularExplainer
 
@@ -57,7 +61,7 @@ def load_data(data_path):
     # print(f"Data loaded from {data_path}")
     return data
 
-def explain_with_shap(model, x_test):
+def explain_with_shap(model, x_test, feature_names):
     result = {}
     try:
         x_test = np.array(x_test, dtype=np.float32)
@@ -74,12 +78,12 @@ def explain_with_shap(model, x_test):
         # 平均重要度
         shap_importance = np.abs(shap_values_for_plot).mean(axis=0)
         result["shap_importance"] = {
-            f"feature_{i}": float(val) for i, val in enumerate(shap_importance)
+            feature_names[i]: float(val) for i, val in enumerate(shap_importance)
         }
 
         # beeswarm plot
         plt.figure(figsize=(10, 6))
-        shap.summary_plot(shap_values_for_plot, shap_data, show=False)
+        shap.summary_plot(shap_values_for_plot, shap_data, feature_names=feature_names, show=False)
         plt.tight_layout()
         buf = io.BytesIO()
         plt.savefig(buf, format='png')
@@ -93,14 +97,14 @@ def explain_with_shap(model, x_test):
 
     return result
 
-def explain_with_lime(model, x_test, y_test):
+def explain_with_lime(model, x_test, y_test, feature_names):
     result = {}
     try:
         lime_explainer = LimeTabularExplainer(
             training_data=x_test,
             mode="classification",
             training_labels=y_test,
-            feature_names=[f"feature_{i}" for i in range(x_test.shape[1])],
+            feature_names=feature_names,
             class_names=["class_0", "class_1"],
             discretize_continuous=True,
         )
@@ -132,6 +136,7 @@ def explain_with_lime(model, x_test, y_test):
     return result
 
 def predict_labels(model, model_path, data, label_column):
+    feature_names = data.columns.tolist()
     x_test = data.copy()
     if model_path.lower().endswith(".zip"): # tabnet 只吃 numpy array，不吃 object
         x_test = x_test.to_numpy(dtype=np.float32)
@@ -142,8 +147,8 @@ def predict_labels(model, model_path, data, label_column):
 
     explain_result = {}
     try:
-        explain_result["shap"] = explain_with_shap(model, x_test)
-        explain_result["lime"] = explain_with_lime(model, x_test, y_pred)
+        explain_result["shap"] = explain_with_shap(model, x_test, feature_names)
+        explain_result["lime"] = explain_with_lime(model, x_test, y_pred, feature_names)
     except Exception as e:
         explain_result["explain_error"] = str(e)
 
