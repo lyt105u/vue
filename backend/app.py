@@ -17,6 +17,7 @@ from datetime import datetime
 import base64
 import zipfile
 import io
+from docx import Document
 
 # 建立 Flask 應用，指定靜態資源位置（給 Vue build 後的檔案用）
 app = Flask(__name__, static_folder='static', static_url_path='')
@@ -825,6 +826,7 @@ def copy_local_file():
         "status": "success",
     })
 
+
 def build_zip_in_memory(data):
     # 建立 ZIP 並將 metrics.json + base64 圖片一起寫入記憶體
     zip_buffer = io.BytesIO()
@@ -856,12 +858,26 @@ def build_zip_in_memory(data):
         for key in keys_to_remove:
             del obj[key]
 
-    # 處理圖片並修改原始 JSON
-    data_copy = json.loads(json.dumps(data))  # 深複製，避免直接改到前端傳來的資料
+    # 深複製並處理圖片
+    data_copy = json.loads(json.dumps(data))
     process(data_copy)
 
-    # 寫入 JSON 檔案
-    zipf.writestr("metrics.json", json.dumps(data_copy, indent=4, ensure_ascii=False))
+    # 將 JSON 字串格式化為漂亮排版
+    json_string = json.dumps(data_copy, indent=4, ensure_ascii=False)
+
+    # 加入 metrics.json 檔
+    zipf.writestr("metrics.json", json_string)
+
+    # 建立 Word 檔並放入整段 JSON
+    document = Document()
+    document.add_heading("Metrics Report", level=1)
+    document.add_paragraph(json_string)
+
+    word_buffer = io.BytesIO()
+    document.save(word_buffer)
+    word_buffer.seek(0)
+
+    zipf.writestr("metrics.docx", word_buffer.read())
     zipf.close()
 
     zip_buffer.seek(0)

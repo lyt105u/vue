@@ -1464,7 +1464,7 @@ export default {
                 this.openModalFinishTraining()
               }
             } else if (this.selected.split_strategy == "k_fold") {
-              for (let i=1; i<= this.selected.split_value; i++) {
+              for (let i=0; i< this.selected.split_value; i++) {
                 const path = `model/${this.selected.model_name}_fold_${i}${extension}`
                 try {
                   await this.downloadFile(path)
