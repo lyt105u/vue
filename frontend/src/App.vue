@@ -60,7 +60,7 @@ export default {
     menu() {
       return [
         {
-          header: this.$t('lblMlas')+'_v0.8',
+          header: this.$t('lblMlas')+'_v0.7',
           hiddenOnCollapse: true
         },
         {
