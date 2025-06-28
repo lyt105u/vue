@@ -456,21 +456,35 @@ def main(file_path, label_column, split_strategy, split_value, model_name, penal
     alpha = 1.0 / C
 
     if split_strategy == "train_test_split":
-        x_train, x_test, y_train, y_test = train_test_split(
-            x, y, train_size=float(split_value), stratify=y, random_state=30
-        )
-        use_class_weight = should_use_class_weight(y)
-        model, evals_result = train_lr(x_train, y_train, x_test, y_test, model_name, penalty, alpha, max_iter, use_class_weight)
-        y_pred = model.predict(x_test)
-        results = evaluate_model(y_test, y_pred, model, x_test)
-        results["loss_plot"] = plot_loss(evals_result)
-        results["accuracy_plot"] = plot_accuracy(evals_result)
-        shap_result = explain_with_shap(model, x_test)
-        results.update(shap_result)
-        lime_result = explain_with_lime(model, x_test, y_test)
-        results.update(lime_result)
+        try:
+            x_train, x_test, y_train, y_test = train_test_split(
+                x, y, train_size=float(split_value), stratify=y, random_state=30
+            )
+            use_class_weight = should_use_class_weight(y)
+            model, evals_result = train_lr(x_train, y_train, x_test, y_test, model_name, penalty, alpha, max_iter, use_class_weight)
+            y_pred = model.predict(x_test)
+            results = evaluate_model(y_test, y_pred, model, x_test)
+            results["loss_plot"] = plot_loss(evals_result)
+            results["accuracy_plot"] = plot_accuracy(evals_result)
+            shap_result = explain_with_shap(model, x_test)
+            results.update(shap_result)
+            lime_result = explain_with_lime(model, x_test, y_test)
+            results.update(lime_result)
+        except ValueError as e:
+            print(json.dumps({
+                "status": "error",
+                "message": f"{e}",
+            }))
+            return
     elif split_strategy == "k_fold":
-        results = kfold_evaluation(x, y, int(split_value), model_name, penalty, alpha, max_iter)
+        try:
+            results = kfold_evaluation(x, y, int(split_value), model_name, penalty, alpha, max_iter)
+        except ValueError as e:
+            print(json.dumps({
+                "status": "error",
+                "message": f"{e}",
+            }))
+            return
     else:
         print(json.dumps({
             "status": "error",

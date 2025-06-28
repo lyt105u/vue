@@ -422,26 +422,40 @@ def main(file_path, label_column, split_strategy, split_value, model_name, n_est
         return
 
     if split_strategy == "train_test_split":
-        x_train, x_test, y_train, y_test = train_test_split(
-            x, y, train_size=float(split_value), stratify=y, random_state=30
-        )
-        model, evals_result = train_lgbm(x_train, y_train, x_test, y_test, model_name, n_estimators, learning_rate, max_depth, num_leaves)
-        y_pred = model.predict(x_test)
-        results = evaluate_model(y_test, y_pred, model, x_test)
-        results["loss_plot"] = plot_loss(evals_result)
-        results["accuracy_plot"] = plot_accuracy(evals_result)
-        shap_result = explain_with_shap(model, x_test)
-        results.update(shap_result)
-        lime_result = explain_with_lime(model, x_test, y_test)
-        results.update(lime_result)
+        try:
+            x_train, x_test, y_train, y_test = train_test_split(
+                x, y, train_size=float(split_value), stratify=y, random_state=30
+            )
+            model, evals_result = train_lgbm(x_train, y_train, x_test, y_test, model_name, n_estimators, learning_rate, max_depth, num_leaves)
+            y_pred = model.predict(x_test)
+            results = evaluate_model(y_test, y_pred, model, x_test)
+            results["loss_plot"] = plot_loss(evals_result)
+            results["accuracy_plot"] = plot_accuracy(evals_result)
+            shap_result = explain_with_shap(model, x_test)
+            results.update(shap_result)
+            lime_result = explain_with_lime(model, x_test, y_test)
+            results.update(lime_result)
+        except ValueError as e:
+            print(json.dumps({
+                "status": "error",
+                "message": f"{e}",
+            }))
+            return
 
     elif split_strategy == "k_fold":
-        results = kfold_evaluation(
-            x, y,
-            int(split_value),  # split_value 為 fold 數
-            model_name,
-            n_estimators, learning_rate, max_depth, num_leaves
-        )
+        try:
+            results = kfold_evaluation(
+                x, y,
+                int(split_value),  # split_value 為 fold 數
+                model_name,
+                n_estimators, learning_rate, max_depth, num_leaves
+            )
+        except ValueError as e:
+            print(json.dumps({
+                "status": "error",
+                "message": f"{e}",
+            }))
+            return
 
     else:
         print(json.dumps({

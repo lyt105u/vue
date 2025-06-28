@@ -430,24 +430,38 @@ def main(file_path, label_column, split_strategy, split_value, model_name, hidde
         return
 
     if split_strategy == "train_test_split":
-        x_train, x_test, y_train, y_test = train_test_split(
-            x, y, train_size=float(split_value), stratify=y, random_state=30
-        )
-        model, loss_curve, val_scores = train_mlp(x_train, y_train, model_name, hidden_layer_1, hidden_layer_2, hidden_layer_3, activation, learning_rate_init, max_iter, n_iter_no_change)
-        y_pred = model.predict(x_test)
-        results = evaluate_model(y_test, y_pred, model, x_test)
-        results["loss_plot"] = plot_loss(loss_curve)
-        results["accuracy_plot"] = plot_accuracy(val_scores)
-        shap_result = explain_with_shap(model, x_test)
-        results.update(shap_result)
-        lime_result = explain_with_lime(model, x_test, y_test)
-        results.update(lime_result)
+        try:
+            x_train, x_test, y_train, y_test = train_test_split(
+                x, y, train_size=float(split_value), stratify=y, random_state=30
+            )
+            model, loss_curve, val_scores = train_mlp(x_train, y_train, model_name, hidden_layer_1, hidden_layer_2, hidden_layer_3, activation, learning_rate_init, max_iter, n_iter_no_change)
+            y_pred = model.predict(x_test)
+            results = evaluate_model(y_test, y_pred, model, x_test)
+            results["loss_plot"] = plot_loss(loss_curve)
+            results["accuracy_plot"] = plot_accuracy(val_scores)
+            shap_result = explain_with_shap(model, x_test)
+            results.update(shap_result)
+            lime_result = explain_with_lime(model, x_test, y_test)
+            results.update(lime_result)
+        except ValueError as e:
+            print(json.dumps({
+                "status": "error",
+                "message": f"{e}",
+            }))
+            return
     elif split_strategy == "k_fold":
-        results = kfold_evaluation(
-            x, y, int(split_value),
-            model_name, hidden_layer_1, hidden_layer_2, hidden_layer_3,
-            activation, learning_rate_init, max_iter, n_iter_no_change
-        )
+        try:
+            results = kfold_evaluation(
+                x, y, int(split_value),
+                model_name, hidden_layer_1, hidden_layer_2, hidden_layer_3,
+                activation, learning_rate_init, max_iter, n_iter_no_change
+            )
+        except ValueError as e:
+            print(json.dumps({
+                "status": "error",
+                "message": f"{e}",
+            }))
+            return
     else:
         print(json.dumps({
             "status": "error",

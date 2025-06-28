@@ -448,20 +448,34 @@ def main(file_path, label_column, split_strategy, split_value, model_name, batch
         return
 
     if split_strategy == "train_test_split":
-        x_train, x_test, y_train, y_test = train_test_split(
-            x, y, train_size=float(split_value), stratify=y, random_state=30
-        )
-        model, evals_result = train_tabnet(x_train, y_train, x_test, y_test, model_name, batch_size, max_epochs, patience)
-        y_pred = model.predict(np.array(x_test, dtype=np.float32))  # 確保 x_test 在傳入前轉換為 numpy.float32
-        results = evaluate_model(y_test, y_pred, model, np.array(x_test, dtype=np.float32))
-        results["loss_plot"] = plot_loss(evals_result)
-        results["accuracy_plot"] = plot_accuracy(evals_result)
-        shap_result = explain_with_shap(model, x_test)
-        results.update(shap_result)
-        lime_result = explain_with_lime(model, x_test, y_test)
-        results.update(lime_result)
+        try:
+            x_train, x_test, y_train, y_test = train_test_split(
+                x, y, train_size=float(split_value), stratify=y, random_state=30
+            )
+            model, evals_result = train_tabnet(x_train, y_train, x_test, y_test, model_name, batch_size, max_epochs, patience)
+            y_pred = model.predict(np.array(x_test, dtype=np.float32))  # 確保 x_test 在傳入前轉換為 numpy.float32
+            results = evaluate_model(y_test, y_pred, model, np.array(x_test, dtype=np.float32))
+            results["loss_plot"] = plot_loss(evals_result)
+            results["accuracy_plot"] = plot_accuracy(evals_result)
+            shap_result = explain_with_shap(model, x_test)
+            results.update(shap_result)
+            lime_result = explain_with_lime(model, x_test, y_test)
+            results.update(lime_result)
+        except ValueError as e:
+            print(json.dumps({
+                "status": "error",
+                "message": f"{e}",
+            }))
+            return
     elif split_strategy == "k_fold":
-        results = kfold_evaluation(x, y, int(split_value), model_name, batch_size, max_epochs, patience)
+        try:
+            results = kfold_evaluation(x, y, int(split_value), model_name, batch_size, max_epochs, patience)
+        except ValueError as e:
+            print(json.dumps({
+                "status": "error",
+                "message": f"{e}",
+            }))
+            return
     else:
         print(json.dumps({
             "status": "error",
