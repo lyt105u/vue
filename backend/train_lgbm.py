@@ -15,8 +15,12 @@ import numpy as np
 from sklearn import metrics
 import matplotlib.pyplot as plt
 import matplotlib
-# 設定 matplotlib 支援中文（自動找電腦上現有中文字型）
-matplotlib.rcParams['font.sans-serif'] = ['Microsoft JhengHei', 'SimHei', 'Arial Unicode MS']
+from matplotlib import font_manager
+# 明確指定字型檔路徑
+font_path = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
+font_prop = font_manager.FontProperties(fname=font_path)
+matplotlib.rcParams['font.family'] = font_prop.get_name()  # 自動設定名稱
+
 matplotlib.rcParams['axes.unicode_minus'] = False
 import io
 import base64
