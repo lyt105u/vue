@@ -96,7 +96,15 @@ export default {
               icon: 'fa fa-stethoscope',
             },
           ]
-        }
+        },
+        {
+          component: separator,
+        },
+        {
+          href: '/release',
+          title: this.$t('lblReleaseNote'),
+          icon: 'fa fa-sticky-note-o'
+        },
       ]
     }
   },
