@@ -84,11 +84,28 @@ export default {
   computed: {
     limeParsed() {
       if (!Array.isArray(this.lime_example_0)) return []
+
+      // 工具函式：轉義正則特殊字元
+      const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
       return this.lime_example_0.map(([condition, weight]) => {
-        const match = condition.match(/feature_(\d+)/);
-        const index = match ? parseInt(match[1]) : null;
-        const columnName = index !== null && this.columns[index] ? this.columns[index] : '(Unknown)';
-        return { condition, weight, columnName };
+        let columnName = '(Unknown)';
+
+        for (const col of this.columns) {
+          // 判斷 col 是否是英文或包含數字
+          const isEnglish = /^[\w\s\-()]+$/.test(col);  // 英文、數字、底線、括號等
+
+          const regex = isEnglish
+            ? new RegExp(`\\b${escapeRegExp(col)}\\b`)
+            : new RegExp(escapeRegExp(col));  // 中文直接整體比對
+
+          if (regex.test(condition)) {
+            columnName = col;
+            break;
+          }
+        }
+
+        return { condition, weight, columnName }
       })
     }
   },

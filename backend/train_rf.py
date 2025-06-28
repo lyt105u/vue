@@ -13,6 +13,10 @@ from sklearn.metrics import (
 import numpy as np
 from sklearn import metrics
 import matplotlib.pyplot as plt
+import matplotlib
+# 設定 matplotlib 支援中文（自動找電腦上現有中文字型）
+matplotlib.rcParams['font.sans-serif'] = ['Microsoft JhengHei', 'SimHei', 'Arial Unicode MS']
+matplotlib.rcParams['axes.unicode_minus'] = False
 import io
 import base64
 from sklearn.model_selection import StratifiedKFold
@@ -169,7 +173,7 @@ def evaluate_model(y_test, y_pred, model, x_test):
     result['roc'] = image_base64
     return result
 
-def explain_with_shap(model, x_test):
+def explain_with_shap(model, x_test, feature_names):
     result = {}
     try:
         x_test = np.array(x_test, dtype=np.float32)
@@ -186,12 +190,12 @@ def explain_with_shap(model, x_test):
         # 平均重要度
         shap_importance = np.abs(shap_values_for_plot).mean(axis=0)
         result["shap_importance"] = {
-            f"feature_{i}": float(val) for i, val in enumerate(shap_importance)
+            feature_names[i]: float(val) for i, val in enumerate(shap_importance)
         }
 
         # beeswarm plot
         plt.figure(figsize=(10, 6))
-        shap.summary_plot(shap_values_for_plot, shap_data, show=False)
+        shap.summary_plot(shap_values_for_plot, shap_data, feature_names=feature_names, show=False)
         plt.tight_layout()
         buf = io.BytesIO()
         plt.savefig(buf, format='png')
@@ -205,14 +209,14 @@ def explain_with_shap(model, x_test):
 
     return result
 
-def explain_with_lime(model, x_test, y_test):
+def explain_with_lime(model, x_test, y_test, feature_names):
     result = {}
     try:
         lime_explainer = LimeTabularExplainer(
             training_data=x_test,
             mode="classification",
             training_labels=y_test,
-            feature_names=[f"feature_{i}" for i in range(x_test.shape[1])],
+            feature_names=feature_names,
             class_names=["class_0", "class_1"],
             discretize_continuous=True,
         )
@@ -243,7 +247,7 @@ def explain_with_lime(model, x_test, y_test):
         
     return result
 
-def kfold_evaluation(X, y, cv_folds, model_name, n_estimators, max_depth, random_state, n_jobs):
+def kfold_evaluation(X, y, cv_folds, model_name, n_estimators, max_depth, random_state, n_jobs, feature_names):
     skf = StratifiedKFold(n_splits=cv_folds, shuffle=True, random_state=30)
     folds_result = []
 
@@ -299,8 +303,8 @@ def kfold_evaluation(X, y, cv_folds, model_name, n_estimators, max_depth, random
         buf.close()
         plt.close()
 
-        shap_result = explain_with_shap(model, X_test)
-        lime_result = explain_with_lime(model, X_test, y_test)
+        shap_result = explain_with_shap(model, X_test, feature_names)
+        lime_result = explain_with_lime(model, X_test, y_test, feature_names)
 
         folds_result.append({
             "fold": fold,
@@ -347,7 +351,7 @@ def kfold_evaluation(X, y, cv_folds, model_name, n_estimators, max_depth, random
 
 def main(file_path, label_column, split_strategy, split_value, model_name, n_estimators, max_depth, random_state, n_jobs):
     try:
-        x, y = prepare_data(file_path, label_column)
+        x, y, feature_names = prepare_data(file_path, label_column)
     except ValueError as e:
         print(json.dumps({
             "status": "error",
@@ -363,9 +367,9 @@ def main(file_path, label_column, split_strategy, split_value, model_name, n_est
             model = train_rf(x_train, y_train, model_name, n_estimators, max_depth, random_state, n_jobs)
             y_pred = model.predict(x_test)
             results = evaluate_model(y_test, y_pred, model, x_test)
-            shap_result = explain_with_shap(model, x_test)
+            shap_result = explain_with_shap(model, x_test, feature_names)
             results.update(shap_result)
-            lime_result = explain_with_lime(model, x_test, y_test)
+            lime_result = explain_with_lime(model, x_test, y_test, feature_names)
             results.update(lime_result)
         except ValueError as e:
             print(json.dumps({
@@ -376,7 +380,7 @@ def main(file_path, label_column, split_strategy, split_value, model_name, n_est
     elif split_strategy == "k_fold":
         try:
             results = kfold_evaluation(
-                x, y, int(split_value), model_name, n_estimators, max_depth, random_state, n_jobs
+                x, y, int(split_value), model_name, n_estimators, max_depth, random_state, n_jobs, feature_names
             )
         except ValueError as e:
             print(json.dumps({

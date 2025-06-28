@@ -39,8 +39,9 @@ def prepare_data(file_path, label_column):
     
     x = df.drop(columns=[label_column]).values
     y = df[label_column].values.astype(float)
+    feature_names = df.drop(columns=[label_column]).columns.tolist()
 
-    return x, y
+    return x, y, feature_names
 
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):

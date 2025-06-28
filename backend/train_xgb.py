@@ -6,6 +6,10 @@ import os
 from xgboost import XGBClassifier
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
+import matplotlib
+# 設定 matplotlib 支援中文（自動找電腦上現有中文字型）
+matplotlib.rcParams['font.sans-serif'] = ['Microsoft JhengHei', 'SimHei', 'Arial Unicode MS']
+matplotlib.rcParams['axes.unicode_minus'] = False
 import base64
 import io
 
@@ -182,7 +186,7 @@ def evaluate_model(y_test, y_pred, model, x_test):
     result['roc'] = image_base64
     return result
 
-def explain_with_shap(model, x_test):
+def explain_with_shap(model, x_test, feature_names):
     result = {}
     try:
         x_test = np.array(x_test, dtype=np.float32)
@@ -199,12 +203,12 @@ def explain_with_shap(model, x_test):
         # 平均重要度
         shap_importance = np.abs(shap_values_for_plot).mean(axis=0)
         result["shap_importance"] = {
-            f"feature_{i}": float(val) for i, val in enumerate(shap_importance)
+            feature_names[i]: float(val) for i, val in enumerate(shap_importance)
         }
 
         # beeswarm plot
         plt.figure(figsize=(10, 6))
-        shap.summary_plot(shap_values_for_plot, shap_data, show=False)
+        shap.summary_plot(shap_values_for_plot, shap_data, feature_names=feature_names, show=False)
         plt.tight_layout()
         buf = io.BytesIO()
         plt.savefig(buf, format='png')
@@ -218,14 +222,14 @@ def explain_with_shap(model, x_test):
 
     return result
 
-def explain_with_lime(model, x_test, y_test):
+def explain_with_lime(model, x_test, y_test, feature_names):
     result = {}
     try:
         lime_explainer = LimeTabularExplainer(
             training_data=x_test,
             mode="classification",
             training_labels=y_test,
-            feature_names=[f"feature_{i}" for i in range(x_test.shape[1])],
+            feature_names=feature_names,
             class_names=["class_0", "class_1"],
             discretize_continuous=True,
         )
@@ -304,7 +308,7 @@ def plot_accuracy(evals_result):
 
     return image_base64
 
-def kfold_evaluation(X, y, cv_folds, model_name, n_estimators, learning_rate, max_depth):
+def kfold_evaluation(X, y, cv_folds, model_name, n_estimators, learning_rate, max_depth, feature_names):
     skf = StratifiedKFold(n_splits=cv_folds, shuffle=True, random_state=30)
     folds_result = []
 
@@ -362,8 +366,8 @@ def kfold_evaluation(X, y, cv_folds, model_name, n_estimators, learning_rate, ma
 
         loss_base64 = plot_loss(evals_result)
         acc_base64 = plot_accuracy(evals_result)
-        shap_result = explain_with_shap(model, X_test)
-        lime_result = explain_with_lime(model, X_test, y_test)
+        shap_result = explain_with_shap(model, X_test, feature_names)
+        lime_result = explain_with_lime(model, X_test, y_test, feature_names)
 
         folds_result.append({
             "fold": fold,
@@ -413,7 +417,7 @@ def kfold_evaluation(X, y, cv_folds, model_name, n_estimators, learning_rate, ma
 
 def main(file_path, label_column, split_strategy, split_value, model_name, n_estimators, learning_rate, max_depth):
     try:
-        x, y = prepare_data(file_path, label_column)
+        x, y, feature_names = prepare_data(file_path, label_column)
     except ValueError as e:
         print(json.dumps({
             "status": "error",
@@ -431,9 +435,9 @@ def main(file_path, label_column, split_strategy, split_value, model_name, n_est
             results = evaluate_model(y_test, y_pred, model, x_test)
             results["loss_plot"] = plot_loss(evals_result)
             results["accuracy_plot"] = plot_accuracy(evals_result)
-            shap_result = explain_with_shap(model, x_test)
+            shap_result = explain_with_shap(model, x_test, feature_names)
             results.update(shap_result)
-            lime_result = explain_with_lime(model, x_test, y_test)
+            lime_result = explain_with_lime(model, x_test, y_test, feature_names)
             results.update(lime_result)
         except ValueError as e:
             print(json.dumps({
@@ -445,7 +449,7 @@ def main(file_path, label_column, split_strategy, split_value, model_name, n_est
     elif split_strategy == "k_fold":
         try:
             # 重新打包 train function，這樣就不用傳遞超參數
-            results = kfold_evaluation(x, y, int(split_value), model_name, n_estimators, learning_rate, max_depth)
+            results = kfold_evaluation(x, y, int(split_value), model_name, n_estimators, learning_rate, max_depth, feature_names)
         except ValueError as e:
             print(json.dumps({
                 "status": "error",

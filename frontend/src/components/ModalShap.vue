@@ -26,14 +26,12 @@
             <table class="table table-striped">
               <thead>
                 <tr>
-                  <th scope="col">#</th>
                   <th scope="col">{{ $t('lblFeature') }}</th>
                   <th scope="col">{{ $t('lblAvgShap') }}</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="item in sortedShapImportance" :key="item.key">
-                  <td><code>{{ item.key }}</code></td>
                   <td>{{ item.columnName }}</td>
                   <td>{{ item.value.toFixed(4) }}</td>
                 </tr>
@@ -64,7 +62,8 @@ export default {
     },
     columns: {
       type: Array,
-      required: true,
+      required: false,
+      default: () => []
     },
   },
   data() {
@@ -80,11 +79,7 @@ export default {
   computed: {
     sortedShapImportance() {
       return Object.entries(this.shapImportance)
-        .map(([key, value]) => {
-          const index = parseInt(key.split('_')[1]) // e.g., "feature_3" -> 3
-          const columnName = this.columns[index] || key
-          return { key, columnName, value }
-        })
+        .map(([columnName, value]) => ({ columnName, value }))
         .sort((a, b) => b.value - a.value)
     }
   },
