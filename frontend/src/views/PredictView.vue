@@ -31,7 +31,7 @@
         <div class="form-check">
           <input v-model="selected.mode" class="form-check-input" type="radio" name="gridRadios" id="gridRadios1_file" value="file"  :disabled="loading">
           <label class="form-check-label" for="gridRadios1">
-            {{ $t('lblFilePrediction') }}
+            {{ $t('lblTabularData') }}
           </label>
         </div>
       </div>
