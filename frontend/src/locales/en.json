@@ -61,6 +61,8 @@
   "lblDownload": "Download",
   "lblReleaseNote": "Release Note",
   "lblTabularData": "Tabular Data",
+  "lblSignIn": "Sign in",
+  "lblSettings": "Settings",
   
   "msgPreviewCaption": "Showing first 10 rows (total:{count} rows)",
   "msgUploadSuccess": "Upload `{filename}` successfully.",
@@ -123,9 +125,11 @@
   "msgSysRunning": "The system is still running. Are you sure you want to leave?",
   "msgTrainLonger": "The training process will take much longer than other models.",
   "msgLabelColumnClass": "The True Label Column must contain at least two different classes.",
+  "msgNotOnList": "is not on the list.",
 
   "msgValRequired": "This field is required.",
   "msgValIntOnly": "Integer only.",
   "msgValFloatOnly": "Floating point only.",
-  "msgValRequireLayer2": "layer_2 is required."
+  "msgValRequireLayer2": "layer_2 is required.",
+  "msgValAlphaOnly": "Only English letters are allowed."
 }

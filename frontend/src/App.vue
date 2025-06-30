@@ -1,5 +1,4 @@
 <template>
-  <!-- <NavBar /> -->
   <sidebar-menu
     :key="$i18n.locale" 
     v-model:collapsed="collapsed"
@@ -17,50 +16,64 @@
       </div>
     </div>
   </div>
-  <!-- <div>
-    <SideBar />
-  </div> -->
-  <!-- <nav>
-    <router-link to="/">Home</router-link> |
-    <router-link to="/about">About</router-link>
-  </nav> -->
-  <!-- <router-view/> -->
 </template>
 
 <script>
-// import NavBar from './components/NavBar.vue'
-// import SideBar from './components/SideBar.vue'
 import { SidebarMenu } from 'vue-sidebar-menu'
 import 'vue-sidebar-menu/dist/vue-sidebar-menu.css'
 
 import { h } from 'vue'
-// import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-
-const separator = h('hr', {
-  style: {
-    borderColor: 'gray',
-    margin: '20px',
-  },
-})
-
-// const faIcon = (props) => {
-//   return {
-//     element: h('div', [h(FontAwesomeIcon, { size: 'lg', ...props })]),
-//   }
-// }
 
 export default {
   name: "App",
   components: {
-    // NavBar,
-    // SideBar,
     SidebarMenu,
   },
-  computed: {
-    menu() {
-      return [
+  data() {
+    return {
+      collapsed: false,
+      selectedTheme: 'white-theme',
+      isOnMobile: false,
+      menu: [],
+    }
+  },
+
+  mounted() {
+    this.onResize()
+    window.addEventListener('resize', this.onResize)
+  },
+
+  created() {
+    this.buildMenu()
+    const savedLocale = sessionStorage.getItem('locale')
+    if (savedLocale) {
+      this.$i18n.locale = savedLocale
+    }
+  },
+
+  beforeUnmount() {
+    sessionStorage.removeItem('username')
+    sessionStorage.removeItem('locale')
+  },
+  
+  watch: {
+    '$i18n.locale'() {
+      this.buildMenu()
+    }
+  },
+
+  methods: {
+    buildMenu() {
+      const separator = h('hr', {
+        style: {
+          borderColor: 'gray',
+          margin: '20px',
+        },
+      })
+
+      this.menu = [
         {
-          header: this.$t('lblMlas')+'_v0.8',
+          header: this.$t('lblUserName') + ": " + (sessionStorage.getItem('username') || ''),
           hiddenOnCollapse: true
         },
         {
@@ -69,8 +82,11 @@ export default {
           icon: 'fa fa-home'
         },
         {
-          component: separator,
+          href: '/settings',
+          title: this.$t('lblSettings'),
+          icon: 'fa fa-cog'
         },
+        { component: separator },
         {
           href: '/upload',
           title: this.$t('lblUpload'),
@@ -97,30 +113,15 @@ export default {
             },
           ]
         },
-        {
-          component: separator,
-        },
+        { component: separator },
         {
           href: '/release',
           title: this.$t('lblReleaseNote'),
           icon: 'fa fa-sticky-note-o'
-        },
+        }
       ]
-    }
-  },
-  data() {
-    return {
-      collapsed: false,
-      selectedTheme: 'white-theme',
-      isOnMobile: false,
-    }
-  },
+    },
 
-  mounted() {
-    this.onResize()
-    window.addEventListener('resize', this.onResize)
-  },
-  methods: {
     onToggleCollapse(collapsed) {
       console.log(collapsed)
       console.log('onToggleCollapse')

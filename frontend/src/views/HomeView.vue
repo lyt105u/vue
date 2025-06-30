@@ -3,10 +3,6 @@
     <img alt="Vue logo" src="../assets/logo4.png" style="max-width: 200px; max-height: 200px;">
     <h1 class="display-5 fw-bold text-body-emphasis">MLAS</h1>
     <p>Machine Learning Analysis System</p>
-    <!-- <HelloWorld msg="Welcome to Your Vue.js App"/> -->
-    <select class="form-select" v-model="$i18n.locale">
-      <option v-for="locale in $i18n.availableLocales" :key="`locale-${locale}`" :value="locale">{{ localeLabels[locale] }}</option>
-    </select>
   </div>
   <div class="container">
     <footer class="flex-wrap align-items-center py-3 my-4 border-top">
@@ -25,12 +21,7 @@ export default {
   name: 'HomeView',
   components: {},
   data() {
-    return {
-      localeLabels: {
-        en: 'English',
-        zh: '中文',
-      }
-    }
+    return {}
   },
 }
 </script>

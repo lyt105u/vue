@@ -35,6 +35,31 @@ def index():
 def not_found(e):
     return send_from_directory(app.static_folder, 'index.html')
 
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    username = data.get('username', '').strip()
+
+    try:
+        with open('listWhite.txt', 'r') as f:
+            whitelist = [line.strip() for line in f if line.strip()]
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Error while loading white list: {e}"
+        })
+
+    if username in whitelist:
+        return jsonify({
+            "status": "success",
+            "username": username
+        })
+    else:
+        return jsonify({
+            "status": "unauthorized",
+            "message": f"{username} is not in the list."
+        })
+
 @app.route('/list-files', methods=['POST'])
 def list_files():
     data = request.get_json()
