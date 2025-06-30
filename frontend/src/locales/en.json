@@ -63,6 +63,8 @@
   "lblTabularData": "Tabular Data",
   "lblSignIn": "Sign in",
   "lblSettings": "Settings",
+  "lblLogout": "Logout",
+  "lblLanguage": "Language",
   
   "msgPreviewCaption": "Showing first 10 rows (total:{count} rows)",
   "msgUploadSuccess": "Upload `{filename}` successfully.",
@@ -126,6 +128,7 @@
   "msgTrainLonger": "The training process will take much longer than other models.",
   "msgLabelColumnClass": "The True Label Column must contain at least two different classes.",
   "msgNotOnList": "is not on the list.",
+  "msgFilesDeleted": "The following files have been deleted:",
 
   "msgValRequired": "This field is required.",
   "msgValIntOnly": "Integer only.",

@@ -63,6 +63,8 @@
   "lblTabularData": "表格式資料",
   "lblSignIn": "登入",
   "lblSettings": "設定",
+  "lblLogout": "登出",
+  "lblLanguage": "語言",
   
   "msgPreviewCaption": "顯示前 10 筆資料（總共：{count} 筆）",
   "msgUploadSuccess": "成功上傳 `{filename}`。",
@@ -126,6 +128,7 @@
   "msgTrainLonger": "訓練耗時將比其他模型還要來得久。",
   "msgLabelColumnClass": "正確答案欄位中必須包含兩種以上的分類。",
   "msgNotOnList": "不在名單中。",
+  "msgFilesDeleted": "已刪除下列檔案：",
 
   "msgValRequired": "此為必填欄位",
   "msgValIntOnly": "僅允許整數",

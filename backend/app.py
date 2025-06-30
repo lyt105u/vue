@@ -967,6 +967,44 @@ def check_label_uniqueness():
             "status": "error",
             "message": str(e)
         })
+    
+@app.route('/delete-files', methods=['POST'])
+def delete_files():
+    data = request.get_json()
+    folder_path = data.get('folder_path')  # e.g., "upload/username"
+    files = data.get('files', [])          # e.g., ["a.csv", "b.xlsx"]
+    if not folder_path or not files:
+        return jsonify({
+            'status': 'error',
+            'message': 'Missing folder_path or files list.'
+        })
+
+    deleted = []
+    failed = []
+
+    for filename in files:
+        filepath = os.path.join(folder_path, filename)
+        try:
+            if os.path.exists(filepath):
+                os.remove(filepath)
+                deleted.append(filename)
+            else:
+                failed.append((filename, "File not found"))
+        except Exception as e:
+            failed.append((filename, str(e)))
+
+    if failed:
+        return jsonify({
+            'status': 'error',
+            'message': f"Some files could not be deleted: {failed}",
+            'deleted': deleted
+        }), 500
+
+    return jsonify({
+        'status': 'success',
+        'message': f"Deleted {len(deleted)} files.",
+        'deleted': deleted
+    })
 
 if __name__ == '__main__':
     app.run(debug=True)
