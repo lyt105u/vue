@@ -19,6 +19,7 @@ def main(args):
 
         filename = os.path.basename(args.remote_path)
         local_full_path = os.path.join(args.folder, filename)
+        os.makedirs(args.folder, exist_ok=True)
 
         with smbclient.open_file(args.remote_path, mode="rb") as remote_file:
             with open(local_full_path , mode="wb") as local_file:

@@ -200,7 +200,8 @@ export default {
       try {
         const fileInput = document.querySelector('input[type="file"]')
         const file = fileInput.files[0]
-        const folder = 'upload' // upload/
+        // 分別放入不同使用者的資料夾
+        const folder = `upload/${sessionStorage.getItem('username')}` // upload/
 
         const formData = new FormData()
         formData.append("file", file)
@@ -244,7 +245,8 @@ export default {
           username: this.selected.username,
           password: this.selected.password,
           remote_path: this.selected.remote_path,
-          folder: 'upload'  // upload/
+          // 分別放入不同使用者的資料夾
+          folder: `upload/${sessionStorage.getItem('username')}`  // upload/
         })
         if (response.data.status == "success") {
           const parts = this.selected.remote_path.split(/[/\\]+/)
