@@ -4,7 +4,15 @@
     <h1 class="display-5 fw-bold text-body-emphasis">MLAS</h1>
     <p>Machine Learning Analysis System</p>
     <div class="form-floating">
-      <input v-model="selected.username" type="password" class="form-control" id="floatingUsername" placeholder="Username" :disabled="loading">
+      <input
+        v-model="selected.username"
+        type="password"
+        class="form-control"
+        id="floatingUsername"
+        placeholder="Username"
+        :disabled="loading"
+        @keyup.enter="login"
+      >
       <label for="floatingUsername">{{ $t('lblUserName') }}</label>
     </div>
     <div v-if="errors.username" class="text-danger small">{{ errors.username }}</div>
