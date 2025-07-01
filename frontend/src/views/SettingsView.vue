@@ -41,6 +41,7 @@
           class="btn btn-outline-primary"
           :disabled="loading || selectedFileCnt==0"
         >
+          <i class="fa fa-trash me-1"></i>
           {{ $t('lblDelete')}}
         </button>
       </div>
@@ -75,6 +76,7 @@
           class="btn btn-outline-primary"
           :disabled="loading || selectedModelCnt==0"
         >
+          <i class="fa fa-trash me-1"></i>
           {{ $t('lblDelete')}}
         </button>
       </div>
