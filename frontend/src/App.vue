@@ -211,4 +211,8 @@ body {
 .container {
   max-width: 900px;
 }
+
+.v-sidebar-menu .vsm--header {
+  text-transform: none !important;
+}
 </style>
