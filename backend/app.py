@@ -35,6 +35,9 @@ def index():
 def not_found(e):
     return send_from_directory(app.static_folder, 'index.html')
 
+# 儲存每個正在執行的 task_id 與對應的子進程物件
+process_pool = {}
+
 @app.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
@@ -182,6 +185,7 @@ def run_train_xgb():
     split_strategy = data.get('split_strategy') 
     split_value = data.get('split_value')
     model_name = data.get('model_name')
+    username = data.get('username')
     n_estimators = data.get('n_estimators')
     learning_rate = data.get('learning_rate')
     max_depth = data.get('max_depth')
@@ -206,11 +210,27 @@ def run_train_xgb():
         
         # return jsonify(json.loads(result.stdout))
 
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        task_id = f"{timestamp}"
+        task_dir = os.path.join("model", username, timestamp)   # model/<username>/<timestamp>/
+        os.makedirs(task_dir, exist_ok=True)
+        # status.json
+        status = {
+            "task_id": task_id,
+            "username": username,
+            "status": "running",
+            "params": data,
+            "start_time": timestamp,
+            "api": "xgb",
+        }
+        with open(os.path.join(task_dir, "status.json"), "w", encoding="utf-8") as f:
+            json.dump(status, f, indent=4, ensure_ascii=False)
         args = [
             'python', 'train_xgb.py',
             file_path, label_column, split_strategy,
             split_value, model_name,
-            n_estimators, learning_rate, max_depth
+            n_estimators, learning_rate, max_depth,
+            task_dir
         ]
         # 執行 Python 訓練腳本（非阻塞，可終止）
         current_process = subprocess.Popen(
@@ -219,12 +239,46 @@ def run_train_xgb():
             stderr=subprocess.DEVNULL,
             text=True
         )
+
+        process_pool[task_id] = {
+            "process": current_process,
+            "username": username,
+            "task_dir": task_dir
+        }
+
         stdout, stderr = current_process.communicate()
+        # --- DEBUG 輸出（如需印出，請取消註解） ---
+        # print("STDOUT:", stdout, flush=True)
+        # print("STDERR:", stderr, flush=True)
+
+        # 如果 task_id 不在 process_pool，代表已被終止
+        if task_id not in process_pool:
+            # 不寫 status，避免覆蓋已寫入的 terminated 狀態
+            return jsonify({
+                "status": "terminated",
+                "message": "Task was terminated by user.",
+                "task_id": task_id
+            })
+        
         if current_process.returncode != 0:
+            # 更新 status.json 為 error
+            status['status'] = 'error'
+            status['msg'] = stderr
+            with open(os.path.join(task_dir, "status.json"), "w", encoding="utf-8") as f:
+                json.dump(status, f, indent=4, ensure_ascii=False)
+            # 任務完成後移除該 process 記錄
+            process_pool.pop(task_id, None)
             return jsonify({
                 "status": "error",
                 "message": stderr
             })
+        # 更新 status.json 為 success
+        status['status'] = 'success'
+        status['end_time'] = datetime.now().strftime("%Y%m%d_%H%M%S")
+        with open(os.path.join(task_dir, "status.json"), "w", encoding="utf-8") as f:
+            json.dump(status, f, indent=4, ensure_ascii=False)
+        # 任務完成後移除該 process 記錄
+        process_pool.pop(task_id, None)
         return jsonify(json.loads(stdout))
     
     except Exception as e:
@@ -242,36 +296,35 @@ def run_train_lgbm():
     split_strategy = data.get('split_strategy') 
     split_value = data.get('split_value')
     model_name = data.get('model_name')
+    username = data.get('username')
     n_estimators = data.get('n_estimators')
     learning_rate = data.get('learning_rate')
     max_depth = data.get('max_depth')
     num_leaves = data.get('num_leaves')
 
     try:
-        # result = subprocess.run(
-        #     ['python', 'train_lgbm.py', file_path, label_column, split_strategy, split_value, model_name, n_estimators, learning_rate, max_depth, num_leaves],
-        #     # capture_output=True,        # 捕獲標準輸出和標準錯誤
-        #     stdout=subprocess.PIPE,     # 只捕獲標準輸出
-        #     stderr=subprocess.DEVNULL,  # 忽略標準錯誤
-        #     text=True                   # 將輸出轉換為字符串
-        # )
-
-        # # print("STDOUT:", result.stdout)  # 印出標準輸出
-        # # print("STDERR:", result.stderr)  # 印出標準錯誤
-
-        # if result.returncode != 0:
-        #     return jsonify({
-        #         "status": "error",
-        #         "message": result.stderr
-        #     })
-        
-        # return jsonify(json.loads(result.stdout))
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        task_id = f"{timestamp}"
+        task_dir = os.path.join("model", username, timestamp)   # model/<username>/<timestamp>/
+        os.makedirs(task_dir, exist_ok=True)
+        # status.json
+        status = {
+            "task_id": task_id,
+            "username": username,
+            "status": "running",
+            "params": data,
+            "start_time": timestamp,
+            "api": "lgbm",
+        }
+        with open(os.path.join(task_dir, "status.json"), "w", encoding="utf-8") as f:
+            json.dump(status, f, indent=4, ensure_ascii=False)
 
         args = [
             'python', 'train_lgbm.py',
             file_path, label_column, split_strategy,
             split_value, model_name,
-            n_estimators, learning_rate, max_depth, num_leaves
+            n_estimators, learning_rate, max_depth, num_leaves,
+            task_dir
         ]
         # 執行 Python 訓練腳本（非阻塞，可終止）
         current_process = subprocess.Popen(
@@ -280,12 +333,46 @@ def run_train_lgbm():
             stderr=subprocess.DEVNULL,
             text=True
         )
+
+        process_pool[task_id] = {
+            "process": current_process,
+            "username": username,
+            "task_dir": task_dir
+        }
+
         stdout, stderr = current_process.communicate()
+        # --- DEBUG 輸出（如需印出，請取消註解） ---
+        # print("STDOUT:", stdout, flush=True)
+        # print("STDERR:", stderr, flush=True)
+
+        # 如果 task_id 不在 process_pool，代表已被終止
+        if task_id not in process_pool:
+            # 不寫 status，避免覆蓋已寫入的 terminated 狀態
+            return jsonify({
+                "status": "terminated",
+                "message": "Task was terminated by user.",
+                "task_id": task_id
+            })
+
         if current_process.returncode != 0:
+            # 更新 status.json 為 error
+            status['status'] = 'error'
+            status['msg'] = stderr
+            with open(os.path.join(task_dir, "status.json"), "w", encoding="utf-8") as f:
+                json.dump(status, f, indent=4, ensure_ascii=False)
+            # 任務完成後移除該 process 記錄
+            process_pool.pop(task_id, None)
             return jsonify({
                 "status": "error",
                 "message": stderr
             })
+        # 更新 status.json 為 success
+        status['status'] = 'success'
+        status['end_time'] = datetime.now().strftime("%Y%m%d_%H%M%S")
+        with open(os.path.join(task_dir, "status.json"), "w", encoding="utf-8") as f:
+            json.dump(status, f, indent=4, ensure_ascii=False)
+        # 任務完成後移除該 process 記錄
+        process_pool.pop(task_id, None)
         return jsonify(json.loads(stdout))
     
     except Exception as e:
@@ -303,36 +390,35 @@ def run_train_rf():
     split_strategy = data.get('split_strategy') 
     split_value = data.get('split_value')
     model_name = data.get('model_name')
+    username = data.get('username')
     n_estimators = data.get('n_estimators')
     max_depth = data.get('max_depth')
     random_state = data.get('random_state')
     n_jobs = data.get('n_jobs')
 
     try:
-        # result = subprocess.run(
-        #     ['python', 'train_rf.py', file_path, label_column, split_strategy, split_value, model_name, n_estimators, max_depth, random_state, n_jobs],
-        #     # capture_output=True,        # 捕獲標準輸出和標準錯誤
-        #     stdout=subprocess.PIPE,     # 只捕獲標準輸出
-        #     stderr=subprocess.DEVNULL,  # 忽略標準錯誤
-        #     text=True                   # 將輸出轉換為字符串
-        # )
-
-        # # print("STDOUT:", result.stdout)  # 印出標準輸出
-        # # print("STDERR:", result.stderr)  # 印出標準錯誤
-
-        # if result.returncode != 0:
-        #     return jsonify({
-        #         "status": "error",
-        #         "message": result.stderr
-        #     })
-        
-        # return jsonify(json.loads(result.stdout))
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        task_id = f"{timestamp}"
+        task_dir = os.path.join("model", username, timestamp)   # model/<username>/<timestamp>/
+        os.makedirs(task_dir, exist_ok=True)
+        # status.json
+        status = {
+            "task_id": task_id,
+            "username": username,
+            "status": "running",
+            "params": data,
+            "start_time": timestamp,
+            "api": "rf",
+        }
+        with open(os.path.join(task_dir, "status.json"), "w", encoding="utf-8") as f:
+            json.dump(status, f, indent=4, ensure_ascii=False)
 
         args = [
             'python', 'train_rf.py',
             file_path, label_column, split_strategy,
             split_value, model_name,
-            n_estimators, max_depth, random_state, n_jobs
+            n_estimators, max_depth, random_state, n_jobs,
+            task_dir
         ]
         # 執行 Python 訓練腳本（非阻塞，可終止）
         current_process = subprocess.Popen(
@@ -341,12 +427,45 @@ def run_train_rf():
             stderr=subprocess.DEVNULL,
             text=True
         )
+        process_pool[task_id] = {
+            "process": current_process,
+            "username": username,
+            "task_dir": task_dir
+        }
+
         stdout, stderr = current_process.communicate()
+        # --- DEBUG 輸出（如需印出，請取消註解） ---
+        # print("STDOUT:", stdout, flush=True)
+        # print("STDERR:", stderr, flush=True)
+
+        # 如果 task_id 不在 process_pool，代表已被終止
+        if task_id not in process_pool:
+            # 不寫 status，避免覆蓋已寫入的 terminated 狀態
+            return jsonify({
+                "status": "terminated",
+                "message": "Task was terminated by user.",
+                "task_id": task_id
+            })
+        
         if current_process.returncode != 0:
+            # 更新 status.json 為 error
+            status['status'] = 'error'
+            status['msg'] = stderr
+            with open(os.path.join(task_dir, "status.json"), "w", encoding="utf-8") as f:
+                json.dump(status, f, indent=4, ensure_ascii=False)
+            # 任務完成後移除該 process 記錄
+            process_pool.pop(task_id, None)
             return jsonify({
                 "status": "error",
                 "message": stderr
             })
+        # 更新 status.json 為 success
+        status['status'] = 'success'
+        status['end_time'] = datetime.now().strftime("%Y%m%d_%H%M%S")
+        with open(os.path.join(task_dir, "status.json"), "w", encoding="utf-8") as f:
+            json.dump(status, f, indent=4, ensure_ascii=False)
+        # 任務完成後移除該 process 記錄
+        process_pool.pop(task_id, None)
         return jsonify(json.loads(stdout))
     
     except Exception as e:
@@ -364,35 +483,34 @@ def run_train_lr():
     split_strategy = data.get('split_strategy') 
     split_value = data.get('split_value')
     model_name = data.get('model_name')
+    username = data.get('username')
     penalty = data.get('penalty')
     C = data.get('C')
     max_iter = data.get('max_iter')
 
     try:
-        # result = subprocess.run(
-        #     ['python', 'train_lr.py', file_path, label_column, split_strategy, split_value, model_name, penalty, C, max_iter],
-        #     # capture_output=True,        # 捕獲標準輸出和標準錯誤
-        #     stdout=subprocess.PIPE,     # 只捕獲標準輸出
-        #     stderr=subprocess.DEVNULL,  # 忽略標準錯誤
-        #     text=True                   # 將輸出轉換為字符串
-        # )
-
-        # # print("STDOUT:", result.stdout)  # 印出標準輸出
-        # # print("STDERR:", result.stderr)  # 印出標準錯誤
-
-        # if result.returncode != 0:
-        #     return jsonify({
-        #         "status": "error",
-        #         "message": result.stderr
-        #     })
-        
-        # return jsonify(json.loads(result.stdout))
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        task_id = f"{timestamp}"
+        task_dir = os.path.join("model", username, timestamp)   # model/<username>/<timestamp>/
+        os.makedirs(task_dir, exist_ok=True)
+        # status.json
+        status = {
+            "task_id": task_id,
+            "username": username,
+            "status": "running",
+            "params": data,
+            "start_time": timestamp,
+            "api": "lr",
+        }
+        with open(os.path.join(task_dir, "status.json"), "w", encoding="utf-8") as f:
+            json.dump(status, f, indent=4, ensure_ascii=False)
 
         args = [
             'python', 'train_lr.py',
             file_path, label_column, split_strategy,
             split_value, model_name,
-            penalty, C, max_iter
+            penalty, C, max_iter,
+            task_dir
         ]
         # 執行 Python 訓練腳本（非阻塞，可終止）
         current_process = subprocess.Popen(
@@ -401,12 +519,46 @@ def run_train_lr():
             stderr=subprocess.DEVNULL,
             text=True
         )
+
+        process_pool[task_id] = {
+            "process": current_process,
+            "username": username,
+            "task_dir": task_dir
+        }
+
         stdout, stderr = current_process.communicate()
+        # --- DEBUG 輸出（如需印出，請取消註解） ---
+        # print("STDOUT:", stdout, flush=True)
+        # print("STDERR:", stderr, flush=True)
+
+        # 如果 task_id 不在 process_pool，代表已被終止
+        if task_id not in process_pool:
+            # 不寫 status，避免覆蓋已寫入的 terminated 狀態
+            return jsonify({
+                "status": "terminated",
+                "message": "Task was terminated by user.",
+                "task_id": task_id
+            })
+        
         if current_process.returncode != 0:
+            # 更新 status.json 為 error
+            status['status'] = 'error'
+            status['msg'] = stderr
+            with open(os.path.join(task_dir, "status.json"), "w", encoding="utf-8") as f:
+                json.dump(status, f, indent=4, ensure_ascii=False)
+            # 任務完成後移除該 process 記錄
+            process_pool.pop(task_id, None)
             return jsonify({
                 "status": "error",
                 "message": stderr
             })
+        # 更新 status.json 為 success
+        status['status'] = 'success'
+        status['end_time'] = datetime.now().strftime("%Y%m%d_%H%M%S")
+        with open(os.path.join(task_dir, "status.json"), "w", encoding="utf-8") as f:
+            json.dump(status, f, indent=4, ensure_ascii=False)
+        # 任務完成後移除該 process 記錄
+        process_pool.pop(task_id, None)
         return jsonify(json.loads(stdout))
     
     except Exception as e:
@@ -424,35 +576,34 @@ def run_train_tabnet():
     split_strategy = data.get('split_strategy') 
     split_value = data.get('split_value')
     model_name = data.get('model_name')
+    username = data.get('username')
     batch_size = data.get('batch_size')
     max_epochs = data.get('max_epochs')
     patience = data.get('patience')
 
     try:
-        # result = subprocess.run(
-        #     ['python', 'train_tabnet.py', file_path, label_column, split_strategy, split_value, model_name, batch_size, max_epochs, patience],
-        #     # capture_output=True,        # 捕獲標準輸出和標準錯誤
-        #     stdout=subprocess.PIPE,     # 只捕獲標準輸出
-        #     stderr=subprocess.DEVNULL,  # 忽略標準錯誤
-        #     text=True                   # 將輸出轉換為字符串
-        # )
-
-        # # print("STDOUT:", result.stdout)  # 印出標準輸出
-        # # print("STDERR:", result.stderr)  # 印出標準錯誤
-
-        # if result.returncode != 0:
-        #     return jsonify({
-        #         "status": "error",
-        #         "message": result.stderr
-        #     })
-        
-        # return jsonify(json.loads(result.stdout))
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        task_id = f"{timestamp}"
+        task_dir = os.path.join("model", username, timestamp)   # model/<username>/<timestamp>/
+        os.makedirs(task_dir, exist_ok=True)
+        # status.json
+        status = {
+            "task_id": task_id,
+            "username": username,
+            "status": "running",
+            "params": data,
+            "start_time": timestamp,
+            "api": "tabnet",
+        }
+        with open(os.path.join(task_dir, "status.json"), "w", encoding="utf-8") as f:
+            json.dump(status, f, indent=4, ensure_ascii=False)
 
         args = [
             'python', 'train_tabnet.py',
             file_path, label_column, split_strategy,
             split_value, model_name,
-            batch_size, max_epochs, patience
+            batch_size, max_epochs, patience,
+            task_dir
         ]
         # 執行 Python 訓練腳本（非阻塞，可終止）
         current_process = subprocess.Popen(
@@ -461,12 +612,45 @@ def run_train_tabnet():
             stderr=subprocess.DEVNULL,
             text=True
         )
+
+        process_pool[task_id] = {
+            "process": current_process,
+            "username": username,
+            "task_dir": task_dir
+        }
+
         stdout, stderr = current_process.communicate()
+        # --- DEBUG 輸出（如需印出，請取消註解） ---
+        # print("STDOUT:", stdout, flush=True)
+        # print("STDERR:", stderr, flush=True)
+
+        # 如果 task_id 不在 process_pool，代表已被終止
+        if task_id not in process_pool:
+            # 不寫 status，避免覆蓋已寫入的 terminated 狀態
+            return jsonify({
+                "status": "terminated",
+                "message": "Task was terminated by user.",
+                "task_id": task_id
+            })
         if current_process.returncode != 0:
+            # 更新 status.json 為 error
+            status['status'] = 'error'
+            status['msg'] = stderr
+            with open(os.path.join(task_dir, "status.json"), "w", encoding="utf-8") as f:
+                json.dump(status, f, indent=4, ensure_ascii=False)
+            # 任務完成後移除該 process 記錄
+            process_pool.pop(task_id, None)
             return jsonify({
                 "status": "error",
                 "message": stderr
             })
+        # 更新 status.json 為 success
+        status['status'] = 'success'
+        status['end_time'] = datetime.now().strftime("%Y%m%d_%H%M%S")
+        with open(os.path.join(task_dir, "status.json"), "w", encoding="utf-8") as f:
+            json.dump(status, f, indent=4, ensure_ascii=False)
+        # 任務完成後移除該 process 記錄
+        process_pool.pop(task_id, None)
         return jsonify(json.loads(stdout))
     
     except Exception as e:
@@ -484,6 +668,7 @@ def run_train_mlp():
     split_strategy = data.get('split_strategy') 
     split_value = data.get('split_value')
     model_name = data.get('model_name')
+    username = data.get('username')
     hidden_layer_1 = data.get('hidden_layer_1')
     hidden_layer_2 = data.get('hidden_layer_2')
     hidden_layer_3 = data.get('hidden_layer_3')
@@ -493,31 +678,29 @@ def run_train_mlp():
     n_iter_no_change = data.get('n_iter_no_change')
 
     try:
-        # result = subprocess.run(
-        #     ['python', 'train_mlp.py', file_path, label_column, split_strategy, split_value, model_name, hidden_layer_1, hidden_layer_2, hidden_layer_3, activation, learning_rate_init, max_iter, n_iter_no_change],
-        #     # capture_output=True,        # 捕獲標準輸出和標準錯誤
-        #     stdout=subprocess.PIPE,     # 只捕獲標準輸出
-        #     stderr=subprocess.DEVNULL,  # 忽略標準錯誤
-        #     text=True                   # 將輸出轉換為字符串
-        # )
-
-        # # print("STDOUT:", result.stdout)  # 印出標準輸出
-        # # print("STDERR:", result.stderr)  # 印出標準錯誤
-
-        # if result.returncode != 0:
-        #     return jsonify({
-        #         "status": "error",
-        #         "message": result.stderr
-        #     })
-        
-        # return jsonify(json.loads(result.stdout))
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        task_id = f"{timestamp}"
+        task_dir = os.path.join("model", username, timestamp)   # model/<username>/<timestamp>/
+        os.makedirs(task_dir, exist_ok=True)
+        # status.json
+        status = {
+            "task_id": task_id,
+            "username": username,
+            "status": "running",
+            "params": data,
+            "start_time": timestamp,
+            "api": "mlp",
+        }
+        with open(os.path.join(task_dir, "status.json"), "w", encoding="utf-8") as f:
+            json.dump(status, f, indent=4, ensure_ascii=False)
 
         args = [
             'python', 'train_mlp.py',
             file_path, label_column, split_strategy,
             split_value, model_name,
             hidden_layer_1, hidden_layer_2, hidden_layer_3,
-            activation, learning_rate_init, max_iter, n_iter_no_change
+            activation, learning_rate_init, max_iter, n_iter_no_change,
+            task_dir
         ]
         # 執行 Python 訓練腳本（非阻塞，可終止）
         current_process = subprocess.Popen(
@@ -526,12 +709,46 @@ def run_train_mlp():
             stderr=subprocess.DEVNULL,
             text=True
         )
+
+        process_pool[task_id] = {
+            "process": current_process,
+            "username": username,
+            "task_dir": task_dir
+        }
+
         stdout, stderr = current_process.communicate()
+        # --- DEBUG 輸出（如需印出，請取消註解） ---
+        # print("STDOUT:", stdout, flush=True)
+        # print("STDERR:", stderr, flush=True)
+
+        # 如果 task_id 不在 process_pool，代表已被終止
+        if task_id not in process_pool:
+            # 不寫 status，避免覆蓋已寫入的 terminated 狀態
+            return jsonify({
+                "status": "terminated",
+                "message": "Task was terminated by user.",
+                "task_id": task_id
+            })
+        
         if current_process.returncode != 0:
+            # 更新 status.json 為 error
+            status['status'] = 'error'
+            status['msg'] = stderr
+            with open(os.path.join(task_dir, "status.json"), "w", encoding="utf-8") as f:
+                json.dump(status, f, indent=4, ensure_ascii=False)
+            # 任務完成後移除該 process 記錄
+            process_pool.pop(task_id, None)
             return jsonify({
                 "status": "error",
                 "message": stderr
             })
+        # 更新 status.json 為 success
+        status['status'] = 'success'
+        status['end_time'] = datetime.now().strftime("%Y%m%d_%H%M%S")
+        with open(os.path.join(task_dir, "status.json"), "w", encoding="utf-8") as f:
+            json.dump(status, f, indent=4, ensure_ascii=False)
+        # 任務完成後移除該 process 記錄
+        process_pool.pop(task_id, None)
         return jsonify(json.loads(stdout))
     
     except Exception as e:
@@ -852,82 +1069,87 @@ def copy_local_file():
     })
 
 
-def build_zip_in_memory(data):
-    # 建立 ZIP 並將 metrics.json + base64 圖片一起寫入記憶體
-    zip_buffer = io.BytesIO()
-    zipf = zipfile.ZipFile(zip_buffer, mode='w', compression=zipfile.ZIP_DEFLATED)
+# def build_zip_in_memory(data):
+#     # 建立 ZIP 並將 metrics.json + base64 圖片一起寫入記憶體
+#     zip_buffer = io.BytesIO()
+#     zipf = zipfile.ZipFile(zip_buffer, mode='w', compression=zipfile.ZIP_DEFLATED)
 
-    def process(obj, parent_key=""):
-        keys_to_remove = []
+#     def process(obj, parent_key=""):
+#         keys_to_remove = []
 
-        for key, value in obj.items():
-            current_key = f"{parent_key}_{key}" if parent_key else key
+#         for key, value in obj.items():
+#             current_key = f"{parent_key}_{key}" if parent_key else key
 
-            if isinstance(value, str) and value[:20].startswith("iVBORw0KGgo"):
-                try:
-                    image_bytes = base64.b64decode(value)
-                    zipf.writestr(f"{current_key}.png", image_bytes)
-                    # 刪除 metrics.json 裡的圖片plot
-                    keys_to_remove.append(key)
-                except Exception as e:
-                    print(f"[decode error] {current_key}: {e}")
+#             if isinstance(value, str) and value[:20].startswith("iVBORw0KGgo"):
+#                 try:
+#                     image_bytes = base64.b64decode(value)
+#                     zipf.writestr(f"{current_key}.png", image_bytes)
+#                     # 刪除 metrics.json 裡的圖片plot
+#                     keys_to_remove.append(key)
+#                 except Exception as e:
+#                     print(f"[decode error] {current_key}: {e}")
 
-            elif isinstance(value, dict):
-                process(value, current_key)
+#             elif isinstance(value, dict):
+#                 process(value, current_key)
 
-            elif isinstance(value, list):
-                for i, item in enumerate(value):
-                    if isinstance(item, dict):
-                        process(item, f"{current_key}_{i}")
+#             elif isinstance(value, list):
+#                 for i, item in enumerate(value):
+#                     if isinstance(item, dict):
+#                         process(item, f"{current_key}_{i}")
 
-        for key in keys_to_remove:
-            del obj[key]
+#         for key in keys_to_remove:
+#             del obj[key]
 
-    # 深複製並處理圖片
-    data_copy = json.loads(json.dumps(data))
-    process(data_copy)
+#     # 深複製並處理圖片
+#     data_copy = json.loads(json.dumps(data))
+#     process(data_copy)
 
-    # 將 JSON 字串格式化為漂亮排版
-    json_string = json.dumps(data_copy, indent=4, ensure_ascii=False)
+#     # 將 JSON 字串格式化為漂亮排版
+#     json_string = json.dumps(data_copy, indent=4, ensure_ascii=False)
 
-    # 加入 metrics.json 檔
-    zipf.writestr("metrics.json", json_string)
+#     # 加入 metrics.json 檔
+#     zipf.writestr("metrics.json", json_string)
 
-    # 建立 Word 檔並放入整段 JSON
-    document = Document()
-    document.add_heading("Metrics Report", level=1)
-    document.add_paragraph(json_string)
+#     # 建立 Word 檔並放入整段 JSON
+#     document = Document()
+#     document.add_heading("Metrics Report", level=1)
+#     document.add_paragraph(json_string)
 
-    word_buffer = io.BytesIO()
-    document.save(word_buffer)
-    word_buffer.seek(0)
+#     word_buffer = io.BytesIO()
+#     document.save(word_buffer)
+#     word_buffer.seek(0)
 
-    zipf.writestr("metrics.docx", word_buffer.read())
-    zipf.close()
+#     zipf.writestr("metrics.docx", word_buffer.read())
+#     zipf.close()
 
-    zip_buffer.seek(0)
-    return zip_buffer
+#     zip_buffer.seek(0)
+#     return zip_buffer
 
 @app.route('/download-report', methods=['POST'])
 def download_report():
     try:
-        result = request.get_json()
-        if not result:
-            return jsonify({
-                "status": "error",
-                "message": "Missing JSON payload"
-            })
+        data = request.get_json()
+        task_dir = data.get("task_dir")
 
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"report_{timestamp}.zip"
+        if not task_dir or not os.path.exists(task_dir):
+            return jsonify({"status": "error", "message": "task_dir not found"}), 404
 
-        memory_zip = build_zip_in_memory(result)
+        # 在記憶體中建立 ZIP 檔
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for root, _, files in os.walk(task_dir):
+                for file in files:
+                    full_path = os.path.join(root, file)
+                    arcname = os.path.relpath(full_path, start=task_dir)
+                    zipf.write(full_path, arcname)
+
+        zip_buffer.seek(0)
 
         return send_file(
-            memory_zip,
+            zip_buffer,
+            mimetype='application/zip',
             as_attachment=True,
-            download_name=filename,
-            mimetype='application/zip'
+            download_name=os.path.basename(task_dir) + ".zip"
         )
 
     except Exception as e:
@@ -998,13 +1220,171 @@ def delete_files():
             'status': 'error',
             'message': f"Some files could not be deleted: {failed}",
             'deleted': deleted
-        }), 500
+        })
 
     return jsonify({
         'status': 'success',
         'message': f"Deleted {len(deleted)} files.",
         'deleted': deleted
     })
+
+# 抓出使用者資料夾內，每個 task_dir 內 status.json 的內容
+@app.route('/list-status', methods=['POST'])
+def list_status():
+    data = request.get_json()
+    user_dir = data.get('user_dir')  # e.g. model/alice
+
+    if not user_dir:
+        return jsonify({
+            "status": "error",
+            "message": "Missing 'user_dir' in request."
+        })
+
+    try:
+        result = subprocess.run(
+            ['python', 'listStatus.py', user_dir],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True
+        )
+
+        if result.returncode != 0:
+            return jsonify({
+                "status": "error",
+                "message": "Script execution failed."
+            })
+
+        return jsonify(json.loads(result.stdout))
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        })
+
+# 抓出該 task_dir 中 status.json 的內容
+@app.route('/get-status', methods=['POST'])
+def get_status():
+    data = request.get_json()
+    folder_path = data.get('folder_path')
+
+    if not folder_path:
+        return jsonify({
+            "status": "error",
+            "message": "Missing 'folder_path' in request."
+        })
+
+    status_path = os.path.join(folder_path, "status.json")
+    if not os.path.exists(status_path):
+        return jsonify({
+            "status": "error",
+            "message": f"'status.json' not found in folder: {folder_path}"
+        })
+
+    try:
+        with open(status_path, "r", encoding="utf-8") as f:
+            status_data = json.load(f)
+        return jsonify({
+            "status": "success",
+            "data": status_data
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Failed to read status.json: {str(e)}"
+        })
+
+@app.route('/delete-folders', methods=['POST'])
+def delete_folders():
+    data = request.get_json()
+    folder_path = data.get('folder_path')   # e.g., "model/alice"
+    folders = data.get('folders', [])       # e.g., ["a", "b", "c"]
+
+    if not folder_path or not folders:
+        return jsonify({
+            'status': 'error',
+            'message': 'Missing folder_path or folders list.'
+        }), 400
+
+    deleted = []
+    failed = []
+
+    for subfolder in folders:
+        full_path = os.path.join(folder_path, subfolder)
+        try:
+            if os.path.exists(full_path):
+                shutil.rmtree(full_path)
+                deleted.append(subfolder)
+            else:
+                failed.append((subfolder, "Folder not found"))
+        except Exception as e:
+            failed.append((subfolder, str(e)))
+
+    if failed:
+        return jsonify({
+            'status': 'error',
+            'message': f"Some folders could not be deleted: {failed}",
+            'deleted': deleted
+        })
+
+    return jsonify({
+        'status': 'success',
+        'message': f"Deleted {len(deleted)} folders.",
+        'deleted': deleted
+    })
+
+@app.route('/terminate-task', methods=['POST'])
+def terminate_task():
+    data = request.get_json()
+    task_id = data.get("task_id")
+    username = data.get("username")  # 驗證使用者身分（如有登入系統）
+
+    task_info = process_pool.get(task_id)
+
+    if not task_info:
+        return jsonify({
+            "status": "notRunning",
+            "message": f"Task ID '{task_id}' is not running."
+        })
+
+    if username and task_info.get("username") != username:
+        return jsonify({
+            "status": "error",
+            "message": "Permission denied: task belongs to another user."
+        })
+
+    process = task_info["process"]
+    task_dir = task_info["task_dir"]
+    status_path = os.path.join(task_dir, "status.json")
+
+    try:
+        # 終止子進程
+        process.terminate()
+        process_pool.pop(task_id, None)
+
+        # 更新 status.json
+        if os.path.exists(status_path):
+            with open(status_path, "r", encoding="utf-8") as f:
+                status = json.load(f)
+        else:
+            status = {"task_id": task_id}
+
+        status["status"] = "terminated"
+        status["end_time"] = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        with open(status_path, "w", encoding="utf-8") as f:
+            json.dump(status, f, indent=4, ensure_ascii=False)
+
+        return jsonify({
+            "status": "success",
+            "message": f"Task {task_id} terminated."
+        })
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Failed to terminate task: {str(e)}"
+        })
 
 if __name__ == '__main__':
     app.run(debug=True)

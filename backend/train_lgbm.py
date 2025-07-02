@@ -5,7 +5,7 @@ from lightgbm import LGBMClassifier
 import lightgbm as lgb
 import joblib
 from sklearn.model_selection import train_test_split
-from tool_train import prepare_data, NumpyEncoder
+from tool_train import prepare_data, NumpyEncoder, extract_base64_images_and_clean_json
 
 import pandas as pd
 from sklearn.metrics import (
@@ -16,11 +16,17 @@ from sklearn import metrics
 import matplotlib.pyplot as plt
 import matplotlib
 from matplotlib import font_manager
-# 明確指定字型檔路徑
-font_path = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
-font_prop = font_manager.FontProperties(fname=font_path)
-matplotlib.rcParams['font.family'] = font_prop.get_name()  # 自動設定名稱
+try:
+    # 嘗試使用 Docker 中的 NotoSansCJK 字型
+    font_path = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
+    font_prop = font_manager.FontProperties(fname=font_path)
+    matplotlib.rcParams['font.family'] = font_prop.get_name()
 
+except Exception:
+    # Fallback：改用本機字型清單
+    matplotlib.rcParams['font.sans-serif'] = ['Microsoft JhengHei', 'SimHei', 'Arial Unicode MS']
+
+# 顯示負號正常
 matplotlib.rcParams['axes.unicode_minus'] = False
 import io
 import base64
@@ -38,7 +44,7 @@ subprocess.check_call(
 import shap
 from lime.lime_tabular import LimeTabularExplainer
 
-def train_lgbm(x_train, y_train, x_val, y_val, model_name, n_estimators, learning_rate, max_depth, num_leaves):
+def train_lgbm(x_train, y_train, x_val, y_val, model_name, n_estimators, learning_rate, max_depth, num_leaves, task_dir):
     evals_result = {}
     lightgbm = LGBMClassifier(
         n_estimators=n_estimators,
@@ -56,8 +62,8 @@ def train_lgbm(x_train, y_train, x_val, y_val, model_name, n_estimators, learnin
     )
     
     if model_name:
-        os.makedirs("model", exist_ok=True)
-        joblib.dump(lightgbm, f"model/{model_name}.pkl")
+        os.makedirs(task_dir, exist_ok=True)
+        joblib.dump(lightgbm, f"{task_dir}/{model_name}.pkl")
 
     return lightgbm, evals_result
 
@@ -311,7 +317,7 @@ def plot_accuracy(evals_result):
 
     return image_base64
 
-def kfold_evaluation(x, y, cv_folds, model_name, n_estimators, learning_rate, max_depth, num_leaves, feature_names):
+def kfold_evaluation(x, y, cv_folds, model_name, n_estimators, learning_rate, max_depth, num_leaves, feature_names, task_dir):
     skf = StratifiedKFold(n_splits=cv_folds, shuffle=True, random_state=30)
     folds_result = []
     all_metrics = {
@@ -330,7 +336,7 @@ def kfold_evaluation(x, y, cv_folds, model_name, n_estimators, learning_rate, ma
         y_train, y_val = y[train_index], y[val_index]
 
         model_fold_name = f"{model_name}_fold_{fold_index}"
-        model, evals_result = train_lgbm(x_train, y_train, x_val, y_val, model_fold_name, n_estimators, learning_rate, max_depth, num_leaves)
+        model, evals_result = train_lgbm(x_train, y_train, x_val, y_val, model_fold_name, n_estimators, learning_rate, max_depth, num_leaves, task_dir)
         y_pred_proba = model.predict_proba(x_val)[:, 1]
         y_pred = (y_pred_proba >= 0.5).astype(int)
 
@@ -419,7 +425,7 @@ def kfold_evaluation(x, y, cv_folds, model_name, n_estimators, learning_rate, ma
     }
     return result
 
-def main(file_path, label_column, split_strategy, split_value, model_name, n_estimators, learning_rate, max_depth, num_leaves):
+def main(file_path, label_column, split_strategy, split_value, model_name, n_estimators, learning_rate, max_depth, num_leaves, task_dir):
     try:
         x, y, feature_names = prepare_data(file_path, label_column)
     except ValueError as e:
@@ -434,7 +440,7 @@ def main(file_path, label_column, split_strategy, split_value, model_name, n_est
             x_train, x_test, y_train, y_test = train_test_split(
                 x, y, train_size=float(split_value), stratify=y, random_state=30
             )
-            model, evals_result = train_lgbm(x_train, y_train, x_test, y_test, model_name, n_estimators, learning_rate, max_depth, num_leaves)
+            model, evals_result = train_lgbm(x_train, y_train, x_test, y_test, model_name, n_estimators, learning_rate, max_depth, num_leaves, task_dir)
             y_pred = model.predict(x_test)
             results = evaluate_model(y_test, y_pred, model, x_test)
             results["loss_plot"] = plot_loss(evals_result)
@@ -457,7 +463,8 @@ def main(file_path, label_column, split_strategy, split_value, model_name, n_est
                 int(split_value),  # split_value 為 fold 數
                 model_name,
                 n_estimators, learning_rate, max_depth, num_leaves,
-                feature_names
+                feature_names,
+                task_dir,
             )
         except ValueError as e:
             print(json.dumps({
@@ -473,6 +480,11 @@ def main(file_path, label_column, split_strategy, split_value, model_name, n_est
         }))
         return
 
+    results["task_dir"] = task_dir
+    result_json_path = os.path.join(task_dir, "metrics.json")
+    with open(result_json_path, "w", encoding="utf-8") as f:
+        json.dump(results, f, indent=4, cls=NumpyEncoder, ensure_ascii=False)
+    extract_base64_images_and_clean_json(task_dir, "metrics.json")
     print(json.dumps(results, indent=4, cls=NumpyEncoder))
 
 if __name__ == "__main__":
@@ -486,6 +498,7 @@ if __name__ == "__main__":
     parser.add_argument("learning_rate", type=float)
     parser.add_argument("max_depth", type=int)
     parser.add_argument("num_leaves", type=int)
+    parser.add_argument("task_dir", type=str)
 
     args = parser.parse_args()
-    main(args.file_path, args.label_column, args.split_strategy, args.split_value, args.model_name, args.n_estimators, args.learning_rate, args.max_depth, args.num_leaves)
+    main(args.file_path, args.label_column, args.split_strategy, args.split_value, args.model_name, args.n_estimators, args.learning_rate, args.max_depth, args.num_leaves, args.task_dir)

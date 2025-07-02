@@ -1,5 +1,5 @@
-# usage: python train_xgb.py upload/高醫訓練csv.csv label train_test_split 0.8 xgb_model 100 0.300000012 6
-# usage: python train_xgb.py upload/高醫訓練csv.csv label k_fold 2 "" 100 0.300000012 6 
+# usage: python train_xgb.py upload/高醫訓練csv.csv label train_test_split 0.8 xgb_model 100 0.300000012 6 <task_dir>
+# usage: python train_xgb.py upload/高醫訓練csv.csv label k_fold 2 "" 100 0.300000012 6 <task_dir>
 import json
 import argparse
 import os
@@ -8,16 +8,22 @@ from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 import matplotlib
 from matplotlib import font_manager
-# 明確指定字型檔路徑
-font_path = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
-font_prop = font_manager.FontProperties(fname=font_path)
-matplotlib.rcParams['font.family'] = font_prop.get_name()  # 自動設定名稱
+try:
+    # 嘗試使用 Docker 中的 NotoSansCJK 字型
+    font_path = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
+    font_prop = font_manager.FontProperties(fname=font_path)
+    matplotlib.rcParams['font.family'] = font_prop.get_name()
 
+except Exception:
+    # Fallback：改用本機字型清單
+    matplotlib.rcParams['font.sans-serif'] = ['Microsoft JhengHei', 'SimHei', 'Arial Unicode MS']
+
+# 顯示負號正常
 matplotlib.rcParams['axes.unicode_minus'] = False
 import base64
 import io
 
-from tool_train import prepare_data, NumpyEncoder
+from tool_train import prepare_data, NumpyEncoder, extract_base64_images_and_clean_json
 import pandas as pd
 from sklearn.metrics import (
     confusion_matrix, accuracy_score, precision_score, recall_score, f1_score, roc_curve, auc
@@ -38,7 +44,7 @@ subprocess.check_call(
 import shap
 from lime.lime_tabular import LimeTabularExplainer
 
-def train_xgb(x_train, y_train, x_val, y_val, model_name, n_estimators, learning_rate, max_depth):
+def train_xgb(x_train, y_train, x_val, y_val, model_name, n_estimators, learning_rate, max_depth, task_dir):
     evals_result = {}
     xgb = XGBClassifier(base_score=0.5, booster='gbtree', colsample_bylevel=1,
                         colsample_bynode=1, colsample_bytree=1, enable_categorical=False,
@@ -60,8 +66,8 @@ def train_xgb(x_train, y_train, x_val, y_val, model_name, n_estimators, learning
     evals_result = xgb.evals_result()
     
     if model_name:
-        os.makedirs("model", exist_ok=True)
-        xgb.save_model(f"model/{model_name}.json")
+        os.makedirs(task_dir, exist_ok=True)
+        xgb.save_model(f"{task_dir}/{model_name}.json")
 
     return xgb, evals_result
 
@@ -312,7 +318,7 @@ def plot_accuracy(evals_result):
 
     return image_base64
 
-def kfold_evaluation(X, y, cv_folds, model_name, n_estimators, learning_rate, max_depth, feature_names):
+def kfold_evaluation(X, y, cv_folds, model_name, n_estimators, learning_rate, max_depth, feature_names, task_dir):
     skf = StratifiedKFold(n_splits=cv_folds, shuffle=True, random_state=30)
     folds_result = []
 
@@ -331,7 +337,7 @@ def kfold_evaluation(X, y, cv_folds, model_name, n_estimators, learning_rate, ma
         y_train, y_test = y[train_index], y[test_index]
 
         model_fold_name = f"{model_name}_fold_{fold}"
-        model, evals_result = train_xgb(X_train, y_train, X_test, y_test, model_fold_name , n_estimators, learning_rate, max_depth)
+        model, evals_result = train_xgb(X_train, y_train, X_test, y_test, model_fold_name , n_estimators, learning_rate, max_depth, task_dir)
         
         y_pred_proba = model.predict_proba(X_test)[:, 1]
         y_pred = (y_pred_proba >= 0.5).astype(int)
@@ -419,7 +425,7 @@ def kfold_evaluation(X, y, cv_folds, model_name, n_estimators, learning_rate, ma
     }
     return result
 
-def main(file_path, label_column, split_strategy, split_value, model_name, n_estimators, learning_rate, max_depth):
+def main(file_path, label_column, split_strategy, split_value, model_name, n_estimators, learning_rate, max_depth, task_dir):
     try:
         x, y, feature_names = prepare_data(file_path, label_column)
     except ValueError as e:
@@ -434,7 +440,7 @@ def main(file_path, label_column, split_strategy, split_value, model_name, n_est
             x_train, x_test, y_train, y_test = train_test_split(
                 x, y, train_size=float(split_value), stratify=y, random_state=30
             )
-            model, evals_result = train_xgb(x_train, y_train, x_test, y_test, model_name, n_estimators, learning_rate, max_depth)
+            model, evals_result = train_xgb(x_train, y_train, x_test, y_test, model_name, n_estimators, learning_rate, max_depth, task_dir)
             y_pred = model.predict(x_test)
             results = evaluate_model(y_test, y_pred, model, x_test)
             results["loss_plot"] = plot_loss(evals_result)
@@ -453,7 +459,7 @@ def main(file_path, label_column, split_strategy, split_value, model_name, n_est
     elif split_strategy == "k_fold":
         try:
             # 重新打包 train function，這樣就不用傳遞超參數
-            results = kfold_evaluation(x, y, int(split_value), model_name, n_estimators, learning_rate, max_depth, feature_names)
+            results = kfold_evaluation(x, y, int(split_value), model_name, n_estimators, learning_rate, max_depth, feature_names, task_dir)
         except ValueError as e:
             print(json.dumps({
                 "status": "error",
@@ -467,6 +473,11 @@ def main(file_path, label_column, split_strategy, split_value, model_name, n_est
         }))
         return
 
+    results["task_dir"] = task_dir
+    result_json_path = os.path.join(task_dir, "metrics.json")
+    with open(result_json_path, "w", encoding="utf-8") as f:
+        json.dump(results, f, indent=4, cls=NumpyEncoder, ensure_ascii=False)
+    extract_base64_images_and_clean_json(task_dir, "metrics.json")
     print(json.dumps(results, indent=4, cls=NumpyEncoder))
 
 if __name__ == "__main__":
@@ -479,6 +490,7 @@ if __name__ == "__main__":
     parser.add_argument("n_estimators", type=int)
     parser.add_argument("learning_rate", type=float)
     parser.add_argument("max_depth", type=int)
+    parser.add_argument("task_dir", type=str)
 
     args = parser.parse_args()
-    main(args.file_path, args.label_column, args.split_strategy, args.split_value, args.model_name, args.n_estimators, args.learning_rate, args.max_depth)
+    main(args.file_path, args.label_column, args.split_strategy, args.split_value, args.model_name, args.n_estimators, args.learning_rate, args.max_depth, args.task_dir)

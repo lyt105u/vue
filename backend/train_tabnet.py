@@ -11,7 +11,7 @@ except ModuleNotFoundError:
     from pytorch_tabnet.tab_model import TabNetClassifier
 
 from sklearn.model_selection import train_test_split
-from tool_train import prepare_data, NumpyEncoder, evaluate_model, kfold_evaluation
+from tool_train import prepare_data, NumpyEncoder, extract_base64_images_and_clean_json
 from contextlib import contextmanager
 
 import pandas as pd
@@ -22,11 +22,17 @@ from sklearn import metrics
 import matplotlib.pyplot as plt
 import matplotlib
 from matplotlib import font_manager
-# 明確指定字型檔路徑
-font_path = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
-font_prop = font_manager.FontProperties(fname=font_path)
-matplotlib.rcParams['font.family'] = font_prop.get_name()  # 自動設定名稱
+try:
+    # 嘗試使用 Docker 中的 NotoSansCJK 字型
+    font_path = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
+    font_prop = font_manager.FontProperties(fname=font_path)
+    matplotlib.rcParams['font.family'] = font_prop.get_name()
 
+except Exception:
+    # Fallback：改用本機字型清單
+    matplotlib.rcParams['font.sans-serif'] = ['Microsoft JhengHei', 'SimHei', 'Arial Unicode MS']
+
+# 顯示負號正常
 matplotlib.rcParams['axes.unicode_minus'] = False
 import io
 import base64
@@ -54,7 +60,7 @@ def suppress_stdout():
         finally:
             sys.stdout = old_stdout
 
-def train_tabnet(x_train, y_train, x_val, y_val, model_name, batch_size, max_epochs, patience):
+def train_tabnet(x_train, y_train, x_val, y_val, model_name, batch_size, max_epochs, patience, task_dir):
     tabnet = TabNetClassifier(verbose=0)    # verbose 隱藏輸出
     x_train_np = np.array(x_train, dtype=np.float32)    # 確保 x_train 和 y_train 是 numpy.ndarray，而非 object
     y_train_np = np.array(y_train, dtype=np.int64)
@@ -76,10 +82,10 @@ def train_tabnet(x_train, y_train, x_val, y_val, model_name, batch_size, max_epo
         )
     
     if model_name:
-        os.makedirs("model", exist_ok=True)
+        os.makedirs(task_dir, exist_ok=True)
         # 使用 suppress_stdout() 來隱藏 `save_model()` 的輸出
         with suppress_stdout():
-            tabnet.save_model(f"model/{model_name}")
+            tabnet.save_model(f"{task_dir}/{model_name}")
 
     return tabnet, tabnet.history
 
@@ -339,7 +345,7 @@ def plot_accuracy(evals_result):
 
     return image_base64
 
-def kfold_evaluation(X, y, cv_folds, model_name, batch_size, max_epochs, patience, feature_names):
+def kfold_evaluation(X, y, cv_folds, model_name, batch_size, max_epochs, patience, feature_names, task_dir):
     skf = StratifiedKFold(n_splits=cv_folds, shuffle=True, random_state=30)
     folds_result = []
 
@@ -358,7 +364,7 @@ def kfold_evaluation(X, y, cv_folds, model_name, batch_size, max_epochs, patienc
         Y_train, Y_test = y[train_index], y[test_index]
 
         model_fold_name = f"{model_name}_fold_{fold}"
-        model, evals_result = train_tabnet(X_train, Y_train, X_test, Y_test, model_fold_name, batch_size, max_epochs, patience)
+        model, evals_result = train_tabnet(X_train, Y_train, X_test, Y_test, model_fold_name, batch_size, max_epochs, patience, task_dir)
         X_test_np = np.array(X_test, dtype=np.float32)
         y_pred = model.predict(X_test_np)
         y_proba = model.predict_proba(X_test_np)[:, 1]
@@ -445,7 +451,7 @@ def kfold_evaluation(X, y, cv_folds, model_name, batch_size, max_epochs, patienc
         "average": avg_result
     }
 
-def main(file_path, label_column, split_strategy, split_value, model_name, batch_size, max_epochs, patience):
+def main(file_path, label_column, split_strategy, split_value, model_name, batch_size, max_epochs, patience, task_dir):
     try:
         x, y, feature_names = prepare_data(file_path, label_column)
     except ValueError as e:
@@ -460,7 +466,7 @@ def main(file_path, label_column, split_strategy, split_value, model_name, batch
             x_train, x_test, y_train, y_test = train_test_split(
                 x, y, train_size=float(split_value), stratify=y, random_state=30
             )
-            model, evals_result = train_tabnet(x_train, y_train, x_test, y_test, model_name, batch_size, max_epochs, patience)
+            model, evals_result = train_tabnet(x_train, y_train, x_test, y_test, model_name, batch_size, max_epochs, patience, task_dir)
             y_pred = model.predict(np.array(x_test, dtype=np.float32))  # 確保 x_test 在傳入前轉換為 numpy.float32
             results = evaluate_model(y_test, y_pred, model, np.array(x_test, dtype=np.float32))
             results["loss_plot"] = plot_loss(evals_result)
@@ -477,7 +483,7 @@ def main(file_path, label_column, split_strategy, split_value, model_name, batch
             return
     elif split_strategy == "k_fold":
         try:
-            results = kfold_evaluation(x, y, int(split_value), model_name, batch_size, max_epochs, patience, feature_names)
+            results = kfold_evaluation(x, y, int(split_value), model_name, batch_size, max_epochs, patience, feature_names, task_dir)
         except ValueError as e:
             print(json.dumps({
                 "status": "error",
@@ -491,6 +497,11 @@ def main(file_path, label_column, split_strategy, split_value, model_name, batch
         }))
         return
 
+    results["task_dir"] = task_dir
+    result_json_path = os.path.join(task_dir, "metrics.json")
+    with open(result_json_path, "w", encoding="utf-8") as f:
+        json.dump(results, f, indent=4, cls=NumpyEncoder, ensure_ascii=False)
+    extract_base64_images_and_clean_json(task_dir, "metrics.json")
     print(json.dumps(results, indent=4, cls=NumpyEncoder))
 
 if __name__ == "__main__":
@@ -503,6 +514,7 @@ if __name__ == "__main__":
     parser.add_argument("batch_size", type=int)
     parser.add_argument("max_epochs", type=int)
     parser.add_argument("patience", type=int)
+    parser.add_argument("task_dir", type=str)
 
     args = parser.parse_args()
-    main(args.file_path, args.label_column, args.split_strategy, args.split_value, args.model_name, args.batch_size, args.max_epochs, args.patience)
+    main(args.file_path, args.label_column, args.split_strategy, args.split_value, args.model_name, args.batch_size, args.max_epochs, args.patience, args.task_dir)

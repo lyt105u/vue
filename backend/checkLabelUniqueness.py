@@ -1,4 +1,4 @@
-# usage: python checkLabelUniqueness.py "upload/川崎症病人(訓練用 第一階段).csv" label
+# usage: python checkLabelUniqueness.py "upload/<username>/川崎症病人(訓練用 第一階段).csv" label
 
 import pandas as pd
 import argparse

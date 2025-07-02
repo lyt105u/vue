@@ -1,7 +1,7 @@
 # 檢查表格資料是否缺漏，並提供預覽資訊
 # usage: python checkPreviewTab.py <file_path>
 # ex:
-#   python checkPreviewTab.py upload/tabular.csv
+#   python checkPreviewTab.py upload/<username>/tabular.csv
 
 import os
 import sys

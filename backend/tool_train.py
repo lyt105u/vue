@@ -43,6 +43,49 @@ def prepare_data(file_path, label_column):
 
     return x, y, feature_names
 
+def extract_base64_images_and_clean_json(task_dir, filename="metrics.json"):
+    # 將 task_dir/metrics.json 中的 base64 圖片轉存為實體圖片並移除該欄位，然後覆蓋原 JSON 檔。
+    json_path = os.path.join(task_dir, filename)
+
+    if not os.path.exists(json_path):
+        raise FileNotFoundError(f"{json_path} 不存在")
+
+    with open(json_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    def process(obj, parent_key=""):
+        keys_to_remove = []
+
+        for key, value in obj.items():
+            current_key = f"{parent_key}_{key}" if parent_key else key
+
+            if isinstance(value, str) and value[:20].startswith("iVBORw0KGgo"):
+                try:
+                    image_bytes = base64.b64decode(value)
+                    image_path = os.path.join(task_dir, f"{current_key}.png")
+                    with open(image_path, "wb") as img_file:
+                        img_file.write(image_bytes)
+                    keys_to_remove.append(key)
+                except Exception as e:
+                    print(f"[decode error] {current_key}: {e}")
+
+            elif isinstance(value, dict):
+                process(value, current_key)
+
+            elif isinstance(value, list):
+                for i, item in enumerate(value):
+                    if isinstance(item, dict):
+                        process(item, f"{current_key}_{i}")
+
+        for key in keys_to_remove:
+            del obj[key]
+
+    process(data)
+
+    # 直接覆蓋原本 metrics.json
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=4, ensure_ascii=False)
+
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, (np.integer, int)):

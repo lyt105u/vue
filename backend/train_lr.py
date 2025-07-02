@@ -7,7 +7,7 @@ from sklearn.linear_model import SGDClassifier
 import os
 import joblib
 from sklearn.model_selection import train_test_split
-from tool_train import prepare_data, NumpyEncoder
+from tool_train import prepare_data, NumpyEncoder, extract_base64_images_and_clean_json
 
 import pandas as pd
 from sklearn.metrics import (
@@ -18,11 +18,17 @@ from sklearn import metrics
 import matplotlib.pyplot as plt
 import matplotlib
 from matplotlib import font_manager
-# 明確指定字型檔路徑
-font_path = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
-font_prop = font_manager.FontProperties(fname=font_path)
-matplotlib.rcParams['font.family'] = font_prop.get_name()  # 自動設定名稱
+try:
+    # 嘗試使用 Docker 中的 NotoSansCJK 字型
+    font_path = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
+    font_prop = font_manager.FontProperties(fname=font_path)
+    matplotlib.rcParams['font.family'] = font_prop.get_name()
 
+except Exception:
+    # Fallback：改用本機字型清單
+    matplotlib.rcParams['font.sans-serif'] = ['Microsoft JhengHei', 'SimHei', 'Arial Unicode MS']
+
+# 顯示負號正常
 matplotlib.rcParams['axes.unicode_minus'] = False
 import io
 import base64
@@ -41,7 +47,7 @@ import shap
 from lime.lime_tabular import LimeTabularExplainer
 from collections import Counter
 
-def train_lr(x_train, y_train, x_val, y_val, model_name, penalty, alpha, max_iter, use_class_weight):
+def train_lr(x_train, y_train, x_val, y_val, model_name, penalty, alpha, max_iter, use_class_weight, task_dir):
     class_weight = "balanced" if use_class_weight else None
     logistic_reg = make_pipeline(
         StandardScaler(),
@@ -77,8 +83,8 @@ def train_lr(x_train, y_train, x_val, y_val, model_name, penalty, alpha, max_ite
         acc_list_val.append(acc_val)
     
     if model_name:
-        os.makedirs("model", exist_ok=True)
-        joblib.dump(logistic_reg, f"model/{model_name}.pkl")
+        os.makedirs(task_dir, exist_ok=True)
+        joblib.dump(logistic_reg, f"{task_dir}/{model_name}.pkl")
 
     evals_result = {
         "training": {"logloss": loss_list_train, "accuracy": acc_list_train},
@@ -344,7 +350,7 @@ def should_use_class_weight(y):
     ratios = [v / total for v in counts.values()]
     return max(ratios) - min(ratios) > 0.25  # 自動啟用條件
 
-def kfold_evaluation(X, y, cv_folds, model_name, penalty, alpha, max_iter, feature_names):
+def kfold_evaluation(X, y, cv_folds, model_name, penalty, alpha, max_iter, feature_names, task_dir):
     skf = StratifiedKFold(n_splits=cv_folds, shuffle=True, random_state=30)
     folds_result = []
 
@@ -364,7 +370,7 @@ def kfold_evaluation(X, y, cv_folds, model_name, penalty, alpha, max_iter, featu
         y_train, y_test = y[train_index], y[test_index]
 
         model_fold_name = f"{model_name}_fold_{fold}"
-        model, evals_result = train_lr(X_train, y_train, X_test, y_test, model_fold_name, penalty, alpha, max_iter, use_class_weight)
+        model, evals_result = train_lr(X_train, y_train, X_test, y_test, model_fold_name, penalty, alpha, max_iter, use_class_weight, task_dir)
         
         y_pred_proba = model.predict_proba(X_test)[:, 1]
         y_pred = (y_pred_proba >= 0.5).astype(int)
@@ -451,7 +457,7 @@ def kfold_evaluation(X, y, cv_folds, model_name, penalty, alpha, max_iter, featu
     }
     return result
 
-def main(file_path, label_column, split_strategy, split_value, model_name, penalty, C, max_iter):
+def main(file_path, label_column, split_strategy, split_value, model_name, penalty, C, max_iter, task_dir):
     try:
         x, y, feature_names = prepare_data(file_path, label_column)
     except ValueError as e:
@@ -469,7 +475,7 @@ def main(file_path, label_column, split_strategy, split_value, model_name, penal
                 x, y, train_size=float(split_value), stratify=y, random_state=30
             )
             use_class_weight = should_use_class_weight(y)
-            model, evals_result = train_lr(x_train, y_train, x_test, y_test, model_name, penalty, alpha, max_iter, use_class_weight)
+            model, evals_result = train_lr(x_train, y_train, x_test, y_test, model_name, penalty, alpha, max_iter, use_class_weight, task_dir)
             y_pred = model.predict(x_test)
             results = evaluate_model(y_test, y_pred, model, x_test)
             results["loss_plot"] = plot_loss(evals_result)
@@ -486,7 +492,7 @@ def main(file_path, label_column, split_strategy, split_value, model_name, penal
             return
     elif split_strategy == "k_fold":
         try:
-            results = kfold_evaluation(x, y, int(split_value), model_name, penalty, alpha, max_iter, feature_names)
+            results = kfold_evaluation(x, y, int(split_value), model_name, penalty, alpha, max_iter, feature_names, task_dir)
         except ValueError as e:
             print(json.dumps({
                 "status": "error",
@@ -500,6 +506,11 @@ def main(file_path, label_column, split_strategy, split_value, model_name, penal
         }))
         return
 
+    results["task_dir"] = task_dir
+    result_json_path = os.path.join(task_dir, "metrics.json")
+    with open(result_json_path, "w", encoding="utf-8") as f:
+        json.dump(results, f, indent=4, cls=NumpyEncoder, ensure_ascii=False)
+    extract_base64_images_and_clean_json(task_dir, "metrics.json")
     print(json.dumps(results, indent=4, cls=NumpyEncoder))
 
 if __name__ == "__main__":
@@ -512,6 +523,7 @@ if __name__ == "__main__":
     parser.add_argument("penalty", type=str)
     parser.add_argument("C", type=float)
     parser.add_argument("max_iter", type=int)
+    parser.add_argument("task_dir", type=str)
 
     args = parser.parse_args()
-    main(args.file_path, args.label_column, args.split_strategy, args.split_value, args.model_name, args.penalty, args.C, args.max_iter)
+    main(args.file_path, args.label_column, args.split_strategy, args.split_value, args.model_name, args.penalty, args.C, args.max_iter, args.task_dir)

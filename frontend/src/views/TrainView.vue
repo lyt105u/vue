@@ -818,7 +818,6 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"> <!-- question mark icon -->
   <ModalNotification ref="modalNotification" :title="modal.title" :content="modal.content" :icon="modal.icon" />
   <ModalNotification ref="modalMissingDataRef" :title="modal.title" :content="modal.content" :icon="modal.icon" :primaryButton="modalMissingData.primary" :secondaryButton="modalMissingData.secondary" :onUserDismiss="closeModalMissingData"/>
-  <ModalNotification ref="modalFinishTrainingRef" :title="modal.title" :content="modal.content" :icon="modal.icon" :primaryButton="modalFinishTraining.primary" :secondaryButton="modalFinishTraining.secondary" />
   <ModalFormulaExplain ref="formulaExplainModal" />
   <ModalImage ref="modalImageRef" :title="modal.title" :imageSrc="modal.content"/>
   <ModalShap ref="modalShapRef" :imageSrc="modal.content" :shapImportance="modal.shap_importance" :columns="preview_data.columns"/>
@@ -938,9 +937,8 @@ export default {
       imageLime: null,
       errors: {}, // 檢核用
       fileOptions: [],
-      controller: null,
-      isAborted: false,
       recommendedMsg: '',
+      isUnmounted: false, // 防止跳轉後，API執行完仍繼續執行js，造成錯誤
     }
   },
   created() {
@@ -950,11 +948,10 @@ export default {
   },
   mounted() {
     window.addEventListener('beforeunload', this.handleBeforeUnload)
-    window.addEventListener('pagehide', this.handlePageHide)
   },
   beforeUnmount() {
     window.removeEventListener('beforeunload', this.handleBeforeUnload)
-    window.removeEventListener('pagehide', this.handlePageHide)
+    this.isUnmounted = true
   },
   computed: {
     modalMissingData() {
@@ -969,19 +966,6 @@ export default {
         }
       }
     },
-
-    modalFinishTraining() {
-      return {
-        primary: {
-          text: this.$t('lblUpload'),
-          onClick: this.uploadTrainedModel,
-        },
-        secondary: {
-          text: this.$t('lblCancel'),
-          onClick: this.closeModalFinishTraining,
-        }
-      }
-    }
   },
   watch: {
     "selected.split_strategy"() {
@@ -1015,11 +999,6 @@ export default {
     if (this.loading) {
       const answer = window.confirm(this.$t('msgSysRunning'))
       if (answer) {
-        if (this.controller) {
-          this.controller.abort()
-          this.isAborted = true
-          navigator.sendBeacon(`${process.env.VUE_APP_API_URL}/cancel`)
-        }
         next()
       } else {
         next(false)
@@ -1030,18 +1009,10 @@ export default {
   },
   methods: {
     handleBeforeUnload(event) {
-      // 僅提示，若確認離開則觸發 handlePageHide
+      // 僅提示
       if (this.loading) {
         event.preventDefault()
-        event.returnValue = '' // 必需，讓瀏覽器顯示警示對話框
-      }
-    },
-
-    handlePageHide() {
-      if (this.loading && this.controller) {
-        this.controller.abort()
-        this.isAborted = true
-        navigator.sendBeacon(`${process.env.VUE_APP_API_URL}/cancel`)
+        event.returnValue = '' // 讓瀏覽器顯示警示對話框
       }
     },
 
@@ -1078,7 +1049,7 @@ export default {
       this.loading = true
       try {
         const response = await axios.post(`${process.env.VUE_APP_API_URL}/list-files`, {
-          folder_path: 'upload', // upload/
+          folder_path: `upload/${sessionStorage.getItem('username')}`, // upload/
           ext1: 'csv',
           ext2: 'xlsx',
         })
@@ -1125,7 +1096,7 @@ export default {
       // delete-Tabular-Rows 成功才會執行 preview-tabular
       try {
         const response = await axios.post(`${process.env.VUE_APP_API_URL}/delete-tabular-rows`, {
-          file_path: `upload/${this.selected.data}`, // upload/
+          file_path: `upload/${sessionStorage.getItem('username')}/${this.selected.data}`, // upload/
           rows: rowsToDelete
         })
         if (response.data.status == "success") {
@@ -1310,7 +1281,7 @@ export default {
       this.loading = true
       try {
         const response = await axios.post(`${process.env.VUE_APP_API_URL}/preview-tabular`, {
-          file_path: `upload/${this.selected.data}`, // upload/
+          file_path: `upload/${sessionStorage.getItem('username')}/${this.selected.data}`, // upload/
         })
         if (response.data.status == "success") {
           this.preview_data = response.data.preview_data
@@ -1355,7 +1326,7 @@ export default {
       // 檢查 label 是否只有一種 class
       try {
         const response = await axios.post(`${process.env.VUE_APP_API_URL}/check-label-uniqueness`, {
-          file_path: `upload/${this.selected.data}`, // upload/
+          file_path: `upload/${sessionStorage.getItem('username')}/${this.selected.data}`, // upload/
           label_column: this.selected.label_column
         })
         if (response.data.status == "errorUnique") {
@@ -1382,17 +1353,16 @@ export default {
         return
       }
 
-      this.isAborted = false
-      this.controller = new AbortController()
       try {
         this.output = null
         let api = ''
         let payload = {
-          file_path: `upload/${this.selected.data}`, // upload/
+          file_path: `upload/${sessionStorage.getItem('username')}/${this.selected.data}`, // upload/
           label_column: this.selected.label_column,
           split_strategy: this.selected.split_strategy,
           split_value: this.selected.split_value,
           model_name: this.selected.model_name,
+          username: sessionStorage.getItem('username')
         }
 
         if (this.selected.model_type == "xgb") {
@@ -1449,106 +1419,36 @@ export default {
           this.openModalNotification()
         }
 
-        const response = await axios.post(`${process.env.VUE_APP_API_URL}/${api}`, payload, {
-          signal: this.controller.signal
-        })
+        const response = await axios.post(`${process.env.VUE_APP_API_URL}/${api}`, payload)
         this.output = response.data
-        // 顯示用，讓切換 split_strategy 不會拿掉 results
-        this.output.split_strategy = this.selected.split_strategy
-      } catch (error) {
-        if (axios.isCancel(error)) {
+        if (this.output.status == 'success') {
+          // 顯示用，讓切換 split_strategy 不會拿掉 results
+          this.output.split_strategy = this.selected.split_strategy
+          this.modal.title = this.$t('lblSuccess')
+          this.modal.content = this.$t('msgTrainingCompleted')
+          this.modal.icon = 'success'
+          this.openModalNotification()
+          if (this.selected.split_strategy == "train_test_split") {
+            this.imageRoc = `data:image/png;base64,${this.output.roc}`
+            this.imageLoss = `data:image/png;base64,${this.output.loss_plot}`
+            this.imageAccuracy = `data:image/png;base64,${this.output.accuracy_plot}`
+            this.imageShap = `data:image/png;base64,${this.output.shap_plot}`
+            this.imageLime = `data:image/png;base64,${this.output.lime_plot}`
+          }
+        } else if (this.output.status == 'error') {
+          this.modal.title = this.$t('lblError')
+          this.modal.content = this.output.message
+          this.modal.icon = 'error'
+          this.openModalNotification()
           this.output = null
-          this.isAborted = true
-          console.warn("Request aborted")
-          return // 跳出 early
         }
+      } catch (error) {
         this.output = {
           "status": "error",
           "message": error,
         }
-      } finally {
-        if (!this.isAborted) {
-          let errorFlag = false
-          if (this.output.status == 'success') {
-            let extension = ".pkl"
-            if (this.selected.model_type === "tabnet") extension = ".zip"
-            else if (this.selected.model_type === "xgb") extension = ".json"
-
-            if (this.selected.split_strategy == "train_test_split") {
-              this.imageRoc = `data:image/png;base64,${this.output.roc}`
-              this.imageLoss = `data:image/png;base64,${this.output.loss_plot}`
-              this.imageAccuracy = `data:image/png;base64,${this.output.accuracy_plot}`
-              this.imageShap = `data:image/png;base64,${this.output.shap_plot}`
-              this.imageLime = `data:image/png;base64,${this.output.lime_plot}`
-              // download api
-              // 訓練好的模型會暫存在 model/ 資料夾中，再去把它載下來
-              // 懶得改了QQ，要改的話要去每一個 train_xxx.py 改
-              const path = `model/${this.selected.model_name}${extension}`
-              try {
-                await this.downloadFile(path)
-              } catch (error) {
-                errorFlag = true
-                this.modal.title = this.$t('lblError')
-                this.modal.content = this.output.message
-                this.modal.icon = 'error'
-                this.openModalNotification()
-              }
-              if (errorFlag == false) {
-                this.modal.title = this.$t('lblTrainingCompleted')
-                this.modal.content = this.$t('msgTrainingCompleted')
-                this.modal.icon = 'success'
-                this.openModalFinishTraining()
-              }
-            } else if (this.selected.split_strategy == "k_fold") {
-              for (let i=0; i< this.selected.split_value; i++) {
-                const path = `model/${this.selected.model_name}_fold_${i}${extension}`
-                try {
-                  await this.downloadFile(path)
-                } catch (error) {
-                  errorFlag = true
-                  this.modal.title = this.$t('lblError')
-                  this.modal.content = this.output.message
-                  this.modal.icon = 'error'
-                  this.openModalNotification()
-                }
-              }
-              if (errorFlag == false) {
-                this.modal.title = this.$t('lblTrainingCompleted')
-                this.modal.content = this.$t('lblTrainingCompleted')
-                this.modal.icon = 'success'
-                this.openModalNotification()
-              }
-            }
-          } else if (this.output.status == 'error') {
-            this.modal.title = this.$t('lblError')
-            this.modal.content = this.output.message
-            this.modal.icon = 'error'
-            this.openModalNotification()
-            this.output = null
-          }
-        }
-        this.loading = false
       }
-    },
-
-    async downloadFile(path) {
-      try {
-        const response = await axios.post(`${process.env.VUE_APP_API_URL}/download`, {
-          download_path: path
-        }, {
-          responseType: 'blob' // 關鍵：支援二進位檔案格式
-        })
-
-        const blob = response.data
-        const url = window.URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = path.split('/').pop()  // 取檔名
-        a.click()
-        URL.revokeObjectURL(url)
-      } catch (err) {
-        console.error('下載檔案失敗：', err)
-      }
+      this.loading = false
     },
 
     openModalNotification() {
@@ -1600,79 +1500,22 @@ export default {
       }
     },
 
-    openModalFinishTraining() {
-      if (this.$refs.modalFinishTrainingRef) {
-        this.$refs.modalFinishTrainingRef.openModal()
-      } else {
-        console.error("ModalFinishTraining component not found.")
-      }
-    },
-
-    async uploadTrainedModel() {
-      if (this.$refs.modalFinishTrainingRef) {
-        this.$refs.modalFinishTrainingRef.closeModal()
-      }
-      this.loading = true
-      try {
-        let extension = ".pkl"
-        if (this.selected.model_type === "tabnet") extension = ".zip"
-        else if (this.selected.model_type === "xgb") extension = ".json"
-        // 將訓練好暫存在 model/ 的模型複製到 upload/ 中，假裝上傳
-        const response = await axios.post(`${process.env.VUE_APP_API_URL}/copy-local-file`, {
-          source_path: `model/${this.selected.model_name}${extension}`,
-          target_folder: 'upload' // upload/
-        })
-        if (response.data.status == "success") {
-          this.modal.title = this.$t('lblSuccess')
-          const filename = `${this.selected.model_name}${extension}`
-          this.modal.content = this.$t('msgUploadSuccess', { filename })
-          this.modal.icon = 'success'
-          this.openModalNotification()
-        } else if (response.data.status == "error") {
-          this.modal.title = this.$t('lblError')
-          this.modal.content = response.data.message
-          this.modal.icon = 'error'
-          this.openModalNotification()
-        }
-      } catch (error) {
-        this.modal.title = this.$t('lblError')
-        this.modal.content = error
-        this.modal.icon = 'error'
-        this.openModalNotification()
-      }
-      this.loading = false
-    },
-
-    closeModalFinishTraining() {
-      if (this.$refs.modalFinishTrainingRef) {
-        this.$refs.modalFinishTrainingRef.closeModal()
-      }
-    },
-
     async downloadReport() {
       this.loading = true
+      console.log(this.output.task_dir)
       try {
-        const response = await axios.post(`${process.env.VUE_APP_API_URL}/download-report`, this.output, {
-          responseType: 'blob' // 關鍵：支援二進位檔案格式
+        const response = await axios.post(`${process.env.VUE_APP_API_URL}/download-report`, {
+          task_dir: this.output.task_dir,
+        }, {
+          responseType: 'blob'
         })
-
-        // 從 Content-Disposition 擷取檔案名稱
-        let filename = 'report.zip' // 預設檔名
-        const disposition = response.headers['content-disposition']
-        if (disposition && disposition.includes('filename=')) {
-          const match = disposition.match(/filename="?([^"]+)"?/)
-          if (match) {
-            filename = decodeURIComponent(match[1]) // 使用後端提供的檔名（如：report_20250627_160500.zip）
-          }
-        }
-
-        const blob = response.data
-        const url = window.URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = filename
-        a.click()
-        URL.revokeObjectURL(url)
+        const url = window.URL.createObjectURL(new Blob([response.data]))
+        const link = document.createElement('a')
+        link.href = url
+        link.setAttribute('download', `${this.output.task_dir.split(/[\\/]/).pop()}.zip`)
+        document.body.appendChild(link)
+        link.click()
+        link.remove()
       } catch (err) {
         console.error('下載檔案失敗：', err)
       }
