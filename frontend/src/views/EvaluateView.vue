@@ -14,7 +14,7 @@
   <form class="row g-3" @submit.prevent="runPredict" style="margin-top: 16px">
     <!-- Trained Model -->
     <div class="row mb-3">
-      <label for="inputEmail3" class="col-sm-3 col-form-label">{{ $t('lblTrainedModel') }}</label>
+      <label for="inputEmail3" class="col-sm-3 col-form-label">{{ $t('lblModelFile') }}</label>
       <div class="col-sm-8">
         <select class="form-select" aria-label="Small select example" v-model="selected.model_name" :disabled="loading">
           <option v-for="model in modelOptions" :key="model" :value="model">
@@ -334,8 +334,7 @@ export default {
         { level: 95, key: 'recall_95' }
       ],
       imageRoc: null,
-      controller: null,
-      isAborted: false,
+      isUnmounted: false, // 防止跳轉後，API執行完仍繼續執行js，造成錯誤
     }
   },
   created() {
@@ -343,11 +342,10 @@ export default {
   },
   mounted() {
     window.addEventListener('beforeunload', this.handleBeforeUnload)  // 嘗試離開時觸發（重整或按叉）
-    window.addEventListener('pagehide', this.handlePageHide)  // 在真的離開時觸發
   },
   beforeUnmount() {
     window.removeEventListener('beforeunload', this.handleBeforeUnload)
-    window.removeEventListener('pagehide', this.handlePageHide)
+    this.isUnmounted = true
   },
   computed: {
     modalButtons() {
@@ -364,11 +362,6 @@ export default {
     }
   },
   watch: {
-    async "selected.model_name"() {
-      this.output = ''
-      this.errors = {}
-    },
-
     "selected.data_name"() {
       if (this .selected.data_name.endsWith(".csv")) {
         this.watched.file_extension = ".csv"
@@ -388,11 +381,6 @@ export default {
     if (this.loading) {
       const answer = window.confirm(this.$t('msgSysRunning'))
       if (answer) {
-        if (this.controller) {
-          this.controller.abort()
-          this.isAborted = true
-          navigator.sendBeacon(`${process.env.VUE_APP_API_URL}/cancel`)
-        }
         next()
       } else {
         next(false)
@@ -403,18 +391,10 @@ export default {
   },
   methods: {
     handleBeforeUnload(event) {
-      // 僅提示，若確認離開則觸發 handlePageHide
+      // 僅提示
       if (this.loading) {
         event.preventDefault()
-        event.returnValue = '' // 必需，讓瀏覽器顯示警示對話框
-      }
-    },
-
-    handlePageHide() {
-      if (this.loading && this.controller) {
-        this.controller.abort()
-        this.isAborted = true
-        navigator.sendBeacon(`${process.env.VUE_APP_API_URL}/cancel`)
+        event.returnValue = '' // 讓瀏覽器顯示警示對話框
       }
     },
 
@@ -423,7 +403,7 @@ export default {
       this.loading = true
       try {
         const response = await axios.post(`${process.env.VUE_APP_API_URL}/list-files`, {
-          folder_path: 'upload', // upload/
+          folder_path: `upload/${sessionStorage.getItem('username')}`, // upload/
           ext1: 'pkl',
           ext2: 'zip',
           ext3: 'json',
@@ -449,7 +429,7 @@ export default {
 
       try {
         const response = await axios.post(`${process.env.VUE_APP_API_URL}/list-files`, {
-          folder_path: 'upload', // upload/
+          folder_path: `upload/${sessionStorage.getItem('username')}`, // upload/
           ext1: 'csv',
           ext2: 'xlsx',
         })
@@ -483,7 +463,7 @@ export default {
       this.loading = true
       try {
         const response = await axios.post(`${process.env.VUE_APP_API_URL}/preview-tabular`, {
-          file_path: `upload/${this.selected.data_name}`, // upload/
+          file_path: `upload/${sessionStorage.getItem('username')}/${this.selected.data_name}`, // upload/
         })
         if (response.data.status == "success") {
           this.preview_data = response.data.preview_data
@@ -543,7 +523,7 @@ export default {
       // delete-Tabular-Rows 成功才會執行 preview-Tabula
       try {
         const response = await axios.post(`${process.env.VUE_APP_API_URL}/delete-tabular-rows`, {
-          file_path: `upload/${this.selected.data_name}`, // upload/
+          file_path: `upload/${sessionStorage.getItem('username')}/${this.selected.data_name}`, // upload/
           rows: rowsToDelete
         })
         if (response.data.status == "success") {
@@ -612,34 +592,27 @@ export default {
       if (!this.validateForm()) {
         return
       }
-      this.isAborted = false
-      this.controller = new AbortController()
       this.loading = true
       this.output = null
 
       try {
         const response = await axios.post(`${process.env.VUE_APP_API_URL}/run-evaluate`,
           {
-            model_path: `upload/${this.selected.model_name}`, // upload/
-            data_path: `upload/${this.selected.data_name}`, // upload/
+            model_path: `upload/${sessionStorage.getItem('username')}/${this.selected.model_name}`, // upload/
+            data_path: `upload/${sessionStorage.getItem('username')}/${this.selected.data_name}`, // upload/
             output_name: this.selected.output_name,
             label_column: this.selected.label_column,
             pred_column: this.selected.pred_column,
+            username: sessionStorage.getItem('username'),
           },
-          {
-            signal: this.controller.signal
-          }
         )
-        if (response.data.status == "success" && !this.isAborted) {
+        if (this.isUnmounted) return // 若頁面已離開就不要繼續處理
+        if (response.data.status == "success") {
           this.output = response.data
           this.imageRoc = `data:image/png;base64,${this.output.roc}`
           this.modal.title = this.$t('lblPredictionCompleted')
           this.modal.icon = 'success'
-          this.modal.content = this.$t('msgFileDownloaded')
-          // download api
-          // 結果檔案會暫時存在 data/result/ 裡面，懶得改了，牽動到 predict.py，好麻煩
-          const path = `data/result/${this.selected.output_name}${this.watched.file_extension}`
-          await this.downloadFile(path)
+          this.modal.content = this.$t('lblPredictionCompleted')
           this.openModalNotification()
         } else if (response.data.status == "error") {
           this.modal.title = this.$t('lblError')
@@ -648,11 +621,7 @@ export default {
           this.openModalNotification()
         }
       } catch (error) {
-        if (axios.isCancel(error)) {
-          console.warn("Prediction aborted")
-          this.isAborted = true
-          return
-        }
+        if (this.isUnmounted) return // 頁面已離開就忽略錯誤處理
         this.output = {
           status: 'error',
           message: error,
@@ -661,32 +630,8 @@ export default {
         this.modal.icon = 'error'
         this.modal.content = error
         this.openModalNotification()
-      } finally {
-        this.loading = false
       }
-    },
-
-    async downloadFile(path) {
-      try {
-        const response = await axios.post(`${process.env.VUE_APP_API_URL}/download`, {
-          download_path: path
-        }, {
-          responseType: 'blob' // 關鍵：支援二進位檔案格式
-        })
-
-        const blob = response.data
-        const url = window.URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = path.split('/').pop()  // 取檔名
-        a.click()
-        URL.revokeObjectURL(url)
-      } catch (err) {
-        this.modal.title = this.$t('lblError')
-        this.modal.content = err
-        this.modal.icon = 'error'
-        this.openModalNotification()
-      }
+      this.loading = false
     },
 
     openModalNotification() {
@@ -741,31 +686,22 @@ export default {
     async downloadReport() {
       this.loading = true
       try {
-        const response = await axios.post(`${process.env.VUE_APP_API_URL}/download-report`, this.output, {
-          responseType: 'blob' // 關鍵：支援二進位檔案格式
+        const response = await axios.post(`${process.env.VUE_APP_API_URL}/download-report`, {
+          task_dir: this.output.task_dir,
+        }, {
+          responseType: 'blob'
         })
-
-        // 從 Content-Disposition 擷取檔案名稱
-        let filename = 'report.zip' // 預設檔名
-        const disposition = response.headers['content-disposition']
-        if (disposition && disposition.includes('filename=')) {
-          const match = disposition.match(/filename="?([^"]+)"?/)
-          if (match) {
-            filename = decodeURIComponent(match[1]) // 使用後端提供的檔名（如：report_20250627_160500.zip）
-          }
-        }
-
-        const blob = response.data
-        const url = window.URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = filename
-        a.click()
-        URL.revokeObjectURL(url)
+        const url = window.URL.createObjectURL(new Blob([response.data]))
+        const link = document.createElement('a')
+        link.href = url
+        link.setAttribute('download', `${this.output.task_dir.split(/[\\/]/).pop()}.zip`)
+        document.body.appendChild(link)
+        link.click()
+        link.remove()
       } catch (err) {
         this.modal.title = this.$t('lblError')
-        this.modal.content = err
         this.modal.icon = 'error'
+        this.modal.content = err
         this.openModalNotification()
       }
       this.loading = false

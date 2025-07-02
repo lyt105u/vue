@@ -140,7 +140,7 @@
   "msgNotOnList": "is not on the list.",
   "msgItemsDeleted": "The following items have been deleted:",
   "msgTerminated": "has been terminated.",
-  "msgNotRunning": "is not running.",
+  "msgNotRunning": "has finished running.",
 
   "msgValRequired": "This field is required.",
   "msgValIntOnly": "Integer only.",

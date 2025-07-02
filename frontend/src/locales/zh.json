@@ -140,7 +140,7 @@
   "msgNotOnList": "不在名單中。",
   "msgItemsDeleted": "以下項目已被刪除：",
   "msgTerminated": "已被終止。",
-  "msgNotRunning": "並未在執行。",
+  "msgNotRunning": "已執行完成。",
 
   "msgValRequired": "此為必填欄位",
   "msgValIntOnly": "僅允許整數",

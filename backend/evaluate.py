@@ -27,15 +27,21 @@ from sklearn import metrics
 import matplotlib.pyplot as plt
 import matplotlib
 from matplotlib import font_manager
-# 明確指定字型檔路徑
-font_path = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
-font_prop = font_manager.FontProperties(fname=font_path)
-matplotlib.rcParams['font.family'] = font_prop.get_name()  # 自動設定名稱
+try:
+    # 嘗試使用 Docker 中的 NotoSansCJK 字型
+    font_path = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
+    font_prop = font_manager.FontProperties(fname=font_path)
+    matplotlib.rcParams['font.family'] = font_prop.get_name()
 
+except Exception:
+    # Fallback：改用本機字型清單
+    matplotlib.rcParams['font.sans-serif'] = ['Microsoft JhengHei', 'SimHei', 'Arial Unicode MS']
+
+# 顯示負號正常
 matplotlib.rcParams['axes.unicode_minus'] = False
 import io
 import base64
-from tool_train import NumpyEncoder
+from tool_train import NumpyEncoder, extract_base64_images_and_clean_json
 import shap
 from lime.lime_tabular import LimeTabularExplainer
 
@@ -83,16 +89,14 @@ def predict_labels(model, model_path, data, label_column, pred_column):
     data[pred_column] = y_pred
     return x_test, y_test, y_pred, data
 
-def save_predictions(data, data_path, output_name):
-    result_dir = os.path.join("data", "result")
-    os.makedirs(result_dir, exist_ok=True)
+def save_predictions(data, data_path, output_name, task_dir):
+    os.makedirs(task_dir, exist_ok=True)
 
-    # output_path = os.path.join(result_dir, output_name)
     if data_path.endswith(".csv"):
-        output_path = os.path.join(result_dir, f"{output_name}.csv")
+        output_path = os.path.join(task_dir, f"{output_name}.csv")
         data.to_csv(output_path, index=False, encoding='utf-8-sig')
     elif data_path.endswith(".xlsx"):
-        output_path = os.path.join(result_dir, f"{output_name}.xlsx")
+        output_path = os.path.join(task_dir, f"{output_name}.xlsx")
         data.to_excel(output_path, index=False)
 
 def evaluate_model(y_test, y_pred, model, x_test):
@@ -294,18 +298,23 @@ def explain_with_lime(model, x_test, y_test, feature_names):
         
     return result
 
-def main(model_path, data_path, output_name, label_column, pred_column):
+def main(model_path, data_path, output_name, label_column, pred_column, task_dir):
     try:
         model = load_model(model_path)
         data = load_data(data_path)
         feature_names = data.drop(columns=[label_column], errors='ignore').columns.tolist()
         x_test, y_test, y_pred, data_with_preds = predict_labels(model, model_path, data, label_column, pred_column)
-        save_predictions(data_with_preds, data_path, output_name)
+        save_predictions(data_with_preds, data_path, output_name, task_dir)
         results = evaluate_model(y_test, y_pred, model, x_test)
         shap_result = explain_with_shap(model, x_test, feature_names)
         results.update(shap_result)
         lime_result = explain_with_lime(model, x_test, y_test, feature_names)
         results.update(lime_result)
+        results["task_dir"] = task_dir
+        result_json_path = os.path.join(task_dir, "metrics.json")
+        with open(result_json_path, "w", encoding="utf-8") as f:
+            json.dump(results, f, indent=4, cls=NumpyEncoder, ensure_ascii=False)
+        extract_base64_images_and_clean_json(task_dir, "metrics.json")
         print(json.dumps(results, indent=4, cls=NumpyEncoder))
     except Exception as e:
         print(json.dumps({
@@ -321,6 +330,7 @@ if __name__ == "__main__":
     parser.add_argument('output_name', type=str, help="Output file name (without extension)")
     parser.add_argument('label_column', type=str, help="Name of the column that contains true labels")
     parser.add_argument("pred_column", type=str, help="Name of the column to store predictions")
+    parser.add_argument("task_dir", type=str)
     
     args = parser.parse_args()
-    main(args.model_path, args.data_path, args.output_name, args.label_column, args.pred_column)
+    main(args.model_path, args.data_path, args.output_name, args.label_column, args.pred_column, args.task_dir)

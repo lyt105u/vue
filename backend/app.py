@@ -839,31 +839,28 @@ def run_evaluate():
     output_name = data.get('output_name')  # 輸出檔案名稱
     label_column = data.get('label_column')
     pred_column = data.get('pred_column')
-
+    username = data.get('username')
     try:
-        # fetch_result = subprocess.run(
-        #     ['python', 'evaluate.py', model_path, data_path, output_name, label_column, pred_column],
-        #     # capture_output=True,  # 捕獲標準輸出和標準錯誤
-        #     stdout=subprocess.PIPE,     # 只捕獲標準輸出
-        #     stderr=subprocess.DEVNULL,  # 忽略標準錯誤
-        #     text=True                   # 將輸出轉換為字符串
-        # )
-        
-        # # debug 用
-        # # print("STDOUT:", fetch_result.stdout)  # 打印标准输出
-        # # print("STDERR:", fetch_result.stderr)  # 打印标准错误
-        
-        # if fetch_result.returncode != 0:
-        #     return jsonify({
-        #         "status": "error",
-        #         "message": fetch_result.stderr,
-        #     })
-
-        # return jsonify(json.loads(fetch_result.stdout))
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        task_id = f"{timestamp}"
+        task_dir = os.path.join("model", username, timestamp)   # model/<username>/<timestamp>/
+        os.makedirs(task_dir, exist_ok=True)
+        # status.json
+        status = {
+            "task_id": task_id,
+            "username": username,
+            "status": "running",
+            "params": data,
+            "start_time": timestamp,
+            "api": "evaluate",
+        }
+        with open(os.path.join(task_dir, "status.json"), "w", encoding="utf-8") as f:
+            json.dump(status, f, indent=4, ensure_ascii=False)
 
         args = [
             'python', 'evaluate.py',
-            model_path, data_path, output_name, label_column, pred_column
+            model_path, data_path, output_name, label_column, pred_column,
+            task_dir
         ]
         # 執行 Python 訓練腳本（非阻塞，可終止）
         current_process = subprocess.Popen(
@@ -872,12 +869,46 @@ def run_evaluate():
             stderr=subprocess.DEVNULL,
             text=True
         )
+
+        process_pool[task_id] = {
+            "process": current_process,
+            "username": username,
+            "task_dir": task_dir
+        }
+
         stdout, stderr = current_process.communicate()
+        # --- DEBUG 輸出（如需印出，請取消註解） ---
+        # print("STDOUT:", stdout, flush=True)
+        # print("STDERR:", stderr, flush=True)
+
+        # 如果 task_id 不在 process_pool，代表已被終止
+        if task_id not in process_pool:
+            # 不寫 status，避免覆蓋已寫入的 terminated 狀態
+            return jsonify({
+                "status": "terminated",
+                "message": "Task was terminated by user.",
+                "task_id": task_id
+            })
+        
         if current_process.returncode != 0:
+            # 更新 status.json 為 error
+            status['status'] = 'error'
+            status['msg'] = stderr
+            with open(os.path.join(task_dir, "status.json"), "w", encoding="utf-8") as f:
+                json.dump(status, f, indent=4, ensure_ascii=False)
+            # 任務完成後移除該 process 記錄
+            process_pool.pop(task_id, None)
             return jsonify({
                 "status": "error",
                 "message": stderr
             })
+        # 更新 status.json 為 success
+        status['status'] = 'success'
+        status['end_time'] = datetime.now().strftime("%Y%m%d_%H%M%S")
+        with open(os.path.join(task_dir, "status.json"), "w", encoding="utf-8") as f:
+            json.dump(status, f, indent=4, ensure_ascii=False)
+        # 任務完成後移除該 process 記錄
+        process_pool.pop(task_id, None)
         return jsonify(json.loads(stdout))
     
     except Exception as e:
@@ -933,8 +964,8 @@ def preview():
         )
         
         # debug 用
-        # print("STDOUT:", result.stdout)  # 打印标准输出
-        # print("STDERR:", result.stderr)  # 打印标准错误
+        # print("STDOUT:", fetch_result.stdout)  # 打印标准输出
+        # print("STDERR:", fetch_result.stderr)  # 打印标准错误
         
         if fetch_result.returncode != 0:
             return jsonify({
