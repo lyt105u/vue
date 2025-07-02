@@ -20,7 +20,7 @@
         </div>
         <div class="modal-body">
           <div class="bd-example-snippet bd-code-snippet">
-            <div class="bd-example m-0 border-0" style="white-space: pre-line;">
+            <div class="bd-example m-0 border-0" style="white-space: pre-wrap; word-break: break-word;">
               {{ content }}
             </div>
           </div>
