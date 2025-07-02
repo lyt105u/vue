@@ -15,6 +15,7 @@
 # )
 
 import argparse
+from tool_train import NumpyEncoder, extract_base64_images_and_clean_json
 import pandas as pd
 from xgboost import XGBClassifier
 import joblib
@@ -28,11 +29,17 @@ import base64
 import matplotlib.pyplot as plt
 import matplotlib
 from matplotlib import font_manager
-# 明確指定字型檔路徑
-font_path = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
-font_prop = font_manager.FontProperties(fname=font_path)
-matplotlib.rcParams['font.family'] = font_prop.get_name()  # 自動設定名稱
+try:
+    # 嘗試使用 Docker 中的 NotoSansCJK 字型
+    font_path = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
+    font_prop = font_manager.FontProperties(fname=font_path)
+    matplotlib.rcParams['font.family'] = font_prop.get_name()
 
+except Exception:
+    # Fallback：改用本機字型清單
+    matplotlib.rcParams['font.sans-serif'] = ['Microsoft JhengHei', 'SimHei', 'Arial Unicode MS']
+
+# 顯示負號正常
 matplotlib.rcParams['axes.unicode_minus'] = False
 import shap
 from lime.lime_tabular import LimeTabularExplainer
@@ -158,20 +165,19 @@ def predict_labels(model, model_path, data, label_column):
 
     return data, explain_result
 
-def save_predictions(data, data_path, output_name):
-    result_dir = os.path.join("data", "result")
-    os.makedirs(result_dir, exist_ok=True)
+def save_predictions(data, data_path, output_name, task_dir):
+    os.makedirs(task_dir, exist_ok=True)
 
     # output_path = os.path.join(result_dir, output_name)
     if data_path.endswith(".csv"):
-        output_path = os.path.join(result_dir, f"{output_name}.csv")
+        output_path = os.path.join(task_dir, f"{output_name}.csv")
         data.to_csv(output_path, index=False, encoding='utf-8-sig')
     elif data_path.endswith(".xlsx"):
-        output_path = os.path.join(result_dir, f"{output_name}.xlsx")
+        output_path = os.path.join(task_dir, f"{output_name}.xlsx")
         data.to_excel(output_path, index=False)
     return output_path
 
-def predict_input(model, model_path, input_values):
+def predict_input(model, model_path, input_values, task_dir):
     # 將輸入值解析為適當的型態
     parsed_values = []
     for value in input_values:
@@ -196,19 +202,26 @@ def predict_input(model, model_path, input_values):
 
     if isinstance(prediction, np.ndarray):
         prediction = prediction.tolist()
-    print(json.dumps({
-        "status": "success",
-        "message": prediction,
-    }))
 
-def main(model_path, mode, data_path=None, output_name=None, input_values=None, label_column="label"):
+    result = {
+        "status": "success",
+        "prediction": prediction,
+        "task_dir": task_dir
+    }
+    result_json_path = os.path.join(task_dir, "metrics.json")
+    with open(result_json_path, "w", encoding="utf-8") as f:
+        json.dump(result, f, indent=4, cls=NumpyEncoder, ensure_ascii=False)
+    extract_base64_images_and_clean_json(task_dir, "metrics.json")
+    print(json.dumps(result))
+
+def main(model_path, mode, task_dir, data_path=None, output_name=None, input_values=None, label_column="label"):
     try:
         model = load_model(model_path)
 
         if mode == "file":
             data = load_data(data_path)
             data_with_predictions, explanations = predict_labels(model, model_path, data, label_column)
-            output_path = save_predictions(data_with_predictions, data_path, output_name)
+            output_path = save_predictions(data_with_predictions, data_path, output_name, task_dir)
             result = {
                 "status": "success",
                 # "message": f"Predictions saved to {output_path}",
@@ -223,10 +236,15 @@ def main(model_path, mode, data_path=None, output_name=None, input_values=None, 
                 result["lime_plot"] = lime_result["lime_plot"]
             if lime_result.get("lime_example_0"):
                 result["lime_example_0"] = lime_result["lime_example_0"]
+            result["task_dir"] = task_dir
+            result_json_path = os.path.join(task_dir, "metrics.json")
+            with open(result_json_path, "w", encoding="utf-8") as f:
+                json.dump(result, f, indent=4, cls=NumpyEncoder, ensure_ascii=False)
+            extract_base64_images_and_clean_json(task_dir, "metrics.json")
             print(json.dumps(result))
             
         elif mode == "input":
-            predict_input(model, model_path, input_values)
+            predict_input(model, model_path, input_values, task_dir)
     except Exception as e:
         print(json.dumps({
             "status": "error",
@@ -238,10 +256,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('model_path', type=str, help="Path to the trained model file (e.g., .json for XGBoost or .pkl for joblib models)")
     parser.add_argument('mode', type=str, choices=["file", "input"], help="模式選擇：file（檔案模式）或 input（手動輸入模式）")
+    parser.add_argument("task_dir", type=str)
     parser.add_argument('--data_path', type=str, help="輸入檔案路徑（僅 file 模式需要）")
     parser.add_argument('--output_name', type=str, help="輸出檔案名稱（僅 file 模式需要）")
     parser.add_argument('--input_values', type=str, nargs='+', help="輸入特徵數值（僅 input 模式需要，數值間以空格分隔）")
     parser.add_argument('--label_column', type=str, help="自訂標籤欄位名稱")
     
     args = parser.parse_args()
-    main(args.model_path, args.mode, args.data_path, args.output_name, args.input_values, args.label_column)
+    main(args.model_path, args.mode, args.task_dir, args.data_path, args.output_name, args.input_values, args.label_column)

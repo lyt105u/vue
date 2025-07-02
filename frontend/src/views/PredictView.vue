@@ -13,7 +13,7 @@
   <form class="row g-3" @submit.prevent="runPredict" style="margin-top: 16px">
     <!-- Trained Model -->
     <div class="row mb-3">
-      <label for="inputEmail3" class="col-sm-3 col-form-label">{{ $t('lblTrainedModel') }}</label>
+      <label for="inputEmail3" class="col-sm-3 col-form-label">{{ $t('lblModelFile') }}</label>
       <div class="col-sm-8">
         <select class="form-select" aria-label="Small select example" v-model="selected.model_name" :disabled="loading">
           <option v-for="model in modelOptions" :key="model" :value="model">
@@ -269,9 +269,8 @@ export default {
       },
       modelOptions: [],
       fileOptions: [],
-      controller: null,
-      isAborted: false,
       msgResult: '',
+      isUnmounted: false, // 防止跳轉後，API執行完仍繼續執行js，造成錯誤
     }
   },
   created() {
@@ -279,11 +278,10 @@ export default {
   },
   mounted() {
     window.addEventListener('beforeunload', this.handleBeforeUnload)  // 嘗試離開時觸發（重整或按叉）
-    window.addEventListener('pagehide', this.handlePageHide)  // 在真的離開時觸發
   },
   beforeUnmount() {
     window.removeEventListener('beforeunload', this.handleBeforeUnload)
-    window.removeEventListener('pagehide', this.handlePageHide)
+    this.isUnmounted = true
   },
   computed: {
     rows() {
@@ -335,11 +333,6 @@ export default {
     if (this.loading) {
       const answer = window.confirm(this.$t('msgSysRunning'))
       if (answer) {
-        if (this.controller) {
-          this.controller.abort()
-          this.isAborted = true
-          navigator.sendBeacon(`${process.env.VUE_APP_API_URL}/cancel`)
-        }
         next()
       } else {
         next(false)
@@ -350,18 +343,10 @@ export default {
   },
   methods: {
     handleBeforeUnload(event) {
-      // 僅提示，若確認離開則觸發 handlePageHide
+      // 僅提示
       if (this.loading) {
         event.preventDefault()
         event.returnValue = '' // 必需，讓瀏覽器顯示警示對話框
-      }
-    },
-
-    handlePageHide() {
-      if (this.loading && this.controller) {
-        this.controller.abort()
-        this.isAborted = true
-        navigator.sendBeacon(`${process.env.VUE_APP_API_URL}/cancel`)
       }
     },
 
@@ -370,7 +355,7 @@ export default {
       this.loading = true
       try {
         const response = await axios.post(`${process.env.VUE_APP_API_URL}/list-files`, {
-          folder_path: 'upload', // upload/
+          folder_path: `upload/${sessionStorage.getItem('username')}`, // upload/
           ext1: 'pkl',
           ext2: 'zip',
           ext3: 'json',
@@ -396,7 +381,7 @@ export default {
 
       try {
         const response = await axios.post(`${process.env.VUE_APP_API_URL}/list-files`, {
-          folder_path: 'upload', // upload/
+          folder_path: `upload/${sessionStorage.getItem('username')}`, // upload/
           ext1: 'csv',
           ext2: 'xlsx',
         })
@@ -427,21 +412,16 @@ export default {
     },
 
     async getFieldNumber() {
-      this.isAborted = false
-      this.controller = new AbortController()
       this.selected.input_values = []
       if (this.selected.model_name) {
         this.loading = true
         try {
           const response = await axios.post(`${process.env.VUE_APP_API_URL}/get-field-number`,
             {
-              model_path: `upload/${this.selected.model_name}`, // upload/
+              model_path: `upload/${sessionStorage.getItem('username')}/${this.selected.model_name}`, // upload/
             },
-            {
-              signal: this.controller.signal
-            }
           )
-          if (response.data.status == "success" && !this.isAborted) {
+          if (response.data.status == "success") {
             this.selected.input_values = Array(response.data.field_count).fill("");
           } else if (response.data.status == "error") {
             this.modal.title = this.$t('lblError')
@@ -450,11 +430,6 @@ export default {
             this.openModalNotification()
           }
         } catch (error) {
-          if (axios.isCancel(error)) {
-            console.warn("Prediction aborted")
-            this.isAborted = true
-            return
-          }
           this.modal.title = this.$t('lblError')
           this.modal.content = error
           this.modal.icon = 'error'
@@ -469,7 +444,7 @@ export default {
       this.loading = true
       try {
         const response = await axios.post(`${process.env.VUE_APP_API_URL}/preview-tabular`, {
-          file_path: `upload/${this.selected.data_name}`, // upload/
+          file_path: `upload/${sessionStorage.getItem('username')}/${this.selected.data_name}`, // upload/
         })
         if (response.data.status == "success") {
           this.preview_data = response.data.preview_data
@@ -529,7 +504,7 @@ export default {
       // delete-Tabular-Rows 成功才會執行 preview-Tabula
       try {
         const response = await axios.post(`${process.env.VUE_APP_API_URL}/delete-tabular-rows`, {
-          file_path: `upload/${this.selected.data_name}`, // upload/
+          file_path: `upload/${sessionStorage.getItem('username')}/${this.selected.data_name}`, // upload/
           rows: rowsToDelete
         })
         if (response.data.status == "success") {
@@ -607,39 +582,32 @@ export default {
         return
       }
 
-      this.isAborted = false
-      this.controller = new AbortController()
       this.loading = true
       this.output = null
 
       try {
         const response = await axios.post(`${process.env.VUE_APP_API_URL}/run-predict`,
           {
-            model_path: `upload/${this.selected.model_name}`, // upload/
+            model_path: `upload/${sessionStorage.getItem('username')}/${this.selected.model_name}`, // upload/
             mode: this.selected.mode,
-            data_path: `upload/${this.selected.data_name}`, // upload/
+            data_path: `upload/${sessionStorage.getItem('username')}/${this.selected.data_name}`, // upload/
             output_name: this.selected.output_name,
             input_values: this.selected.input_values,
             label_column: this.selected.label_column,
+            username: sessionStorage.getItem('username'),
           },
-          {
-            signal: this.controller.signal
-          }
         )
-        if (response.data.status == "success" && !this.isAborted) {
+        if (this.isUnmounted) return // 若頁面已離開就不要繼續處理
+        if (response.data.status == "success") {
           this.output = response.data
           this.modal.title = this.$t('lblPredictionCompleted')
           this.modal.icon = 'success'
           if (this.selected.mode === 'file') {
-            this.modal.content = this.$t('msgFileDownloaded')
-            this.msgResult = this.$t('msgFileDownloaded')
-            // download api
-            // 結果檔案會暫時存在 data/result/ 裡面，懶得改了，牽動到 predict.py，好麻煩
-            const path = `data/result/${this.selected.output_name}${this.watched.file_extension}`
-            await this.downloadFile(path)
+            this.modal.content = this.$t('lblPredictionCompleted')
+            this.msgResult = this.$t('lblPredictionCompleted')
           } else if (this.selected.mode === 'input') {
-            this.modal.content = this.$t('lblPredictionResult') + ':' + this.output.message[0]
-            this.msgResult = this.$t('lblPredictionResult') + ':' + this.output.message[0]
+            this.modal.content = this.$t('lblPredictionResult') + ':' + this.output.prediction[0]
+            this.msgResult = this.$t('lblPredictionResult') + ':' + this.output.prediction[0]
           }
           this.openModalNotification()
         } else if (response.data.status == "error") {
@@ -649,11 +617,7 @@ export default {
           this.openModalNotification()
         }
       } catch (error) {
-        if (axios.isCancel(error)) {
-          console.warn("Prediction aborted")
-          this.isAborted = true
-          return
-        }
+        if (this.isUnmounted) return // 頁面已離開就忽略錯誤處理
         this.output = {
           status: 'error',
           message: error,
@@ -662,9 +626,8 @@ export default {
         this.modal.icon = 'error'
         this.modal.content = error
         this.openModalNotification()
-      } finally {
-        this.loading = false
       }
+      this.loading = false
     },
 
     async downloadFile(path) {

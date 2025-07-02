@@ -767,11 +767,16 @@ def run_predict():
     output_name = data.get('output_name')  # 輸出檔案名稱（file 模式）
     input_values = data.get('input_values')  # 特徵值陣列（input 模式）
     label_column = data.get('label_column')
+    username = data.get('username')
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    task_id = f"{timestamp}"
+    task_dir = os.path.join("model", username, timestamp)   # model/<username>/<timestamp>/
 
     if not model_path or not mode:
         return jsonify({"status": "error", "message": "model_path and mode are necessary args"})
 
-    command = ['python', 'predict.py', model_path, mode]
+    command = ['python', 'predict.py', model_path, mode, task_dir]
     if mode == 'file':
         if not data_path or not output_name:
             return jsonify({"status": "error", "message": "data_path 和 output_name 是 file 模式下的必要參數"})
@@ -782,24 +787,18 @@ def run_predict():
         command.extend(['--input_values'] + list(map(str, input_values)))
 
     try:
-        # # 呼叫子進程執行腳本
-        # result = subprocess.run(
-        #     command,
-        #     stdout=subprocess.PIPE,
-        #     stderr=subprocess.PIPE,
-        #     text=True
-        # )
-
-        # # print("STDOUT:", result.stdout)  # 打印标准输出
-        # # print("STDERR:", result.stderr)  # 打印标准错误
-
-        # if result.returncode != 0:
-        #     return jsonify({
-        #         "status": "error",
-        #         "message": result.stderr
-        #     })
-        
-        # return jsonify(json.loads(result.stdout))
+        os.makedirs(task_dir, exist_ok=True)
+        # status.json
+        status = {
+            "task_id": task_id,
+            "username": username,
+            "status": "running",
+            "params": data,
+            "start_time": timestamp,
+            "api": "predict",
+        }
+        with open(os.path.join(task_dir, "status.json"), "w", encoding="utf-8") as f:
+            json.dump(status, f, indent=4, ensure_ascii=False)
 
         # 使用 Popen 開啟子進程
         current_process = subprocess.Popen(
@@ -809,19 +808,46 @@ def run_predict():
             text=True
         )
 
+        process_pool[task_id] = {
+            "process": current_process,
+            "username": username,
+            "task_dir": task_dir
+        }
+
         # 等待子進程結束並接收輸出
         stdout, stderr = current_process.communicate()
-
         # --- DEBUG 輸出（如需印出，請取消註解） ---
         # print("STDOUT:", stdout, flush=True)
         # print("STDERR:", stderr, flush=True)
 
+        # 如果 task_id 不在 process_pool，代表已被終止
+        if task_id not in process_pool:
+            # 不寫 status，避免覆蓋已寫入的 terminated 狀態
+            return jsonify({
+                "status": "terminated",
+                "message": "Task was terminated by user.",
+                "task_id": task_id
+            })
+
         if current_process.returncode != 0:
+            # 更新 status.json 為 error
+            status['status'] = 'error'
+            status['msg'] = stderr
+            with open(os.path.join(task_dir, "status.json"), "w", encoding="utf-8") as f:
+                json.dump(status, f, indent=4, ensure_ascii=False)
+            # 任務完成後移除該 process 記錄
+            process_pool.pop(task_id, None)
             return jsonify({
                 "status": "error",
                 "message": stderr
             })
-
+        # 更新 status.json 為 success
+        status['status'] = 'success'
+        status['end_time'] = datetime.now().strftime("%Y%m%d_%H%M%S")
+        with open(os.path.join(task_dir, "status.json"), "w", encoding="utf-8") as f:
+            json.dump(status, f, indent=4, ensure_ascii=False)
+        # 任務完成後移除該 process 記錄
+        process_pool.pop(task_id, None)
         return jsonify(json.loads(stdout))
     
     except Exception as e:
