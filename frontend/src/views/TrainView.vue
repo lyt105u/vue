@@ -1362,7 +1362,7 @@ export default {
           split_strategy: this.selected.split_strategy,
           split_value: this.selected.split_value,
           model_name: this.selected.model_name,
-          username: sessionStorage.getItem('username')
+          username: sessionStorage.getItem('username'),
         }
 
         if (this.selected.model_type == "xgb") {
@@ -1420,6 +1420,7 @@ export default {
         }
 
         const response = await axios.post(`${process.env.VUE_APP_API_URL}/${api}`, payload)
+        if (this.isUnmounted) return // 若頁面已離開就不要繼續處理
         this.output = response.data
         if (this.output.status == 'success') {
           // 顯示用，讓切換 split_strategy 不會拿掉 results
@@ -1443,6 +1444,7 @@ export default {
           this.output = null
         }
       } catch (error) {
+        if (this.isUnmounted) return // 頁面已離開就忽略錯誤處理
         this.output = {
           "status": "error",
           "message": error,
@@ -1502,7 +1504,6 @@ export default {
 
     async downloadReport() {
       this.loading = true
-      console.log(this.output.task_dir)
       try {
         const response = await axios.post(`${process.env.VUE_APP_API_URL}/download-report`, {
           task_dir: this.output.task_dir,
@@ -1517,7 +1518,10 @@ export default {
         link.click()
         link.remove()
       } catch (err) {
-        console.error('下載檔案失敗：', err)
+        this.modal.title = this.$t('lblError')
+        this.modal.icon = 'error'
+        this.modal.content = err
+        this.openModalNotification()
       }
       this.loading = false
     },
