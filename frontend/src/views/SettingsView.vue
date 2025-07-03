@@ -17,12 +17,16 @@
       <label class="col-sm-3 col-form-label">{{ $t('lblTabularData') }}</label>
       <div class="col-sm-2">
         <button
+          v-if="!loading"
           @click="deleteSelectedFile"
           class="btn btn-outline-danger"
-          :disabled="loading || selectedFileCnt==0"
+          :disabled="selectedFileCnt==0"
         >
           <i class="fa fa-trash me-1"></i>
           {{ $t('lblDelete')}}
+        </button>
+        <button v-if="loading" class="btn btn-outline-danger" type="button" disabled>
+          <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
         </button>
       </div>
     </div>
@@ -59,12 +63,16 @@
       <label class="col-sm-3 col-form-label">{{ $t('lblModelFile') }}</label>
       <div class="col-sm-2">
         <button
+          v-if="!loading"
           @click="deleteSelectedModel"
           class="btn btn-outline-danger"
-          :disabled="loading || selectedModelCnt==0"
+          :disabled="selectedModelCnt==0"
         >
           <i class="fa fa-trash me-1"></i>
           {{ $t('lblDelete')}}
+        </button>
+        <button v-if="loading" class="btn btn-outline-danger" type="button" disabled>
+          <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
         </button>
       </div>
     </div>
@@ -100,12 +108,16 @@
       <label class="col-sm-3 col-form-label">{{ $t('lblExeResults') }}</label>
       <div class="col-sm-2">
         <button
+          v-if="!loading"
           @click="deleteSelectedTask"
           class="btn btn-outline-danger"
-          :disabled="loading || selectedTaskCnt==0"
+          :disabled="selectedTaskCnt==0"
         >
           <i class="fa fa-trash me-1"></i>
           {{ $t('lblDelete')}}
+        </button>
+        <button v-if="loading" class="btn btn-outline-danger" type="button" disabled>
+          <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
         </button>
       </div>
     </div>
@@ -240,42 +252,7 @@ export default {
       selectAllModel: false,
       displayedModels: [],
 
-      tasks: [
-        // {
-        //   "api": "train",
-        //   "username": "alice",
-        //   "status": "success",
-        //   "params": "...",
-        //   "start_time": "20250701_202245",
-        //   "end_time": "20250701_202323"
-        // },
-        // {
-        //   "task_id": "20250701_202136",
-        //   "username": "alice",
-        //   "status": "success",
-        //   "params": {
-        //     "file_path": "upload/alice/高醫csv有答案.csv",
-        //     "label_column": "label",
-        //     "split_strategy": "train_test_split",
-        //     "split_value": "0.8",
-        //     "model_name": "xgb",
-        //     "username": "alice",
-        //     "n_estimators": "100",
-        //     "learning_rate": "0.300000012",
-        //     "max_depth": "6"
-        //   },
-        //   "start_time": "20250701_202136",
-        //   "api": "train",
-        //   "end_time": "20250701_202215"
-        // },
-        // {
-        //   "api": "train",
-        //   "username": "carol",
-        //   "status": "running",
-        //   "params": "...",
-        //   "start_time": "20250701_203233",
-        // }
-      ],
+      tasks: [],
       selectAllTask: false,
     }
   },
