@@ -236,7 +236,7 @@ def run_train_xgb():
         current_process = subprocess.Popen(
             args,
             stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
             text=True
         )
 
@@ -259,18 +259,18 @@ def run_train_xgb():
                 "message": "Task was terminated by user.",
                 "task_id": task_id
             })
-        
-        if current_process.returncode != 0:
+        result = json.loads(stdout)
+        if result.get("status") == "error" or current_process.returncode != 0:
             # 更新 status.json 為 error
             status['status'] = 'error'
-            status['msg'] = stderr
+            status['msg'] = result.get("message") or stderr or "Unknown error."
             with open(os.path.join(task_dir, "status.json"), "w", encoding="utf-8") as f:
                 json.dump(status, f, indent=4, ensure_ascii=False)
             # 任務完成後移除該 process 記錄
             process_pool.pop(task_id, None)
             return jsonify({
                 "status": "error",
-                "message": stderr
+                "message": result.get("message") or stderr or "Unknown error."
             })
         # 更新 status.json 為 success
         status['status'] = 'success'
@@ -330,7 +330,7 @@ def run_train_lgbm():
         current_process = subprocess.Popen(
             args,
             stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
             text=True
         )
 
@@ -353,18 +353,18 @@ def run_train_lgbm():
                 "message": "Task was terminated by user.",
                 "task_id": task_id
             })
-
-        if current_process.returncode != 0:
+        result = json.loads(stdout)
+        if result.get("status") == "error" or current_process.returncode != 0:
             # 更新 status.json 為 error
             status['status'] = 'error'
-            status['msg'] = stderr
+            status['msg'] = result.get("message") or stderr or "Unknown error."
             with open(os.path.join(task_dir, "status.json"), "w", encoding="utf-8") as f:
                 json.dump(status, f, indent=4, ensure_ascii=False)
             # 任務完成後移除該 process 記錄
             process_pool.pop(task_id, None)
             return jsonify({
                 "status": "error",
-                "message": stderr
+                "message": result.get("message") or stderr or "Unknown error."
             })
         # 更新 status.json 為 success
         status['status'] = 'success'
@@ -424,7 +424,7 @@ def run_train_rf():
         current_process = subprocess.Popen(
             args,
             stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
             text=True
         )
         process_pool[task_id] = {
@@ -446,18 +446,18 @@ def run_train_rf():
                 "message": "Task was terminated by user.",
                 "task_id": task_id
             })
-        
-        if current_process.returncode != 0:
+        result = json.loads(stdout)
+        if result.get("status") == "error" or current_process.returncode != 0:
             # 更新 status.json 為 error
             status['status'] = 'error'
-            status['msg'] = stderr
+            status['msg'] = result.get("message") or stderr or "Unknown error."
             with open(os.path.join(task_dir, "status.json"), "w", encoding="utf-8") as f:
                 json.dump(status, f, indent=4, ensure_ascii=False)
             # 任務完成後移除該 process 記錄
             process_pool.pop(task_id, None)
             return jsonify({
                 "status": "error",
-                "message": stderr
+                "message": result.get("message") or stderr or "Unknown error."
             })
         # 更新 status.json 為 success
         status['status'] = 'success'
@@ -516,7 +516,7 @@ def run_train_lr():
         current_process = subprocess.Popen(
             args,
             stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
             text=True
         )
 
@@ -539,18 +539,18 @@ def run_train_lr():
                 "message": "Task was terminated by user.",
                 "task_id": task_id
             })
-        
-        if current_process.returncode != 0:
+        result = json.loads(stdout)
+        if result.get("status") == "error" or current_process.returncode != 0:
             # 更新 status.json 為 error
             status['status'] = 'error'
-            status['msg'] = stderr
+            status['msg'] = result.get("message") or stderr or "Unknown error."
             with open(os.path.join(task_dir, "status.json"), "w", encoding="utf-8") as f:
                 json.dump(status, f, indent=4, ensure_ascii=False)
             # 任務完成後移除該 process 記錄
             process_pool.pop(task_id, None)
             return jsonify({
                 "status": "error",
-                "message": stderr
+                "message": result.get("message") or stderr or "Unknown error."
             })
         # 更新 status.json 為 success
         status['status'] = 'success'
@@ -609,7 +609,7 @@ def run_train_tabnet():
         current_process = subprocess.Popen(
             args,
             stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
             text=True
         )
 
@@ -632,17 +632,18 @@ def run_train_tabnet():
                 "message": "Task was terminated by user.",
                 "task_id": task_id
             })
-        if current_process.returncode != 0:
+        result = json.loads(stdout)
+        if result.get("status") == "error" or current_process.returncode != 0:
             # 更新 status.json 為 error
             status['status'] = 'error'
-            status['msg'] = stderr
+            status['msg'] = result.get("message") or stderr or "Unknown error."
             with open(os.path.join(task_dir, "status.json"), "w", encoding="utf-8") as f:
                 json.dump(status, f, indent=4, ensure_ascii=False)
             # 任務完成後移除該 process 記錄
             process_pool.pop(task_id, None)
             return jsonify({
                 "status": "error",
-                "message": stderr
+                "message": result.get("message") or stderr or "Unknown error."
             })
         # 更新 status.json 為 success
         status['status'] = 'success'
@@ -706,7 +707,7 @@ def run_train_mlp():
         current_process = subprocess.Popen(
             args,
             stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
             text=True
         )
 
@@ -729,18 +730,18 @@ def run_train_mlp():
                 "message": "Task was terminated by user.",
                 "task_id": task_id
             })
-        
-        if current_process.returncode != 0:
+        result = json.loads(stdout)
+        if result.get("status") == "error" or current_process.returncode != 0:
             # 更新 status.json 為 error
             status['status'] = 'error'
-            status['msg'] = stderr
+            status['msg'] = result.get("message") or stderr or "Unknown error."
             with open(os.path.join(task_dir, "status.json"), "w", encoding="utf-8") as f:
                 json.dump(status, f, indent=4, ensure_ascii=False)
             # 任務完成後移除該 process 記錄
             process_pool.pop(task_id, None)
             return jsonify({
                 "status": "error",
-                "message": stderr
+                "message": result.get("message") or stderr or "Unknown error."
             })
         # 更新 status.json 為 success
         status['status'] = 'success'
@@ -804,7 +805,7 @@ def run_predict():
         current_process = subprocess.Popen(
             command,
             stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
             text=True
         )
 
@@ -828,18 +829,18 @@ def run_predict():
                 "message": "Task was terminated by user.",
                 "task_id": task_id
             })
-
-        if current_process.returncode != 0:
+        result = json.loads(stdout)
+        if result.get("status") == "error" or current_process.returncode != 0:
             # 更新 status.json 為 error
             status['status'] = 'error'
-            status['msg'] = stderr
+            status['msg'] = result.get("message") or stderr or "Unknown error."
             with open(os.path.join(task_dir, "status.json"), "w", encoding="utf-8") as f:
                 json.dump(status, f, indent=4, ensure_ascii=False)
             # 任務完成後移除該 process 記錄
             process_pool.pop(task_id, None)
             return jsonify({
                 "status": "error",
-                "message": stderr
+                "message": result.get("message") or stderr or "Unknown error."
             })
         # 更新 status.json 為 success
         status['status'] = 'success'
@@ -892,7 +893,7 @@ def run_evaluate():
         current_process = subprocess.Popen(
             args,
             stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
             text=True
         )
 
@@ -915,18 +916,18 @@ def run_evaluate():
                 "message": "Task was terminated by user.",
                 "task_id": task_id
             })
-        
-        if current_process.returncode != 0:
+        result = json.loads(stdout)
+        if result.get("status") == "error" or current_process.returncode != 0:
             # 更新 status.json 為 error
             status['status'] = 'error'
-            status['msg'] = stderr
+            status['msg'] = result.get("message") or stderr or "Unknown error."
             with open(os.path.join(task_dir, "status.json"), "w", encoding="utf-8") as f:
                 json.dump(status, f, indent=4, ensure_ascii=False)
             # 任務完成後移除該 process 記錄
             process_pool.pop(task_id, None)
             return jsonify({
                 "status": "error",
-                "message": stderr
+                "message": result.get("message") or stderr or "Unknown error."
             })
         # 更新 status.json 為 success
         status['status'] = 'success'
