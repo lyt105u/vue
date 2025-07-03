@@ -18,6 +18,8 @@ import base64
 import zipfile
 import io
 from docx import Document
+from cleaner import scheduled_clean
+import threading
 
 # 建立 Flask 應用，指定靜態資源位置（給 Vue build 後的檔案用）
 app = Flask(__name__, static_folder='static', static_url_path='')
@@ -37,6 +39,10 @@ def not_found(e):
 
 # 儲存每個正在執行的 task_id 與對應的子進程物件
 process_pool = {}
+
+# 定時清理 model/ 和 upload/，到 cleaner.py 設定時間
+t = threading.Thread(target=scheduled_clean, daemon=True)
+t.start()
 
 @app.route('/login', methods=['POST'])
 def login():
