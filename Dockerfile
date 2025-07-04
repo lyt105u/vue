@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y \
     git \
     curl \
     # 安裝 Noto 字型支援中文
-    fonts-noto-cjk \    
+    fonts-noto-cjk \
     && rm -rf /var/lib/apt/lists/*
 
 # 安裝 Python 套件
@@ -33,4 +33,5 @@ COPY --from=frontend-builder /app/dist ./static
 RUN python tool_checkVersion.py
 
 EXPOSE 5000
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "--timeout", "300", "--log-level", "info", "--access-logfile", "-", "--error-logfile", "-", "app:app"]
+# 改成 -w 1 --threads 4 (1個處理程序+4個執行緒)，取代原本的 -w 4 (4個獨立處理程序)，因為4個獨立處理程序會不共享記憶體，造成 process_pool 失效
+CMD ["gunicorn", "-w", "1", "--threads", "4", "-b", "0.0.0.0:5000", "--timeout", "300", "--log-level", "info", "--access-logfile", "-", "--error-logfile", "-", "app:app"]
