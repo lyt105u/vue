@@ -25,8 +25,6 @@ import threading
 app = Flask(__name__, static_folder='static', static_url_path='')
 CORS(app, expose_headers=["Content-Disposition"])  # 啟用跨域支持
 
-current_process = None
-
 # 當訪問 "/" 時，回傳 index.html
 @app.route('/')
 def index():
@@ -117,7 +115,6 @@ def list_files():
 
 @app.route('/get-field-number', methods=['POST'])
 def get_field_number():
-    global current_process
     model_path = request.json.get('model_path', None)
     if not model_path:
         return jsonify({
@@ -151,14 +148,14 @@ def get_field_number():
             model_path
         ]
         # 執行 Python 訓練腳本（非阻塞，可終止）
-        current_process = subprocess.Popen(
+        p = subprocess.Popen(
             args,
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
             text=True
         )
-        stdout, stderr = current_process.communicate()
-        if current_process.returncode != 0:
+        stdout, stderr = p.communicate()
+        if p.returncode != 0:
             return jsonify({
                 "status": "error",
                 "message": stderr
@@ -170,21 +167,9 @@ def get_field_number():
             "status": "error",
             "message": str(e)
         })
-    
-@app.route('/cancel', methods=['POST'])
-def cancel_train():
-    global current_process
-    if current_process and current_process.poll() is None:
-        current_process.terminate()
-        print("API Canceled!")
-        return jsonify({"status": "terminated"})
-    else:
-        print("Cancel API failed!")
-        return jsonify({"status": "no active process"})
 
 @app.route('/run-train-xgb', methods=['POST'])
 def run_train_xgb():
-    global current_process
     data = request.get_json()
     file_path = data.get('file_path')
     label_column = data.get('label_column')
@@ -239,7 +224,7 @@ def run_train_xgb():
             task_dir
         ]
         # 執行 Python 訓練腳本（非阻塞，可終止）
-        current_process = subprocess.Popen(
+        p = subprocess.Popen(
             args,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -247,12 +232,12 @@ def run_train_xgb():
         )
 
         process_pool[task_id] = {
-            "process": current_process,
+            "process": p,
             "username": username,
             "task_dir": task_dir
         }
 
-        stdout, stderr = current_process.communicate()
+        stdout, stderr = p.communicate()
         # --- DEBUG 輸出（如需印出，請取消註解） ---
         # print("STDOUT:", stdout, flush=True)
         # print("STDERR:", stderr, flush=True)
@@ -266,7 +251,7 @@ def run_train_xgb():
                 "task_id": task_id
             })
         result = json.loads(stdout)
-        if result.get("status") == "error" or current_process.returncode != 0:
+        if result.get("status") == "error" or p.returncode != 0:
             # 更新 status.json 為 error
             status['status'] = 'error'
             status['msg'] = result.get("message") or stderr or "Unknown error."
@@ -295,7 +280,6 @@ def run_train_xgb():
     
 @app.route('/run-train-lgbm', methods=['POST'])
 def run_train_lgbm():
-    global current_process
     data = request.get_json()
     file_path = data.get('file_path')
     label_column = data.get('label_column')
@@ -333,7 +317,7 @@ def run_train_lgbm():
             task_dir
         ]
         # 執行 Python 訓練腳本（非阻塞，可終止）
-        current_process = subprocess.Popen(
+        p = subprocess.Popen(
             args,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -341,12 +325,12 @@ def run_train_lgbm():
         )
 
         process_pool[task_id] = {
-            "process": current_process,
+            "process": p,
             "username": username,
             "task_dir": task_dir
         }
 
-        stdout, stderr = current_process.communicate()
+        stdout, stderr = p.communicate()
         # --- DEBUG 輸出（如需印出，請取消註解） ---
         # print("STDOUT:", stdout, flush=True)
         # print("STDERR:", stderr, flush=True)
@@ -360,7 +344,7 @@ def run_train_lgbm():
                 "task_id": task_id
             })
         result = json.loads(stdout)
-        if result.get("status") == "error" or current_process.returncode != 0:
+        if result.get("status") == "error" or p.returncode != 0:
             # 更新 status.json 為 error
             status['status'] = 'error'
             status['msg'] = result.get("message") or stderr or "Unknown error."
@@ -389,7 +373,6 @@ def run_train_lgbm():
     
 @app.route('/run-train-rf', methods=['POST'])
 def run_train_rf():
-    global current_process
     data = request.get_json()
     file_path = data.get('file_path')
     label_column = data.get('label_column')
@@ -427,19 +410,19 @@ def run_train_rf():
             task_dir
         ]
         # 執行 Python 訓練腳本（非阻塞，可終止）
-        current_process = subprocess.Popen(
+        p = subprocess.Popen(
             args,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True
         )
         process_pool[task_id] = {
-            "process": current_process,
+            "process": p,
             "username": username,
             "task_dir": task_dir
         }
 
-        stdout, stderr = current_process.communicate()
+        stdout, stderr = p.communicate()
         # --- DEBUG 輸出（如需印出，請取消註解） ---
         # print("STDOUT:", stdout, flush=True)
         # print("STDERR:", stderr, flush=True)
@@ -453,7 +436,7 @@ def run_train_rf():
                 "task_id": task_id
             })
         result = json.loads(stdout)
-        if result.get("status") == "error" or current_process.returncode != 0:
+        if result.get("status") == "error" or p.returncode != 0:
             # 更新 status.json 為 error
             status['status'] = 'error'
             status['msg'] = result.get("message") or stderr or "Unknown error."
@@ -482,7 +465,6 @@ def run_train_rf():
 
 @app.route('/run-train-lr', methods=['POST'])
 def run_train_lr():
-    global current_process
     data = request.get_json()
     file_path = data.get('file_path')
     label_column = data.get('label_column')
@@ -519,7 +501,7 @@ def run_train_lr():
             task_dir
         ]
         # 執行 Python 訓練腳本（非阻塞，可終止）
-        current_process = subprocess.Popen(
+        p = subprocess.Popen(
             args,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -527,12 +509,12 @@ def run_train_lr():
         )
 
         process_pool[task_id] = {
-            "process": current_process,
+            "process": p,
             "username": username,
             "task_dir": task_dir
         }
 
-        stdout, stderr = current_process.communicate()
+        stdout, stderr = p.communicate()
         # --- DEBUG 輸出（如需印出，請取消註解） ---
         # print("STDOUT:", stdout, flush=True)
         # print("STDERR:", stderr, flush=True)
@@ -546,7 +528,7 @@ def run_train_lr():
                 "task_id": task_id
             })
         result = json.loads(stdout)
-        if result.get("status") == "error" or current_process.returncode != 0:
+        if result.get("status") == "error" or p.returncode != 0:
             # 更新 status.json 為 error
             status['status'] = 'error'
             status['msg'] = result.get("message") or stderr or "Unknown error."
@@ -575,7 +557,6 @@ def run_train_lr():
     
 @app.route('/run-train-tabnet', methods=['POST'])
 def run_train_tabnet():
-    global current_process
     data = request.get_json()
     file_path = data.get('file_path')
     label_column = data.get('label_column')
@@ -612,7 +593,7 @@ def run_train_tabnet():
             task_dir
         ]
         # 執行 Python 訓練腳本（非阻塞，可終止）
-        current_process = subprocess.Popen(
+        p = subprocess.Popen(
             args,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -620,12 +601,12 @@ def run_train_tabnet():
         )
 
         process_pool[task_id] = {
-            "process": current_process,
+            "process": p,
             "username": username,
             "task_dir": task_dir
         }
 
-        stdout, stderr = current_process.communicate()
+        stdout, stderr = p.communicate()
         # --- DEBUG 輸出（如需印出，請取消註解） ---
         # print("STDOUT:", stdout, flush=True)
         # print("STDERR:", stderr, flush=True)
@@ -639,7 +620,7 @@ def run_train_tabnet():
                 "task_id": task_id
             })
         result = json.loads(stdout)
-        if result.get("status") == "error" or current_process.returncode != 0:
+        if result.get("status") == "error" or p.returncode != 0:
             # 更新 status.json 為 error
             status['status'] = 'error'
             status['msg'] = result.get("message") or stderr or "Unknown error."
@@ -668,7 +649,6 @@ def run_train_tabnet():
     
 @app.route('/run-train-mlp', methods=['POST'])
 def run_train_mlp():
-    global current_process
     data = request.get_json()
     file_path = data.get('file_path')
     label_column = data.get('label_column')
@@ -710,7 +690,7 @@ def run_train_mlp():
             task_dir
         ]
         # 執行 Python 訓練腳本（非阻塞，可終止）
-        current_process = subprocess.Popen(
+        p = subprocess.Popen(
             args,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -718,12 +698,12 @@ def run_train_mlp():
         )
 
         process_pool[task_id] = {
-            "process": current_process,
+            "process": p,
             "username": username,
             "task_dir": task_dir
         }
 
-        stdout, stderr = current_process.communicate()
+        stdout, stderr = p.communicate()
         # --- DEBUG 輸出（如需印出，請取消註解） ---
         # print("STDOUT:", stdout, flush=True)
         # print("STDERR:", stderr, flush=True)
@@ -737,7 +717,7 @@ def run_train_mlp():
                 "task_id": task_id
             })
         result = json.loads(stdout)
-        if result.get("status") == "error" or current_process.returncode != 0:
+        if result.get("status") == "error" or p.returncode != 0:
             # 更新 status.json 為 error
             status['status'] = 'error'
             status['msg'] = result.get("message") or stderr or "Unknown error."
@@ -766,7 +746,6 @@ def run_train_mlp():
 
 @app.route('/run-predict', methods=['POST'])
 def run_predict():
-    global current_process
     data = request.get_json()
     model_path = data.get('model_path')  # 模型路徑
     mode = data.get('mode')             # 模式：file 或 input
@@ -808,7 +787,7 @@ def run_predict():
             json.dump(status, f, indent=4, ensure_ascii=False)
 
         # 使用 Popen 開啟子進程
-        current_process = subprocess.Popen(
+        p = subprocess.Popen(
             command,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -816,13 +795,13 @@ def run_predict():
         )
 
         process_pool[task_id] = {
-            "process": current_process,
+            "process": p,
             "username": username,
             "task_dir": task_dir
         }
 
         # 等待子進程結束並接收輸出
-        stdout, stderr = current_process.communicate()
+        stdout, stderr = p.communicate()
         # --- DEBUG 輸出（如需印出，請取消註解） ---
         # print("STDOUT:", stdout, flush=True)
         # print("STDERR:", stderr, flush=True)
@@ -836,7 +815,7 @@ def run_predict():
                 "task_id": task_id
             })
         result = json.loads(stdout)
-        if result.get("status") == "error" or current_process.returncode != 0:
+        if result.get("status") == "error" or p.returncode != 0:
             # 更新 status.json 為 error
             status['status'] = 'error'
             status['msg'] = result.get("message") or stderr or "Unknown error."
@@ -865,7 +844,6 @@ def run_predict():
 
 @app.route('/run-evaluate', methods=['POST'])
 def run_evaluate():
-    global current_process
     data = request.get_json()
     model_path = data.get('model_path')  # 模型路徑
     data_path = data.get('data_path')   # 輸入檔案路徑
@@ -896,7 +874,7 @@ def run_evaluate():
             task_dir
         ]
         # 執行 Python 訓練腳本（非阻塞，可終止）
-        current_process = subprocess.Popen(
+        p = subprocess.Popen(
             args,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -904,12 +882,12 @@ def run_evaluate():
         )
 
         process_pool[task_id] = {
-            "process": current_process,
+            "process": p,
             "username": username,
             "task_dir": task_dir
         }
 
-        stdout, stderr = current_process.communicate()
+        stdout, stderr = p.communicate()
         # --- DEBUG 輸出（如需印出，請取消註解） ---
         # print("STDOUT:", stdout, flush=True)
         # print("STDERR:", stderr, flush=True)
@@ -923,7 +901,7 @@ def run_evaluate():
                 "task_id": task_id
             })
         result = json.loads(stdout)
-        if result.get("status") == "error" or current_process.returncode != 0:
+        if result.get("status") == "error" or p.returncode != 0:
             # 更新 status.json 為 error
             status['status'] = 'error'
             status['msg'] = result.get("message") or stderr or "Unknown error."
