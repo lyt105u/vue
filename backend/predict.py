@@ -43,6 +43,9 @@ except Exception:
 matplotlib.rcParams['axes.unicode_minus'] = False
 import shap
 from lime.lime_tabular import LimeTabularExplainer
+from sklearn.pipeline import Pipeline
+from sklearn.linear_model import SGDClassifier
+from sklearn.neural_network import MLPClassifier
 
 def load_model(model_path):
     if model_path.lower().endswith(".json"):  # .json 結尾
@@ -76,15 +79,76 @@ def explain_with_shap(model, x_test, feature_names):
     result = {}
     try:
         x_test = np.array(x_test, dtype=np.float32)
-        explainer = shap.Explainer(model, x_test)
-        shap_values = explainer(x_test)
+        is_tabnet = (
+            hasattr(model, "predict_proba") and
+            not hasattr(model, "predict")  # TabNet 沒有原生 predict，只有 predict_proba
+        ) or model.__class__.__name__.lower().startswith("tabnet")
 
-        if hasattr(shap_values, "values") and shap_values.values.ndim == 3:
-            shap_values_for_plot = shap_values.values[..., 1]
+        if is_tabnet:
+            # 專門為 TabNet 使用 KernelExplainer
+            background = x_test[:20]
+            explain_data = x_test[:5]
+
+            explainer = shap.KernelExplainer(model.predict_proba, background)
+            shap_values = explainer.shap_values(explain_data)
+            shap_data = explain_data
+
+            shap_values = np.array(shap_values)
+            if shap_values.ndim == 3:
+                shap_values_for_plot = shap_values[:, :, 1]
+            elif isinstance(shap_values, list) and len(shap_values) == 2:
+                shap_values_for_plot = shap_values[1]
+            else:
+                shap_values_for_plot = shap_values
+
+            if shap_values_for_plot.ndim != 2:
+                raise ValueError(f"shap_values shape is invalid: {shap_values_for_plot.shape}")
+        
+        elif isinstance(model, Pipeline) and "sgdclassifier" in model.named_steps:
+            estimator = model.named_steps["sgdclassifier"]
+            scaler = model.named_steps["standardscaler"]
+            x_scaled = scaler.transform(x_test)
+
+            explainer = shap.LinearExplainer(estimator, x_scaled, feature_perturbation="interventional")
+            shap_values = explainer.shap_values(x_scaled)
+            shap_data = x_scaled
+
+            if isinstance(shap_values, list):
+                shap_values_for_plot = shap_values[1]
+            else:
+                shap_values_for_plot = shap_values
+
+        elif isinstance(model, MLPClassifier):
+            # 使用 lambda 包裝 MLPClassifier，避免 KernelExplainer 報錯
+            background = x_test[:20]
+            explain_data = x_test[:5]
+
+            predict_fn = lambda x: model.predict_proba(x)
+            explainer = shap.KernelExplainer(predict_fn, background)
+            shap_values = explainer.shap_values(explain_data)
+            shap_data = explain_data
+
+            shap_values = np.array(shap_values)
+            if shap_values.ndim == 3:
+                shap_values_for_plot = shap_values[:, :, 1]
+            elif isinstance(shap_values, list) and len(shap_values) == 2:
+                shap_values_for_plot = shap_values[1]
+            else:
+                shap_values_for_plot = shap_values
+
+            if shap_values_for_plot.ndim != 2:
+                raise ValueError(f"shap_values shape is invalid: {shap_values_for_plot.shape}")
+
         else:
-            shap_values_for_plot = shap_values.values
+            # 其他模型使用 shap.Explainer（TreeExplainer, etc.）
+            explainer = shap.Explainer(model, x_test)
+            shap_values = explainer(x_test, check_additivity=False)
+            shap_data = shap_values.data
 
-        shap_data = shap_values.data
+            if hasattr(shap_values, "values") and shap_values.values.ndim == 3:
+                shap_values_for_plot = shap_values.values[..., 1]
+            else:
+                shap_values_for_plot = shap_values.values
 
         # 平均重要度
         shap_importance = np.abs(shap_values_for_plot).mean(axis=0)
