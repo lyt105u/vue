@@ -136,7 +136,7 @@
   "msgFooter2": "指導教授：林俊宏教授",
   "msgSysRunning": "系統運行中，確定要離開嗎？",
   "msgTrainLonger": "訓練耗時將比其他模型還要來得久。",
-  "msgLabelColumnClass": "正確答案欄位中必須包含兩種以上的分類。",
+  "msgLabelColumnClass": "正確答案欄位必須是二元分類（只能包含 0 和 1）。",
   "msgNotOnList": "不在名單中。",
   "msgItemsDeleted": "以下項目已被刪除：",
   "msgTerminated": "已被終止。",

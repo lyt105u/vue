@@ -136,7 +136,7 @@
   "msgFooter2": "Advisor: Prof. Chun-Hung Richard Lin",
   "msgSysRunning": "The system is still running. Are you sure you want to leave?",
   "msgTrainLonger": "The training process will take much longer than other models.",
-  "msgLabelColumnClass": "The True Label Column must contain at least two different classes.",
+  "msgLabelColumnClass": "The True Label Column must be binary (containing only 0 and 1).",
   "msgNotOnList": "is not on the list.",
   "msgItemsDeleted": "The following items have been deleted:",
   "msgTerminated": "has been terminated.",

@@ -595,6 +595,36 @@ export default {
       this.loading = true
       this.output = null
 
+      // 檢查 label 是否只有一種 class
+      try {
+        const response = await axios.post(`${process.env.VUE_APP_API_URL}/check-label-uniqueness`, {
+          file_path: `upload/${sessionStorage.getItem('username')}/${this.selected.data_name}`, // upload/
+          label_column: this.selected.label_column
+        })
+        if (response.data.status == "errorUnique") {
+          this.modal.title = this.$t('lblError')
+          this.modal.content = this.$t('msgLabelColumnClass')
+          this.modal.icon = 'error'
+          this.openModalNotification()
+          this.loading = false
+          return
+        } else if (response.data.status == "error") {
+          this.modal.title = this.$t('lblError')
+          this.modal.content = response.data.message
+          this.modal.icon = 'error'
+          this.openModalNotification()
+          this.loading = false
+          return
+        }
+      } catch (error) {
+        this.modal.title = this.$t('lblError')
+        this.modal.content = error
+        this.modal.icon = 'error'
+        this.openModalNotification()
+        this.loading = false
+        return
+      }
+
       try {
         const response = await axios.post(`${process.env.VUE_APP_API_URL}/run-evaluate`,
           {
