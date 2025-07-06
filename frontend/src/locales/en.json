@@ -55,7 +55,7 @@
   "lblPredictionColumn": "Prediction Column",
   "lblAverage": "Average",
   "lblDataSplit": "Data Split",
-  "lblSplitTestTrain": "Split into test and train",
+  "lblSplitTrainTest": "Split into train and test",
   "lblKfoldValid": "K-fold Cross Validation",
   "lblRecommendedModel": "Recommended model:",
   "lblDownload": "Download",

@@ -382,7 +382,7 @@
         <div class="form-check">
           <input v-model="selected.split_strategy" class="form-check-input" type="radio" name="gridRadios" id="gridRadios1" value="train_test_split" :disabled="loading">
           <label class="form-check-label" for="gridRadios1">
-            {{ $t('lblSplitTestTrain') }}
+            {{ $t('lblSplitTrainTest') }}
           </label>
         </div>
       </div>

@@ -55,7 +55,7 @@
   "lblPredictionColumn": "預測結果欄位",
   "lblAverage": "平均",
   "lblDataSplit": "資料切分方式",
-  "lblSplitTestTrain": "切分為訓練集與測試集",
+  "lblSplitTrainTest": "切分為訓練集與測試集",
   "lblKfoldValid": "K-fold 交叉驗證",
   "lblRecommendedModel": "推薦模型：",
   "lblDownload": "下載",
