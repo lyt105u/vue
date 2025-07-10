@@ -146,5 +146,6 @@
   "msgValIntOnly": "僅允許整數",
   "msgValFloatOnly": "僅允許浮點數",
   "msgValRequireLayer2": "請填 layer_2",
-  "msgValAlphaOnly": "只允許英文字母"
+  "msgValAlphaOnly": "只允許英文字母",
+  "msgValExtension": "只允許 {types} 格式的檔案"
 }

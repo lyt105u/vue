@@ -146,5 +146,6 @@
   "msgValIntOnly": "Integer only.",
   "msgValFloatOnly": "Floating point only.",
   "msgValRequireLayer2": "layer_2 is required.",
-  "msgValAlphaOnly": "Only English letters are allowed."
+  "msgValAlphaOnly": "Only English letters are allowed.",
+  "msgValExtension": "Only {types} file formats are allowed."
 }

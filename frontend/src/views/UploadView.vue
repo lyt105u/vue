@@ -163,6 +163,14 @@ export default {
         if (!this.selected.file) {
           this.errors.file = this.$t('msgValRequired')
           isValid = false
+        } else {
+          const allowed = ['zip', 'pkl', 'json', 'csv', 'xlsx']
+          const name = this.selected.file || ''
+          const ext = name.split('.').pop().toLowerCase()
+          if (!allowed.includes(ext)) {
+            this.errors.file = this.$t('msgValExtension', { types: allowed.join(', ') })
+            isValid = false
+          }
         }
       } else if (this.selected.mode == 'samba') {
         // User Name
@@ -179,6 +187,14 @@ export default {
         if (!this.selected.remote_path) {
           this.errors.remote_path = this.$t('msgValRequired')
           isValid = false
+        } else {
+          const allowed = ['zip', 'pkl', 'json', 'csv', 'xlsx']
+          const name = this.selected.remote_path || ''
+          const ext = name.split('.').pop().toLowerCase()
+          if (!allowed.includes(ext)) {
+            this.errors.remote_path = this.$t('msgValExtension', { types: allowed.join(', ') })
+            isValid = false
+          }
         }
       }
       return isValid
