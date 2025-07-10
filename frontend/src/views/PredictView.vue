@@ -630,29 +630,6 @@ export default {
       this.loading = false
     },
 
-    async downloadFile(path) {
-      try {
-        const response = await axios.post(`${process.env.VUE_APP_API_URL}/download`, {
-          download_path: path
-        }, {
-          responseType: 'blob' // 關鍵：支援二進位檔案格式
-        })
-
-        const blob = response.data
-        const url = window.URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = path.split('/').pop()  // 取檔名
-        a.click()
-        URL.revokeObjectURL(url)
-      } catch (err) {
-        this.modal.title = this.$t('lblError')
-        this.modal.content = err
-        this.modal.icon = 'error'
-        this.openModalNotification()
-      }
-    },
-
     openModalNotification() {
       if (this.$refs.modalNotification) {
         this.$refs.modalNotification.openModal()
