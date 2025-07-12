@@ -1,4 +1,5 @@
 <template>
+  <!-- Release Note -->
   <div class="about">
     <h1>{{ $t('lblReleaseNote') }}</h1>
   </div>
@@ -11,33 +12,49 @@
   </div>
 
   <div class="accordion" id="accordionExample">
-    <!-- 第一筆 -->
+    <!-- v0.9 -->
     <div class="accordion-item">
-      <h2 class="accordion-header" @click="toggleCollapse('collapseOne')">
+      <h2 class="accordion-header" @click="toggleCollapse('collapse_0_9')">
         <button class="accordion-button collapsed" type="button">
-          v0.8
+          v0.9
         </button>
       </h2>
-      <div class="accordion-collapse collapse" ref="collapseOne">
+      <div class="accordion-collapse collapse" ref="collapse_0_9">
         <div class="accordion-body">
-          Implement the download result function.
+          <div>
+            <span class="badge rounded-pill text-bg-success">Feature</span>
+            Settings page
+          </div>
+          <div>
+            <span class="badge rounded-pill text-bg-success">Feature</span>
+            Login
+          </div>
+          <div>
+            <span class="badge rounded-pill text-bg-danger">Fix</span>
+            Show feature names correctly in SHAP and LIME images.
+          </div>
+          <div>
+            <span class="badge rounded-pill text-bg-info">Enhance</span>
+            Check uniqueness of training data's true label column.
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- 第二筆 -->
-    <!-- <div class="accordion-item">
-      <h2 class="accordion-header" @click="toggleCollapse('collapseTwo')">
+    <!-- v0.8 -->
+    <div class="accordion-item">
+      <h2 class="accordion-header" @click="toggleCollapse('collapse_0_8')">
         <button class="accordion-button collapsed" type="button">
-          v0.7
+          v0.8
         </button>
       </h2>
-      <div class="accordion-collapse collapse" ref="collapseTwo">
+      <div class="accordion-collapse collapse" ref="collapse_0_8">
         <div class="accordion-body">
-          Added model explanation modal for SHAP and LIME
+          <span class="badge rounded-pill text-bg-success">Feature</span>
+          Download result report.
         </div>
       </div>
-    </div> -->
+    </div>
   </div>
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
