@@ -38,13 +38,18 @@ def number_to_excel_col(n):
 def check_missing(df):
     coords = list(zip(*df.isnull().to_numpy().nonzero()))
     missing_positions = []
+    missing_col_indices = set()
 
     for row_idx, col_idx in coords:
+        # 缺失座標
         col_letter = number_to_excel_col(col_idx)
         excel_row = row_idx + 2  # 一律 +2，因為假設 row 0 是資料第一列，row 1 是 Excel 第3列
         missing_positions.append(f"{col_letter}{excel_row}")
-
-    return missing_positions
+        missing_col_indices.add(col_idx)
+    # 根據 df.columns 的原始順序選出有缺失的欄位名稱
+    headers = [col_name for idx, col_name in enumerate(df.columns) if idx in missing_col_indices]
+    
+    return missing_positions, headers
 
 def preview(df, max_rows=10, max_columns=30):
     total_rows = len(df)
@@ -63,12 +68,15 @@ def get_summary(df):
     numeric_df = df.select_dtypes(include='number')  # 僅處理數值欄位
     for col in numeric_df.columns:
         col_data = numeric_df[col].dropna()
+        mode_values = col_data.mode()
+        mode = float(mode_values[0]) if not mode_values.empty else None  # 只取第一個眾數
         summary_data[col] = {
             "mean": float(col_data.mean()) if not col_data.empty else None,
             "median": float(col_data.median()) if not col_data.empty else None,
             "min": float(col_data.min()) if not col_data.empty else None,
             "max": float(col_data.max()) if not col_data.empty else None,
-            "std": float(col_data.std()) if not col_data.empty else None
+            "std": float(col_data.std()) if not col_data.empty else None,
+            "mode": mode
         }
     return summary_data
 
@@ -84,17 +92,13 @@ if __name__ == "__main__":
     df = load_file(file_path)
 
     if df is not None:
-        missing_coords = check_missing(df)
+        missing_coords, missing_headers = check_missing(df)
         summary_data = get_summary(df)
-        if missing_coords:
-            print(json.dumps({
-                "status": "errorMissing",
-                "message": f"{missing_coords}"
-            }))
-        else:
-            preview_data = preview(df)
-            print(json.dumps({
-                "status": "success",
-                "preview_data": preview_data,
-                "summary": summary_data,
-            }))
+        preview_data = preview(df)
+        print(json.dumps({
+            "status": "success",
+            "preview_data": preview_data,
+            "summary": summary_data,
+            "missing_cords": missing_coords,
+            "missing_header": missing_headers
+        }))
