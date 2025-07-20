@@ -50,6 +50,7 @@
               <caption>{{ $t('msgPreviewCaption', { count: preview_data.total_rows }) }}</caption>
               <thead>
                 <tr>
+                  <th></th>
                   <th v-for="col in preview_data.columns" :key="col">
                     {{ col }}
                   </th>
@@ -57,11 +58,50 @@
               </thead>
               <tbody>
                 <tr v-for="(row, rowIndex) in preview_data.preview" :key="rowIndex">
+                  <td></td>
                   <td v-for="col in preview_data.columns" :key="col">
                     {{ row[col] }}
                   </td>
                 </tr>
+                <tr>
+                  <td></td>
+                  <td v-for="col in preview_data.columns" :key="col">
+                    ...
+                  </td>
+                </tr>
               </tbody>
+              <tfoot>
+                <tr>
+                  <td><strong>{{ $t('lblMean') }}</strong></td>
+                  <td v-for="col in preview_data.columns" :key="'mean-' + col">
+                    {{ summary[col] ? summary[col].mean.toFixed(2) : '-' }}
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>{{ $t('lblMedian') }}</strong></td>
+                  <td v-for="col in preview_data.columns" :key="'median-' + col">
+                    {{ summary[col] ? summary[col].median : '-' }}
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>{{ $t('lblMin') }}</strong></td>
+                  <td v-for="col in preview_data.columns" :key="'min-' + col">
+                    {{ summary[col] ? summary[col].min : '-' }}
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>{{ $t('lblMax') }}</strong></td>
+                  <td v-for="col in preview_data.columns" :key="'max-' + col">
+                    {{ summary[col] ? summary[col].max : '-' }}
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>{{ $t('lblStd') }}</strong></td>
+                  <td v-for="col in preview_data.columns" :key="'std-' + col">
+                    {{ summary[col] ? summary[col].std.toFixed(2) : '-' }}
+                  </td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         </div>
@@ -325,6 +365,7 @@ export default {
         total_rows: 0,
         total_columns: 0
       },
+      summary: {},
       modelOptions: [],
       fileOptions: [],
       recallLevels: [
@@ -467,6 +508,7 @@ export default {
         })
         if (response.data.status == "success") {
           this.preview_data = response.data.preview_data
+          this.summary = response.data.summary
         } else if (response.data.status == "errorMissing") {
           this.modal.title = this.$t('lblError')
           this.modal.content = this.$t('msgMissingDataFound') + response.data.message + '\n' + this.$t('msgConfirmDeleteRows')
