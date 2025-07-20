@@ -72,31 +72,31 @@
               </tbody>
               <tfoot>
                 <tr>
-                  <td><strong>{{ $t('lblMean') }}</strong></td>
+                  <td style="white-space: nowrap"><strong>{{ $t('lblMean') }}</strong></td>
                   <td v-for="col in preview_data.columns" :key="'mean-' + col">
                     {{ summary[col] ? summary[col].mean.toFixed(2) : '-' }}
                   </td>
                 </tr>
                 <tr>
-                  <td><strong>{{ $t('lblMedian') }}</strong></td>
+                  <td style="white-space: nowrap"><strong>{{ $t('lblMedian') }}</strong></td>
                   <td v-for="col in preview_data.columns" :key="'median-' + col">
                     {{ summary[col] ? summary[col].median : '-' }}
                   </td>
                 </tr>
                 <tr>
-                  <td><strong>{{ $t('lblMin') }}</strong></td>
+                  <td style="white-space: nowrap"><strong>{{ $t('lblMin') }}</strong></td>
                   <td v-for="col in preview_data.columns" :key="'min-' + col">
                     {{ summary[col] ? summary[col].min : '-' }}
                   </td>
                 </tr>
                 <tr>
-                  <td><strong>{{ $t('lblMax') }}</strong></td>
+                  <td style="white-space: nowrap"><strong>{{ $t('lblMax') }}</strong></td>
                   <td v-for="col in preview_data.columns" :key="'max-' + col">
                     {{ summary[col] ? summary[col].max : '-' }}
                   </td>
                 </tr>
                 <tr>
-                  <td><strong>{{ $t('lblStd') }}</strong></td>
+                  <td style="white-space: nowrap"><strong>{{ $t('lblStd') }}</strong></td>
                   <td v-for="col in preview_data.columns" :key="'std-' + col">
                     {{ summary[col] ? summary[col].std.toFixed(2) : '-' }}
                   </td>
