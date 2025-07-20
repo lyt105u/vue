@@ -992,6 +992,44 @@ def preview():
             "message": str(e)
         })
     
+@app.route('/handle-missing', methods=['POST'])
+def handle_missing():
+    data = request.get_json()
+    file_path = data.get('file_path')
+    missing_methods = data.get('missing_methods')
+    if not os.path.exists(file_path):
+        return jsonify({
+            "status": "error",
+            "message": "File not found."
+        })
+    if not isinstance(missing_methods, dict):
+        return jsonify({
+            "status": "error",
+            "message": "missing_methods must be a dict."
+        })
+    try:
+        fetch_result = subprocess.run(
+            ['python', 'handleMissing.py', file_path, json.dumps(missing_methods)],
+            # capture_output=True,  # 捕獲標準輸出和標準錯誤
+            stdout=subprocess.PIPE,     # 只捕獲標準輸出
+            stderr=subprocess.DEVNULL,  # 忽略標準錯誤
+            text=True                   # 將輸出轉換為字符串
+        )
+        # debug 用
+        # print("STDOUT:", fetch_result.stdout)  # 打印标准输出
+        # print("STDERR:", fetch_result.stderr)  # 打印标准错误
+        if fetch_result.returncode != 0:
+            return jsonify({
+                "status": "error",
+                "message": fetch_result.stderr,
+            })
+        return jsonify(json.loads(fetch_result.stdout))
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        })
+    
 @app.route('/download', methods=['POST'])
 def download():
     data = request.get_json()

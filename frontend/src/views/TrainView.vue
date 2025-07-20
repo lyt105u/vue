@@ -327,14 +327,6 @@
       </div>
     </div>
 
-    <!-- 推薦 model -->
-    <template v-if="preview_data && recommendedMsg">
-      <div class="row mb-3">
-        <label class="col-sm-3 col-form-label"></label>
-        <label class="col-sm-9 col-form-label"><small>{{ recommendedMsg }}</small></label>
-      </div>
-    </template>
-
     <!-- Preview -->
     <div v-if="preview_data.total_rows != 0" class="row mb-3">
       <div class="collapse" ref="collapsePreview">
@@ -366,18 +358,6 @@
               </tbody>
               <tfoot>
                 <tr>
-                  <td style="white-space: nowrap"><strong>{{ $t('lblMean') }}</strong></td>
-                  <td v-for="col in preview_data.columns" :key="'mean-' + col">
-                    {{ summary[col] ? summary[col].mean.toFixed(2) : '-' }}
-                  </td>
-                </tr>
-                <tr>
-                  <td style="white-space: nowrap"><strong>{{ $t('lblMedian') }}</strong></td>
-                  <td v-for="col in preview_data.columns" :key="'median-' + col">
-                    {{ summary[col] ? summary[col].median : '-' }}
-                  </td>
-                </tr>
-                <tr>
                   <td style="white-space: nowrap"><strong>{{ $t('lblMin') }}</strong></td>
                   <td v-for="col in preview_data.columns" :key="'min-' + col">
                     {{ summary[col] ? summary[col].min : '-' }}
@@ -387,6 +367,24 @@
                   <td style="white-space: nowrap"><strong>{{ $t('lblMax') }}</strong></td>
                   <td v-for="col in preview_data.columns" :key="'max-' + col">
                     {{ summary[col] ? summary[col].max : '-' }}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="white-space: nowrap"><strong>{{ $t('lblMedian') }}</strong></td>
+                  <td v-for="col in preview_data.columns" :key="'median-' + col">
+                    {{ summary[col] ? summary[col].median : '-' }}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="white-space: nowrap"><strong>{{ $t('lblMean') }}</strong></td>
+                  <td v-for="col in preview_data.columns" :key="'mean-' + col">
+                    {{ summary[col] ? summary[col].mean.toFixed(2) : '-' }}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="white-space: nowrap"><strong>{{ $t('lblMode') }}</strong></td>
+                  <td v-for="col in preview_data.columns" :key="'mode-' + col">
+                    {{ summary[col] ? summary[col].mode : '-' }}
                   </td>
                 </tr>
                 <tr>
@@ -401,6 +399,34 @@
         </div>
       </div>
     </div>
+
+    <!-- 缺失值處理 -->
+    <template v-if="missing_cords && missing_cords.length > 0">
+      <div class="row mb-3" v-for="(row, rowIndex) in rows" :key="rowIndex">
+        <label class="col-sm-3 col-form-label">
+          {{ rowIndex === 0 ? $t('lblMissingValueHandling') : "" }}
+        </label>
+        <div
+          v-for="(header, colIndex) in row"
+          :key="`${rowIndex}-${colIndex}`"
+          class="col-sm-2"
+        >
+          <div class="form-floating">
+            <select
+              class="form-select"
+              v-model="missing_methods[header]"
+              :id="`select-${header}`"
+              :disabled="loading"
+            >
+              <option v-for="option in missing_options" :key="option.value" :value="option.value">{{ $t(option.label) }}</option>
+            </select>
+            <label :for="`select-${header}`">
+              {{ header }}
+            </label>
+          </div>
+        </div>
+      </div>
+    </template>
 
     <!-- True Label Column 欄位 -->
     <div class="row mb-3">
@@ -872,6 +898,7 @@ import ModalImage from "@/components/ModalImage.vue"
 import ModalShap from "@/components/ModalShap.vue"
 import ModalLime from "@/components/ModalLime.vue"
 import { Collapse } from 'bootstrap'
+import { toRaw } from 'vue'
 
 export default {
   components: {
@@ -898,6 +925,18 @@ export default {
         total_columns: 0
       },
       summary: {},
+      missing_cords: [],
+      missing_header:[],
+      missing_methods: [],
+      missing_options: [
+        { value: 'min', label: 'lblMin' },
+        { value: 'max', label: 'lblMax' },
+        { value: 'median', label: 'lblMedian' },
+        { value: 'mean', label: 'lblMean' },
+        { value: 'mode', label: 'lblMode' },
+        { value: 'skip', label: 'lblSkip' },
+        { value: 'zero', label: 'lblZero'},
+      ],
       rfPenaltyOptions: {
         l1: 'l1',
         l2: 'l2',
@@ -978,7 +1017,6 @@ export default {
       imageLime: null,
       errors: {}, // 檢核用
       fileOptions: [],
-      recommendedMsg: '',
       isUnmounted: false, // 防止跳轉後，API執行完仍繼續執行js，造成錯誤
     }
   },
@@ -1007,6 +1045,13 @@ export default {
         }
       }
     },
+    rows() {
+      const result = [];
+      for (let i = 0; i < this.missing_header.length; i += 4) {
+        result.push(this.missing_header.slice(i, i + 4));
+      }
+      return result;
+    },
   },
   watch: {
     "selected.split_strategy"() {
@@ -1029,7 +1074,6 @@ export default {
     },
     "selected.data"() {
       this.selected.label_column = ''
-      this.recommendedMsg = ''
       this.initPreviewData()
       if (this.selected.data != '') {
         this.previewTab()
@@ -1319,6 +1363,9 @@ export default {
     },
 
     async previewTab() {
+      this.missing_cords = []
+      this.missing_header = []
+      this.missing_methods = []
       this.loading = true
       try {
         const response = await axios.post(`${process.env.VUE_APP_API_URL}/preview-tabular`, {
@@ -1327,12 +1374,19 @@ export default {
         if (response.data.status == "success") {
           this.preview_data = response.data.preview_data
           this.summary = response.data.summary
-          console.log(response.data)
-        } else if (response.data.status == "errorMissing") {
-          this.modal.title = this.$t('lblError')
-          this.modal.content = this.$t('msgMissingDataFound') + response.data.message + '\n' + this.$t('msgConfirmDeleteRows')
-          this.modal.icon = 'error'
-          this.openModalMissingData()
+          this.missing_cords = response.data.missing_cords
+          this.missing_header = response.data.missing_header
+          if (this.missing_cords && this.missing_cords.length > 0) {
+            this.modal.title = this.$t('lblError')
+            this.modal.content = this.$t('msgMissingDataFound') + response.data.missing_cords
+            this.modal.icon = 'error'
+            this.openModalNotification()
+          }
+        // } else if (response.data.status == "errorMissing") {
+        //   this.modal.title = this.$t('lblError')
+        //   this.modal.content = this.$t('msgMissingDataFound') + response.data.message + '\n' + this.$t('msgConfirmDeleteRows')
+        //   this.modal.icon = 'error'
+        //   this.openModalMissingData()
         } else if (response.data.status == "error") {
           this.modal.title = this.$t('lblError')
           this.modal.content = response.data.message
@@ -1350,13 +1404,6 @@ export default {
         this.selected.data = ''
       }
       this.loading = false
-
-      // to recommend model
-      if (this.preview_data.total_rows<1000 && this.preview_data.total_columns<10) {
-        this.recommendedMsg = this.$t('lblRecommendedModel') + ' ' + this.$t('lblLogisticRegression')
-      } else {
-        this.recommendedMsg = this.$t('lblRecommendedModel') + ' ' + this.$t('lblXgb')
-      }
     },
     
     async runTrain() {
@@ -1395,6 +1442,45 @@ export default {
         this.loading = false
         return
       }
+
+      // 處理缺失值
+      // try {
+      //   const raw = toRaw(this.missing_methods)
+      //   // 防呆修復：若是 array+屬性混用的 proxy，就重建成 dict
+      //   let fixedDict = {}
+      //   Object.keys(raw).forEach(key => {
+      //     if (isNaN(Number(key))) {
+      //       fixedDict[key] = raw[key]
+      //     }
+      //   })
+
+      //   const response = await axios.post(`${process.env.VUE_APP_API_URL}/handle-missing`, {
+      //     file_path: `upload/${sessionStorage.getItem('username')}/${this.selected.data}`, // upload/
+      //     missing_methods: fixedDict
+      //   })
+      //   if (response.data.status == "success") {
+      //     this.modal.title = this.$t('lblSuccess')
+      //     this.modal.content = response.data.message
+      //     this.modal.icon = 'success'
+      //     this.openModalNotification()
+      //     this.loading = false
+      //     return
+      //   } else if (response.data.status == "error") {
+      //     this.modal.title = this.$t('lblError')
+      //     this.modal.content = response.data.message
+      //     this.modal.icon = 'error'
+      //     this.openModalNotification()
+      //     this.loading = false
+      //     return
+      //   }
+      // } catch (error) {
+      //   this.modal.title = this.$t('lblError')
+      //   this.modal.content = error
+      //   this.modal.icon = 'error'
+      //   this.openModalNotification()
+      //   this.loading = false
+      //   return
+      // }
 
       try {
         this.output = null

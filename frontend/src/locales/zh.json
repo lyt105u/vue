@@ -80,6 +80,10 @@
   "lblMin": "最小值",
   "lblMax": "最大值",
   "lblStd": "標準差",
+  "lblMode": "眾數",
+  "lblMissingValueHandling": "缺失值處理方式",
+  "lblSkip": "不處理",
+  "lblZero": "常數 0",
   
   "msgPreviewCaption": "顯示前 10 筆資料（總共：{count} 筆），和全體統計",
   "msgUploadSuccess": "成功上傳 `{filename}`。",

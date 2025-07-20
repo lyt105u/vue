@@ -80,6 +80,10 @@
   "lblMin": "Min",
   "lblMax": "Max",
   "lblStd": "Std",
+  "lblMode": "Mode",
+  "lblMissingValueHandling": "Missing Value Handling",
+  "lblSkip": "Do Not Handle",
+  "lblZero": "Constant 0",
   
   "msgPreviewCaption": "Showing first 10 rows (total:{count} rows), and overall statistics",
   "msgUploadSuccess": "Upload `{filename}` successfully.",
