@@ -58,6 +58,20 @@ def preview(df, max_rows=10, max_columns=30):
         "total_columns": total_columns
     }
 
+def get_summary(df):
+    summary_data = {}
+    numeric_df = df.select_dtypes(include='number')  # 僅處理數值欄位
+    for col in numeric_df.columns:
+        col_data = numeric_df[col].dropna()
+        summary_data[col] = {
+            "mean": float(col_data.mean()) if not col_data.empty else None,
+            "median": float(col_data.median()) if not col_data.empty else None,
+            "min": float(col_data.min()) if not col_data.empty else None,
+            "max": float(col_data.max()) if not col_data.empty else None,
+            "std": float(col_data.std()) if not col_data.empty else None
+        }
+    return summary_data
+
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print(json.dumps({
@@ -71,6 +85,7 @@ if __name__ == "__main__":
 
     if df is not None:
         missing_coords = check_missing(df)
+        summary_data = get_summary(df)
         if missing_coords:
             print(json.dumps({
                 "status": "errorMissing",
@@ -80,5 +95,6 @@ if __name__ == "__main__":
             preview_data = preview(df)
             print(json.dumps({
                 "status": "success",
-                "preview_data": preview_data
+                "preview_data": preview_data,
+                "summary": summary_data,
             }))
