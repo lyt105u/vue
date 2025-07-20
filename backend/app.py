@@ -992,7 +992,7 @@ def preview():
             "message": str(e)
         })
     
-@app.route('/handle-missing', methods=['POST'])
+@app.route('/preprocess', methods=['POST'])
 def handle_missing():
     data = request.get_json()
     file_path = data.get('file_path')
@@ -1009,7 +1009,7 @@ def handle_missing():
         })
     try:
         fetch_result = subprocess.run(
-            ['python', 'handleMissing.py', file_path, json.dumps(missing_methods)],
+            ['python', 'preprocess.py', file_path, json.dumps(missing_methods)],
             # capture_output=True,  # 捕獲標準輸出和標準錯誤
             stdout=subprocess.PIPE,     # 只捕獲標準輸出
             stderr=subprocess.DEVNULL,  # 忽略標準錯誤

@@ -82,8 +82,9 @@
   "lblStd": "Std",
   "lblMode": "Mode",
   "lblMissingValueHandling": "Missing Value Handling",
-  "lblSkip": "Do Not Handle",
-  "lblZero": "Constant 0",
+  "lblSkip": "Skip",
+  "lblZero": "Fill 0",
+  "lblPreprocess": "Preprocess",
   
   "msgPreviewCaption": "Showing first 10 rows (total:{count} rows), and overall statistics",
   "msgUploadSuccess": "Upload `{filename}` successfully.",
@@ -150,6 +151,8 @@
   "msgItemsDeleted": "The following items have been deleted:",
   "msgTerminated": "has been terminated.",
   "msgNotRunning": "has finished running.",
+  "msgSkipWarning": "However, you chose to skip missing value handling for the following columns: {columns}. \nNote that some models may fail if there are missing values.",
+  "msgFinishHandleMissing": "Missing value handling completed.",
 
   "msgValRequired": "This field is required.",
   "msgValIntOnly": "Integer only.",

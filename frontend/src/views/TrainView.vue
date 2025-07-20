@@ -424,6 +424,19 @@
               {{ header }}
             </label>
           </div>
+          <div v-if="errors_preprocess[header]" class="text-danger small"> {{ errors_preprocess[header] }} </div>
+        </div>
+        <!-- ✅ 只有第一列顯示按鈕 -->
+        <div v-if="rowIndex === 0" class="col-sm-1 d-flex align-items-center">
+          <button
+            class="btn btn-outline-primary"
+            style="white-space: nowrap"
+            type="button"
+            @click="preprocess"
+            :disabled="loading"
+          >
+            {{ $t('lblPreprocess') }}
+          </button>
         </div>
       </div>
     </template>
@@ -1016,6 +1029,7 @@ export default {
       imageShap: null,
       imageLime: null,
       errors: {}, // 檢核用
+      errors_preprocess: {},
       fileOptions: [],
       isUnmounted: false, // 防止跳轉後，API執行完仍繼續執行js，造成錯誤
     }
@@ -1074,9 +1088,8 @@ export default {
     },
     "selected.data"() {
       this.selected.label_column = ''
-      this.initPreviewData()
       if (this.selected.data != '') {
-        this.previewTab()
+        this.previewTab(true)
       }
     },
   },
@@ -1185,7 +1198,7 @@ export default {
           rows: rowsToDelete
         })
         if (response.data.status == "success") {
-          await this.previewTab()
+          await this.previewTab(true)
         } else if (response.data.status == "error") {
           this.modal.title = this.$t('lblError')
           this.modal.content = response.data.message
@@ -1362,7 +1375,8 @@ export default {
       return isValid
     },
 
-    async previewTab() {
+    async previewTab(showMissingModal) {
+      this.initPreviewData()
       this.missing_cords = []
       this.missing_header = []
       this.missing_methods = []
@@ -1376,7 +1390,7 @@ export default {
           this.summary = response.data.summary
           this.missing_cords = response.data.missing_cords
           this.missing_header = response.data.missing_header
-          if (this.missing_cords && this.missing_cords.length > 0) {
+          if (this.missing_cords && this.missing_cords.length > 0 && showMissingModal) {
             this.modal.title = this.$t('lblError')
             this.modal.content = this.$t('msgMissingDataFound') + response.data.missing_cords
             this.modal.icon = 'error'
@@ -1442,45 +1456,6 @@ export default {
         this.loading = false
         return
       }
-
-      // 處理缺失值
-      // try {
-      //   const raw = toRaw(this.missing_methods)
-      //   // 防呆修復：若是 array+屬性混用的 proxy，就重建成 dict
-      //   let fixedDict = {}
-      //   Object.keys(raw).forEach(key => {
-      //     if (isNaN(Number(key))) {
-      //       fixedDict[key] = raw[key]
-      //     }
-      //   })
-
-      //   const response = await axios.post(`${process.env.VUE_APP_API_URL}/handle-missing`, {
-      //     file_path: `upload/${sessionStorage.getItem('username')}/${this.selected.data}`, // upload/
-      //     missing_methods: fixedDict
-      //   })
-      //   if (response.data.status == "success") {
-      //     this.modal.title = this.$t('lblSuccess')
-      //     this.modal.content = response.data.message
-      //     this.modal.icon = 'success'
-      //     this.openModalNotification()
-      //     this.loading = false
-      //     return
-      //   } else if (response.data.status == "error") {
-      //     this.modal.title = this.$t('lblError')
-      //     this.modal.content = response.data.message
-      //     this.modal.icon = 'error'
-      //     this.openModalNotification()
-      //     this.loading = false
-      //     return
-      //   }
-      // } catch (error) {
-      //   this.modal.title = this.$t('lblError')
-      //   this.modal.content = error
-      //   this.modal.icon = 'error'
-      //   this.openModalNotification()
-      //   this.loading = false
-      //   return
-      // }
 
       try {
         this.output = null
@@ -1653,6 +1628,66 @@ export default {
         this.openModalNotification()
       }
       this.loading = false
+    },
+
+    // 處理缺失值
+    async preprocess() {
+      if (!this.validatePreprocess()) {
+        return
+      }
+
+      this.loading = true
+      try {
+        const raw = toRaw(this.missing_methods)
+        // 防呆修復：若是 array+屬性混用的 proxy，就重建成 dict
+        let fixedDict = {}
+        Object.keys(raw).forEach(key => {
+          if (isNaN(Number(key))) {
+            fixedDict[key] = raw[key]
+          }
+        })
+
+        const response = await axios.post(`${process.env.VUE_APP_API_URL}/preprocess`, {
+          file_path: `upload/${sessionStorage.getItem('username')}/${this.selected.data}`, // upload/
+          missing_methods: fixedDict
+        })
+        if (response.data.status == "success") {
+          const skipped = Object.keys(fixedDict).filter(col => fixedDict[col] === 'skip')
+          this.modal.title = this.$t('lblSuccess')
+          this.modal.icon = 'success'
+          this.modal.content = this.$t('msgFinishHandleMissing')
+          if (skipped.length > 0) {
+            this.modal.content += '\n' + this.$t('msgSkipWarning', { columns: skipped.join(', ') })
+          }
+          this.openModalNotification()
+          this.loading = false
+          await this.previewTab(false)
+        } else if (response.data.status == "error") {
+          this.modal.title = this.$t('lblError')
+          this.modal.content = response.data.message
+          this.modal.icon = 'error'
+          this.openModalNotification()
+        }
+      } catch (error) {
+        this.modal.title = this.$t('lblError')
+        this.modal.content = error
+        this.modal.icon = 'error'
+        this.openModalNotification()
+      }
+      this.loading = false
+    },
+
+    validatePreprocess() {
+      let isValid = true
+      this.errors_preprocess = {}
+      for (const header of this.missing_header) {
+        const value = this.missing_methods[header]
+        if (!value) {
+          this.errors_preprocess[header] = this.$t('msgValRequired')
+          isValid = false
+        }
+      }
+      return isValid
     },
   },
 }

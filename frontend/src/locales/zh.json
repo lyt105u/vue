@@ -83,7 +83,8 @@
   "lblMode": "眾數",
   "lblMissingValueHandling": "缺失值處理方式",
   "lblSkip": "不處理",
-  "lblZero": "常數 0",
+  "lblZero": "補 0",
+  "lblPreprocess": "前處理",
   
   "msgPreviewCaption": "顯示前 10 筆資料（總共：{count} 筆），和全體統計",
   "msgUploadSuccess": "成功上傳 `{filename}`。",
@@ -150,6 +151,8 @@
   "msgItemsDeleted": "以下項目已被刪除：",
   "msgTerminated": "已被終止。",
   "msgNotRunning": "已執行完成。",
+  "msgSkipWarning": "但是你選擇跳過處理以下欄位的缺失值：{columns}。\n這些缺失值在某些模型中可能會導致錯誤，請確認模型是否能接受缺失資料。",
+  "msgFinishHandleMissing": "缺失值處理已完成。",
 
   "msgValRequired": "此為必填欄位",
   "msgValIntOnly": "僅允許整數",
