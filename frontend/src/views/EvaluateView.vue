@@ -72,18 +72,6 @@
               </tbody>
               <tfoot>
                 <tr>
-                  <td style="white-space: nowrap"><strong>{{ $t('lblMean') }}</strong></td>
-                  <td v-for="col in preview_data.columns" :key="'mean-' + col">
-                    {{ summary[col] ? summary[col].mean.toFixed(2) : '-' }}
-                  </td>
-                </tr>
-                <tr>
-                  <td style="white-space: nowrap"><strong>{{ $t('lblMedian') }}</strong></td>
-                  <td v-for="col in preview_data.columns" :key="'median-' + col">
-                    {{ summary[col] ? summary[col].median : '-' }}
-                  </td>
-                </tr>
-                <tr>
                   <td style="white-space: nowrap"><strong>{{ $t('lblMin') }}</strong></td>
                   <td v-for="col in preview_data.columns" :key="'min-' + col">
                     {{ summary[col] ? summary[col].min : '-' }}
@@ -93,6 +81,24 @@
                   <td style="white-space: nowrap"><strong>{{ $t('lblMax') }}</strong></td>
                   <td v-for="col in preview_data.columns" :key="'max-' + col">
                     {{ summary[col] ? summary[col].max : '-' }}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="white-space: nowrap"><strong>{{ $t('lblMedian') }}</strong></td>
+                  <td v-for="col in preview_data.columns" :key="'median-' + col">
+                    {{ summary[col] ? summary[col].median : '-' }}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="white-space: nowrap"><strong>{{ $t('lblMean') }}</strong></td>
+                  <td v-for="col in preview_data.columns" :key="'mean-' + col">
+                    {{ summary[col] ? summary[col].mean.toFixed(2) : '-' }}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="white-space: nowrap"><strong>{{ $t('lblMode') }}</strong></td>
+                  <td v-for="col in preview_data.columns" :key="'mode-' + col">
+                    {{ summary[col] ? summary[col].mode : '-' }}
                   </td>
                 </tr>
                 <tr>
@@ -107,6 +113,47 @@
         </div>
       </div>
     </div>
+
+    <!-- 缺失值處理 -->
+    <template v-if="missing_cords && missing_cords.length > 0">
+      <div class="row mb-3" v-for="(row, rowIndex) in rows" :key="rowIndex">
+        <label class="col-sm-3 col-form-label">
+          {{ rowIndex === 0 ? $t('lblMissingValueHandling') : "" }}
+        </label>
+        <div
+          v-for="(header, colIndex) in row"
+          :key="`${rowIndex}-${colIndex}`"
+          class="col-sm-2"
+        >
+          <div class="form-floating">
+            <select
+              class="form-select"
+              v-model="missing_methods[header]"
+              :id="`select-${header}`"
+              :disabled="loading"
+            >
+              <option v-for="option in missing_options" :key="option.value" :value="option.value">{{ $t(option.label) }}</option>
+            </select>
+            <label :for="`select-${header}`">
+              {{ header }}
+            </label>
+          </div>
+          <div v-if="errors_preprocess[header]" class="text-danger small"> {{ errors_preprocess[header] }} </div>
+        </div>
+        <!-- ✅ 只有第一列顯示按鈕 -->
+        <div v-if="rowIndex === 0" class="col-sm-1 d-flex align-items-center">
+          <button
+            class="btn btn-outline-primary"
+            style="white-space: nowrap"
+            type="button"
+            @click="preprocess"
+            :disabled="loading"
+          >
+            {{ $t('lblPreprocess') }}
+          </button>
+        </div>
+      </div>
+    </template>
 
     <!-- True Label Column -->
     <div class="row mb-3">
@@ -329,6 +376,7 @@ import ModalFormulaExplain from "@/components/ModalFormulaExplain.vue"
 import ModalImage from "@/components/ModalImage.vue"
 import ModalShap from "@/components/ModalShap.vue"
 import ModalLime from "@/components/ModalLime.vue"
+import { toRaw } from 'vue'
 
 export default {
   components: {
@@ -359,6 +407,7 @@ export default {
       },
       loading: false,
       errors: {}, // for validation
+      errors_preprocess: {},
       preview_data: {
         columns: [],
         preview: [],
@@ -366,6 +415,18 @@ export default {
         total_columns: 0
       },
       summary: {},
+      missing_cords: [],
+      missing_header:[],
+      missing_methods: [],
+      missing_options: [
+        { value: 'min', label: 'lblMin' },
+        { value: 'max', label: 'lblMax' },
+        { value: 'median', label: 'lblMedian' },
+        { value: 'mean', label: 'lblMean' },
+        { value: 'mode', label: 'lblMode' },
+        { value: 'skip', label: 'lblSkip' },
+        { value: 'zero', label: 'lblZero'},
+      ],
       modelOptions: [],
       fileOptions: [],
       recallLevels: [
@@ -400,7 +461,14 @@ export default {
           onClick: this.closeModalMissingData,
         }
       }
-    }
+    },
+    rows() {
+      const result = [];
+      for (let i = 0; i < this.missing_header.length; i += 4) {
+        result.push(this.missing_header.slice(i, i + 4));
+      }
+      return result;
+    },
   },
   watch: {
     "selected.data_name"() {
@@ -411,10 +479,8 @@ export default {
       } else {
         this.watched.file_extension = ""
       }
-
-      this.initPreviewData()
       if (this.selected.data_name != '') {
-        this.previewTab()
+        this.previewTab(true)
       }
     },
   },
@@ -500,7 +566,11 @@ export default {
       }
     },
 
-    async previewTab() {
+    async previewTab(showMissingModal) {
+      this.initPreviewData()
+      this.missing_cords = []
+      this.missing_header = []
+      this.missing_methods = []
       this.loading = true
       try {
         const response = await axios.post(`${process.env.VUE_APP_API_URL}/preview-tabular`, {
@@ -509,11 +579,19 @@ export default {
         if (response.data.status == "success") {
           this.preview_data = response.data.preview_data
           this.summary = response.data.summary
-        } else if (response.data.status == "errorMissing") {
-          this.modal.title = this.$t('lblError')
-          this.modal.content = this.$t('msgMissingDataFound') + response.data.message + '\n' + this.$t('msgConfirmDeleteRows')
-          this.modal.icon = 'error'
-          this.openModalMissingData()
+          this.missing_cords = response.data.missing_cords
+          this.missing_header = response.data.missing_header
+          if (this.missing_cords && this.missing_cords.length > 0 && showMissingModal) {
+            this.modal.title = this.$t('lblError')
+            this.modal.content = this.$t('msgMissingDataFound') + response.data.missing_cords
+            this.modal.icon = 'error'
+            this.openModalNotification()
+          }
+        // } else if (response.data.status == "errorMissing") {
+        //   this.modal.title = this.$t('lblError')
+        //   this.modal.content = this.$t('msgMissingDataFound') + response.data.message + '\n' + this.$t('msgConfirmDeleteRows')
+        //   this.modal.icon = 'error'
+        //   this.openModalMissingData()
         } else if (response.data.status == "error") {
           this.modal.title = this.$t('lblError')
           this.modal.content = response.data.message
@@ -569,7 +647,7 @@ export default {
           rows: rowsToDelete
         })
         if (response.data.status == "success") {
-          await this.previewTab()
+          await this.previewTab(true)
         } else if (response.data.status == "error") {
           this.modal.title = this.$t('lblError')
           this.modal.content = response.data.message
@@ -777,6 +855,66 @@ export default {
         this.openModalNotification()
       }
       this.loading = false
+    },
+
+    // 處理缺失值
+    async preprocess() {
+      if (!this.validatePreprocess()) {
+        return
+      }
+
+      this.loading = true
+      try {
+        const raw = toRaw(this.missing_methods)
+        // 防呆修復：若是 array+屬性混用的 proxy，就重建成 dict
+        let fixedDict = {}
+        Object.keys(raw).forEach(key => {
+          if (isNaN(Number(key))) {
+            fixedDict[key] = raw[key]
+          }
+        })
+
+        const response = await axios.post(`${process.env.VUE_APP_API_URL}/preprocess`, {
+          file_path: `upload/${sessionStorage.getItem('username')}/${this.selected.data_name}`, // upload/
+          missing_methods: fixedDict
+        })
+        if (response.data.status == "success") {
+          const skipped = Object.keys(fixedDict).filter(col => fixedDict[col] === 'skip')
+          this.modal.title = this.$t('lblSuccess')
+          this.modal.icon = 'success'
+          this.modal.content = this.$t('msgFinishHandleMissing')
+          if (skipped.length > 0) {
+            this.modal.content += '\n' + this.$t('msgSkipWarning', { columns: skipped.join(', ') })
+          }
+          this.openModalNotification()
+          this.loading = false
+          await this.previewTab(false)
+        } else if (response.data.status == "error") {
+          this.modal.title = this.$t('lblError')
+          this.modal.content = response.data.message
+          this.modal.icon = 'error'
+          this.openModalNotification()
+        }
+      } catch (error) {
+        this.modal.title = this.$t('lblError')
+        this.modal.content = error
+        this.modal.icon = 'error'
+        this.openModalNotification()
+      }
+      this.loading = false
+    },
+
+    validatePreprocess() {
+      let isValid = true
+      this.errors_preprocess = {}
+      for (const header of this.missing_header) {
+        const value = this.missing_methods[header]
+        if (!value) {
+          this.errors_preprocess[header] = this.$t('msgValRequired')
+          isValid = false
+        }
+      }
+      return isValid
     },
   },
 }
