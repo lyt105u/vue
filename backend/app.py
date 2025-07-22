@@ -1469,9 +1469,10 @@ def terminate_task():
 @app.route('/run-train-stacking', methods=['POST'])
 def run_train_stacking():
     data = request.get_json()
-    model_names = data.get('model_names', [])
+    base_models = data.get('base_models', [])
     data_name = data.get('data_name')
     label_column = data.get('label_column')
+    meta_model = data.get('meta_model')
     username = data.get('username')
 
     try:
@@ -1493,7 +1494,7 @@ def run_train_stacking():
 
         args = [
             'python', 'train_stacking.py',
-            data_name, json.dumps(model_names), label_column,
+            data_name, json.dumps(base_models), label_column, meta_model,
             task_dir
         ]
         # 執行 Python 訓練腳本（非阻塞，可終止）

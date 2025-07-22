@@ -1,4 +1,4 @@
-# usage: python train_stacking.py upload/高醫訓練xlsx.xlsx "[\"xgb\", \"lgbm\"]" label model/user1/20250721112233
+# usage: python train_stacking.py upload/bob/高醫訓練xlsx.xlsx "[\"xgb\", \"lgbm\"]" label xgb model/bob/20250721112233
 
 import numpy as np
 import pandas as pd
@@ -11,19 +11,19 @@ import json
 import sys
 import os
 import pandas as pd
-from tool_train import prepare_data
+from tool_train import prepare_data, NumpyEncoder, extract_base64_images_and_clean_json
 import argparse
 
-def save_oof_csv(meta_X, y, model_names, task_dir, filename='oof.csv'):
+def save_oof_csv(meta_X, y, base_models, task_dir, filename='oof.csv'):
     os.makedirs(task_dir, exist_ok=True)
-    df = pd.DataFrame(meta_X, columns=model_names)
+    df = pd.DataFrame(meta_X, columns=base_models)
     df['y'] = y
     path = os.path.join(task_dir, filename)
     df.to_csv(path, index=False)
     return
 
 
-def main(file_path, model_names, label_column, task_dir):
+def main(file_path, base_models, label_column, meta_model, task_dir):
     # 1. 讀取資料
     try:
         X, y, feature_names = prepare_data(file_path, label_column)
@@ -40,36 +40,33 @@ def main(file_path, model_names, label_column, task_dir):
     folds = list(kf.split(X))  # 確保所有 model 用相同 folds
 
     # 3. 產生 OOF meta features
-    meta_features = {name: np.zeros(X.shape[0]) for name in model_names}
-    base_models_per_fold = {name: [] for name in model_names}
+    meta_features = {name: np.zeros(X.shape[0]) for name in base_models}
+    # base_models_per_fold = {name: [] for name in model_names}
 
     for fold_idx, (train_idx, val_idx) in enumerate(folds):
-        # print(fold_idx)
         X_train, y_train = X[train_idx], y[train_idx]
         X_val = X[val_idx]
-
-        for name in model_names:
-            # print(name)
+        for name in base_models:
             module = import_module(f"stacking_{name}")
             preds = module.train_fold(
                 X_train, y_train, X_val
             )
             meta_features[name][val_idx] = preds
-
     # 組成 meta_X，真實標籤用 y
-    meta_X = np.column_stack([meta_features[name] for name in model_names])
-    save_oof_csv(meta_X, y, model_names, task_dir)
-    # print("OOF generated.")
-    print(json.dumps({
-        "status": "success",
-        "message": "OOF generated.",
-    }))
+    meta_X = np.column_stack([meta_features[name] for name in base_models])
+    save_oof_csv(meta_X, y, base_models, task_dir)
 
     # 4. 訓練 meta model (OOF 階段)
+    meta_module = import_module(f"stacking_{meta_model}")
+    meta_results =  meta_module.retrain(meta_X, y, feature_names, task_dir, '0.8', False, 'meta')
     # meta_model = LogisticRegression(**meta_params)
     # meta_model.fit(meta_X, y)
     # joblib.dump(meta_model, os.path.join(output_dir, 'meta_model_oof.pkl'))
     # joblib.dump(base_models_per_fold, os.path.join(output_dir, 'base_models_per_fold.pkl'))
+    print(json.dumps({
+            "status": "success",
+            "meta_results": meta_results,
+        }, indent=4, cls=NumpyEncoder))
 
     # # 5. Retrain base models on full data
     # for name in model_names:
@@ -96,10 +93,10 @@ def main(file_path, model_names, label_column, task_dir):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("file_path", type=str)
-    parser.add_argument('model_names', type=json.loads) # JSON list of model names, e.g. \'["xgb","lgbm"]\'
+    parser.add_argument('base_models', type=json.loads) # JSON list of model names, e.g. \'["xgb","lgbm"]\'
     parser.add_argument("label_column", type=str)
-    # parser.add_argument("split_value", type=str)
+    parser.add_argument("meta_model", type=str)
     parser.add_argument("task_dir", type=str)
 
     args = parser.parse_args()
-    main(args.file_path, args.model_names, args.label_column, args.task_dir)
+    main(args.file_path, args.base_models, args.label_column, args.meta_model, args.task_dir)

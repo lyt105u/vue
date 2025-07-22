@@ -141,7 +141,16 @@
       </div>
     </template>
 
-    <!-- Trained Model -->
+    <!-- Predict Column -->
+    <div class="row mb-3">
+      <label for="inputEmail3" class="col-sm-3 col-form-label">{{ $t('lblPredictionColumn') }}</label>
+      <div class="col-sm-8">
+        <input v-model="selected.label_column" class="form-control" type="text" :disabled="loading">
+        <div v-if="errors.label_column" class="text-danger small">{{ errors.label_column }}</div>
+      </div>
+    </div>
+
+    <!-- Base Model -->
     <div class="row mb-3">
       <label for="inputEmail3" class="col-sm-3 col-form-label">{{ $t('lblBaseModels') }}</label>
       <div class="col-sm-8">
@@ -150,22 +159,26 @@
             type="checkbox"
             :id="model.value"
             :value="model.value"
-            v-model="selected.model_names"
+            v-model="selected.base_models"
             class="form-check-input"
             :disabled="loading"
           />
           <label :for="model.value" class="form-check-label">{{ $t(model.label) }}</label>
         </div>
-        <p v-if="errors.model_names" class="text-danger small">{{ errors.model_names }}</p>
+        <p v-if="errors.base_models" class="text-danger small">{{ errors.base_models }}</p>
       </div>
     </div>
 
-    <!-- Predict Column -->
+    <!-- Meta Model -->
     <div class="row mb-3">
-      <label for="inputEmail3" class="col-sm-3 col-form-label">{{ $t('lblPredictionColumn') }}</label>
+      <label class="col-sm-3 col-form-label">{{ $t('lblMetaModel') }}</label>
       <div class="col-sm-8">
-        <input v-model="selected.label_column" class="form-control" type="text" :disabled="loading">
-        <div v-if="errors.label_column" class="text-danger small">{{ errors.label_column }}</div>
+        <select class="form-select" aria-label="Small select example" v-model="selected.meta_model" :disabled="loading">
+          <option v-for="model in modelOptions" :key="model.value" :value="model.value">
+            {{ $t(model.label) }}
+          </option>
+        </select>
+        <div v-if="errors.meta_model" class="text-danger small">{{ errors.meta_model }}</div>
       </div>
     </div>
     
@@ -197,19 +210,144 @@
   </div>
 
   <!-- output -->
-  <div v-if="output" class="row row-cols-1 row-cols-md-3 mb-3 text-center">
-    <div v-if="output.status=='success'" class="col">
-      <div class="card mb-4 rounded-3 shadow-sm">
-        <div class="card-header py-3">
-          <h4 class="my-0 fw-normal">{{ $t('lblPredictionResult') }}</h4>
+  <div v-if="output" class="accordion" id="accordionExample">
+    <div class="accordion-item">
+      <h2 class="accordion-header" @click="toggleCollapseResult('collapse_0_9')">
+        <button class="accordion-button collapsed" type="button">
+          {{ $t('lblMetaModel') }}
+        </button>
+      </h2>
+      <div class="accordion-collapse collapse" ref="collapse_0_9">
+        <div class="accordion-body">
+          <div class="row row-cols-1 row-cols-md-3 mb-3 text-center">
+            <div class="col">
+              <div class="card mb-4 rounded-3 shadow-sm">
+                <div class="card-header py-3">
+                  <h4 class="my-0 fw-normal">{{ $t('lblTrainingResult') }}</h4>
+                </div>
+                <div class="card-body">
+                  <ul class="list-unstyled mt-3 mb-4">
+                    <div class="bd-example-snippet bd-code-snippet">
+                      <div class="bd-example m-0 border-0">
+                        <table class="table table-sm table-bordered">
+                          <thead>
+                            <tr>
+                              <th scope="col" colspan="2">{{ $t('lblConfusionMatrix') }}</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <td>{{ output.meta_results.confusion_matrix.true_positive }}</td>
+                              <td>{{ output.meta_results.confusion_matrix.false_negative }}</td>
+                            </tr>
+                            <tr>
+                              <td>{{ output.meta_results.confusion_matrix.false_positive }}</td>
+                              <td>{{ output.meta_results.confusion_matrix.true_negative }}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                    <li>Accuracy : {{ output.meta_results.metrics.accuracy.toFixed(2) }}%</li>
+                    <li>Recall : {{ output.meta_results.metrics.recall.toFixed(2) }}%</li>
+                    <li>Precision : {{ output.meta_results.metrics.precision.toFixed(2) }}%</li>
+                    <li>F1_score : {{ output.meta_results.metrics.f1_score.toFixed(2) }}%</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <!-- recall 列表 -->
+            <div class="col" v-for="recall in recallLevels" :key="recall.level">
+              <div class="card mb-4 rounded-3 shadow-sm">
+                <div class="card-header py-3">
+                  <h4 class="my-0 fw-normal">Recall > {{ recall.level }}%</h4>
+                </div>
+                <div class="card-body">
+                  <ul class="list-unstyled mt-3 mb-4">
+                    <div class="bd-example-snippet bd-code-snippet">
+                      <div class="bd-example m-0 border-0">
+                        <table class="table table-sm table-bordered">
+                          <thead>
+                            <tr>
+                              <th scope="col" colspan="2">{{ $t('lblConfusionMatrix') }}</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <td>{{ output.meta_results[recall.key].true_positive }}</td>
+                              <td>{{ output.meta_results[recall.key].false_negative }}</td>
+                            </tr>
+                            <tr>
+                              <td>{{ output.meta_results[recall.key].false_positive }}</td>
+                              <td>{{ output.meta_results[recall.key].true_negative }}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                    <li>Recall: {{ output.meta_results[recall.key].recall.toFixed(2) }}%</li>
+                    <li>Specificity: {{ output.meta_results[recall.key].specificity.toFixed(2) }}%</li>
+                    <li>Precision: {{ output.meta_results[recall.key].precision.toFixed(2) }}%</li>
+                    <li>NPV: {{ output.meta_results[recall.key].npv.toFixed(2) }}%</li>
+                    <li>F1 Score: {{ output.meta_results[recall.key].f1_score.toFixed(2) }}%</li>
+                    <li>F2 Score: {{ output.meta_results[recall.key].f2_score.toFixed(2) }}%</li>
+                    <li>Accuracy: {{ output.meta_results[recall.key].accuracy.toFixed(2) }}%</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <!-- ROC 曲線 -->
+            <div class="col">
+              <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalImage($t('lblRocCurve'), `data:image/png;base64,${output.meta_results.roc}`)" style="cursor: pointer;">
+                <div class="card-header py-3">
+                  <h4 class="my-0 fw-normal">{{ $t('lblRocCurve') }}</h4>
+                </div>
+                <img :src="`data:image/png;base64,${output.meta_results.roc}`" :alt="$t('lblRocCurve')" />
+              </div>
+            </div>
+
+            <!-- Loss 曲線 -->
+            <div v-if="output.meta_results.loss_plot" class="col">
+              <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalImage('Loss', `data:image/png;base64,${output.meta_results.loss_plot}`)" style="cursor: pointer;">
+                <div class="card-header py-3">
+                  <h4 class="my-0 fw-normal">Loss</h4>
+                </div>
+                <img :src="`data:image/png;base64,${output.meta_results.loss_plot}`" alt="Loss" />
+              </div>
+            </div>
+
+            <!-- Accuracy 曲線 -->
+            <div v-if="output.meta_results.accuracy_plot" class="col">
+              <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalImage('Accuracy', `data:image/png;base64,${output.meta_results.accuracy_plot}`)" style="cursor: pointer;">
+                <div class="card-header py-3">
+                  <h4 class="my-0 fw-normal">Accuracy</h4>
+                </div>
+                <img :src="`data:image/png;base64,${output.meta_results.accuracy_plot}`" alt="Accuracy" />
+              </div>
+            </div>
+
+            <!-- SHAP -->
+            <div v-if="!output.meta_results.shap_error" class="col">
+              <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalShap(`data:image/png;base64,${output.meta_results.shap_plot}`, output.meta_results.shap_importance)" style="cursor: pointer;">
+                <div class="card-header py-3">
+                  <h4 class="my-0 fw-normal">{{ $t('lblShap') }}</h4>
+                </div>
+                <img :src="`data:image/png;base64,${output.meta_results.shap_plot}`" :alt="$t('lblShap')" />
+              </div>
+            </div>
+
+            <!-- LIME -->
+            <div v-if="!output.meta_results.lime_error" class="col">
+              <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalLime(`data:image/png;base64,${output.meta_results.lime_plot}`, output.meta_results.lime_example_0)" style="cursor: pointer;">
+                <div class="card-header py-3">
+                  <h4 class="my-0 fw-normal">{{ $t('lblLime') }}</h4>
+                </div>
+                <img :src="`data:image/png;base64,${output.meta_results.lime_plot}`" :alt="$t('lblLime')" />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  </div>
-
-  <div class="bd-example-snippet bd-code-snippet">
-    <div class="bd-example m-0 border-0">
-      <hr>
     </div>
   </div>
 
@@ -228,6 +366,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
   <ModalNotification ref="modalNotification" :title="modal.title" :content="modal.content" :icon="modal.icon" />
   <ModalNotification ref="modalMissingDataRef" :title="modal.title" :content="modal.content" :icon="modal.icon" :primaryButton="modalButtons.primary" :secondaryButton="modalButtons.secondary" :onUserDismiss="closeModalMissingData" />
+  <ModalFormulaExplain ref="formulaExplainModal" />
+  <ModalImage ref="modalImageRef" :title="modal.title" :imageSrc="modal.content"/>
   <ModalShap ref="modalShapRef" :imageSrc="modal.content" :shapImportance="modal.shap_importance" :columns="preview_data.columns"/>
   <ModalLime ref="modalLimeRef" :imageSrc="modal.content" :lime_example_0="modal.lime_example_0" :columns="preview_data.columns"/>
 </template>
@@ -236,6 +376,8 @@
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import axios from 'axios';
 import ModalNotification from "@/components/ModalNotification.vue"
+import ModalFormulaExplain from "@/components/ModalFormulaExplain.vue"
+import ModalImage from "@/components/ModalImage.vue"
 import ModalShap from "@/components/ModalShap.vue"
 import ModalLime from "@/components/ModalLime.vue"
 import { Collapse } from 'bootstrap'
@@ -244,15 +386,18 @@ import { toRaw } from 'vue'
 export default {
   components: {
     ModalNotification,
+    ModalFormulaExplain,
+    ModalImage,
     ModalShap,
     ModalLime,
   },
   data() {
     return {
       selected: {
-        model_names: [],
+        base_models: [],
         data_name: '',
-        label_column: ''
+        label_column: '',
+        meta_model: '',
       },
       output: '',
       modal: {
@@ -293,6 +438,12 @@ export default {
       ],
       fileOptions: [],
       isUnmounted: false, // 防止跳轉後，API執行完仍繼續執行js，造成錯誤
+      recallLevels: [
+        { level: 80, key: 'recall_80' },
+        { level: 85, key: 'recall_85' },
+        { level: 90, key: 'recall_90' },
+        { level: 95, key: 'recall_95' }
+      ],
     }
   },
   created() {
@@ -437,6 +588,19 @@ export default {
       collapseInstance.toggle()
     },
 
+    toggleCollapseResult(refName) {
+      const collapseEl = this.$refs[refName]
+      const buttonEl = collapseEl.previousElementSibling.querySelector('.accordion-button')
+
+      let instance = Collapse.getInstance(collapseEl)
+      if (!instance) {
+        instance = new Collapse(collapseEl, { toggle: false })
+      }
+
+      instance.toggle()
+      buttonEl.classList.toggle('collapsed')
+    },
+
     async deleteMissingData() {
       // 關閉 modal
       if (this.$refs.modalMissingDataRef) {
@@ -505,13 +669,18 @@ export default {
         isValid = false
       }
       // Models
-      if (this.selected.model_names.length < 2) {
-        this.errors.model_names = this.$t('msgValSelect2')
+      if (this.selected.base_models.length < 2) {
+        this.errors.base_models = this.$t('msgValSelect2')
         isValid = false
       }
       // Outcome Column
       if (!this.selected.label_column) {
         this.errors.label_column = this.$t('msgValRequired')
+        isValid = false
+      }
+      // Meta Model
+      if (!this.selected.meta_model) {
+        this.errors.meta_model = this.$t('msgValRequired')
         isValid = false
       }
 
@@ -529,9 +698,10 @@ export default {
       try {
         const response = await axios.post(`${process.env.VUE_APP_API_URL}/run-train-stacking`,
           {
-            model_names: this.selected.model_names,
+            base_models: this.selected.base_models,
             data_name: `upload/${sessionStorage.getItem('username')}/${this.selected.data_name}`, // upload/
             label_column: this.selected.label_column,
+            meta_model: this.selected.meta_model,
             username: sessionStorage.getItem('username'),
           },
         )
@@ -540,7 +710,7 @@ export default {
           this.output = response.data
           this.modal.title = this.$t('lblPredictionCompleted')
           this.modal.icon = 'success'
-          this.modal.content = response.data.message
+          this.modal.content = response.data
           this.openModalNotification()
         } else if (response.data.status == "error") {
           this.modal.title = this.$t('lblError')
@@ -686,6 +856,22 @@ export default {
         }
       }
       return isValid
+    },
+
+    openFormulaExplainModal() {
+      if (this.$refs.formulaExplainModal) {
+        this.$refs.formulaExplainModal.openModal()
+      } else {
+        console.error("ModalFormulaExplain component not found.")
+      }
+    },
+
+    openModalImage(title, imageSrc) {
+      if (this.$refs.modalImageRef) {
+        this.modal.title = title
+        this.modal.content = imageSrc
+        this.$refs.modalImageRef.openModal()
+      }
     },
   },
 }
