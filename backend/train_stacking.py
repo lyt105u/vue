@@ -44,12 +44,12 @@ def main(file_path, model_names, label_column, task_dir):
     base_models_per_fold = {name: [] for name in model_names}
 
     for fold_idx, (train_idx, val_idx) in enumerate(folds):
-        print(fold_idx)
+        # print(fold_idx)
         X_train, y_train = X[train_idx], y[train_idx]
         X_val = X[val_idx]
 
         for name in model_names:
-            print(name)
+            # print(name)
             module = import_module(f"stacking_{name}")
             preds = module.train_fold(
                 X_train, y_train, X_val
@@ -59,7 +59,11 @@ def main(file_path, model_names, label_column, task_dir):
     # 組成 meta_X，真實標籤用 y
     meta_X = np.column_stack([meta_features[name] for name in model_names])
     save_oof_csv(meta_X, y, model_names, task_dir)
-    print("OOF generated.")
+    # print("OOF generated.")
+    print(json.dumps({
+        "status": "success",
+        "message": "OOF generated.",
+    }))
 
     # 4. 訓練 meta model (OOF 階段)
     # meta_model = LogisticRegression(**meta_params)

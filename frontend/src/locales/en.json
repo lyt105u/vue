@@ -85,6 +85,9 @@
   "lblSkip": "Skip",
   "lblZero": "Fill 0",
   "lblPreprocess": "Preprocess",
+  "lblStacking": "Stacking",
+  "lblBaseModels": "Base Models",
+  "lblMetaModel": "Meta Model",
   
   "msgPreviewCaption": "Showing first 10 rows (total:{count} rows), and overall statistics",
   "msgUploadSuccess": "Upload `{filename}` successfully.",
@@ -159,5 +162,6 @@
   "msgValFloatOnly": "Floating point only.",
   "msgValRequireLayer2": "layer_2 is required.",
   "msgValAlphaOnly": "Only English letters are allowed.",
-  "msgValExtension": "Only {types} file formats are allowed."
+  "msgValExtension": "Only {types} file formats are allowed.",
+  "msgValSelect2": "Please select at least two."
 }

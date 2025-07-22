@@ -1465,6 +1465,98 @@ def terminate_task():
             "status": "error",
             "message": f"Failed to terminate task: {str(e)}"
         })
+    
+@app.route('/run-train-stacking', methods=['POST'])
+def run_train_stacking():
+    data = request.get_json()
+    model_names = data.get('model_names', [])
+    data_name = data.get('data_name')
+    label_column = data.get('label_column')
+    username = data.get('username')
+
+    try:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        task_id = f"{timestamp}"
+        task_dir = os.path.join("model", username, timestamp)   # model/<username>/<timestamp>/
+        os.makedirs(task_dir, exist_ok=True)
+        # status.json
+        status = {
+            "task_id": task_id,
+            "username": username,
+            "status": "running",
+            "params": data,
+            "start_time": timestamp,
+            "api": "stacking",
+        }
+        with open(os.path.join(task_dir, "status.json"), "w", encoding="utf-8") as f:
+            json.dump(status, f, indent=4, ensure_ascii=False)
+
+        args = [
+            'python', 'train_stacking.py',
+            data_name, json.dumps(model_names), label_column,
+            task_dir
+        ]
+        # 執行 Python 訓練腳本（非阻塞，可終止）
+        p = subprocess.Popen(
+            args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+
+        process_pool[task_id] = {
+            "process": p,
+            "username": username,
+            "task_dir": task_dir
+        }
+
+        stdout, stderr = p.communicate()
+        # --- DEBUG 輸出（如需印出，請取消註解） ---
+        # print("STDOUT:", stdout, flush=True)
+        # print("STDERR:", stderr, flush=True)
+
+        # 如果 task_id 不在 process_pool，代表已被終止
+        if task_id not in process_pool:
+            # 不寫 status，避免覆蓋已寫入的 terminated 狀態
+            return jsonify({
+                "status": "terminated",
+                "message": "Task was terminated by user.",
+                "task_id": task_id
+            })
+        result = json.loads(stdout)
+        if result.get("status") == "error" or p.returncode != 0:
+            # 更新 status.json 為 error
+            status['status'] = 'error'
+            status['msg'] = result.get("message") or stderr or "Unknown error."
+            with open(os.path.join(task_dir, "status.json"), "w", encoding="utf-8") as f:
+                json.dump(status, f, indent=4, ensure_ascii=False)
+            # 任務完成後移除該 process 記錄
+            process_pool.pop(task_id, None)
+            return jsonify({
+                "status": "error",
+                "message": result.get("message") or stderr or "Unknown error."
+            })
+        # 更新 status.json 為 success
+        status['status'] = 'success'
+        status['end_time'] = datetime.now().strftime("%Y%m%d_%H%M%S")
+        with open(os.path.join(task_dir, "status.json"), "w", encoding="utf-8") as f:
+            json.dump(status, f, indent=4, ensure_ascii=False)
+        # 任務完成後移除該 process 記錄
+        process_pool.pop(task_id, None)
+        return jsonify(json.loads(stdout))
+    
+    except Exception as e:
+        # 更新 status.json 為 error
+        status['status'] = 'error'
+        status['msg'] = e or "Unknown error."
+        with open(os.path.join(task_dir, "status.json"), "w", encoding="utf-8") as f:
+            json.dump(status, f, indent=4, ensure_ascii=False)
+        # 任務完成後移除該 process 記錄
+        process_pool.pop(task_id, None)
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        })
 
 if __name__ == '__main__':
     app.run(debug=True)

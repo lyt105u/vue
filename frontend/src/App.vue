@@ -98,6 +98,11 @@ export default {
           icon: 'fa fa-cogs'
         },
         {
+          href: '/stacking',
+          title: this.$t('lblStacking'),
+          icon: 'fa fa-cubes'
+        },
+        {
           title: this.$t('lblPredict'),
           icon: 'fa fa-line-chart',
           child: [

@@ -32,6 +32,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/stacking',
+    name: 'stacking',
+    component: () => import('../views/StackingView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/evaluate',
     name: 'evaluate',
     component: () => import('../views/EvaluateView.vue'),
