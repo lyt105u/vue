@@ -141,11 +141,15 @@
       </div>
     </template>
 
-    <!-- Predict Column -->
+    <!-- Label Column -->
     <div class="row mb-3">
-      <label for="inputEmail3" class="col-sm-3 col-form-label">{{ $t('lblPredictionColumn') }}</label>
+      <label class="col-sm-3 col-form-label">{{ $t('lblOutcomeColumn') }}</label>
       <div class="col-sm-8">
-        <input v-model="selected.label_column" class="form-control" type="text" :disabled="loading">
+        <select class="form-select" aria-label="Small select example" v-model="selected.label_column" :disabled="loading">
+          <option v-for="column in preview_data.columns" :key="column" :value="column">
+            {{ column }}
+          </option>
+        </select>
         <div v-if="errors.label_column" class="text-danger small">{{ errors.label_column }}</div>
       </div>
     </div>
@@ -211,6 +215,7 @@
 
   <!-- output -->
   <div v-if="output" class="accordion" id="accordionExample">
+    <!-- Meta Model -->
     <div class="accordion-item">
       <h2 class="accordion-header" @click="toggleCollapseResult('meta')">
         <button class="accordion-button collapsed" type="button">
@@ -350,6 +355,7 @@
       </div>
     </div>
 
+    <!-- Base Models -->
     <div v-for="base_model in output.base_models" :key="base_model" class="accordion-item">
       <h2 class="accordion-header" @click="toggleCollapseResult(`collapse-${base_model}`)">
         <button class="accordion-button collapsed" type="button">
@@ -620,6 +626,7 @@ export default {
   },
   watch: {
     "selected.data_name"() {
+    this.selected.label_column = ''
       if (this.selected.data_name != '') {
         this.previewTab(true)
       }
@@ -852,9 +859,9 @@ export default {
         if (this.isUnmounted) return // 若頁面已離開就不要繼續處理
         if (response.data.status == "success") {
           this.output = response.data
-          this.modal.title = this.$t('lblPredictionCompleted')
+          this.modal.title = this.$t('lblSuccess')
+          this.modal.content = this.$t('msgTrainingCompleted')
           this.modal.icon = 'success'
-          this.modal.content = response.data
           this.openModalNotification()
         } else if (response.data.status == "error") {
           this.modal.title = this.$t('lblError')

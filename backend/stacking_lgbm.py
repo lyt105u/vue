@@ -44,16 +44,16 @@ def train_fold(X_train, y_train, X_val, n_estimators=100, learning_rate=0.1, max
 
 def retrain(X, y, feature_names, task_dir, split_value=1.0, save_model=True, model_role='base', n_estimators=100, learning_rate=0.1, max_depth=-1, num_leaves=31):
     # Retrain LGBMClassifier on full data, save model, and generate XAI (SHAP & LIME).
+    lightgbm = LGBMClassifier(
+        n_estimators=n_estimators,
+        learning_rate=learning_rate,
+        max_depth=max_depth,
+        num_leaves=num_leaves,
+        verbose=-1
+    )
     if split_value != '1.0':
         X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=float(split_value), stratify=y, random_state=30)
         evals_result = {}
-        lightgbm = LGBMClassifier(
-            n_estimators=n_estimators,
-            learning_rate=learning_rate,
-            max_depth=max_depth,
-            num_leaves=num_leaves,
-            verbose=-1
-        )
         lightgbm.fit(
             X_train, y_train,
             eval_set=[(X_train, y_train), (X_test, y_test)],
@@ -76,6 +76,12 @@ def retrain(X, y, feature_names, task_dir, split_value=1.0, save_model=True, mod
         os.makedirs(task_dir, exist_ok=True)
         joblib.dump(lightgbm, f"{task_dir}/{model_role}_lgbm.pkl")
     return results
+
+def predict_full_meta(X, task_dir):
+    model_path = f"{task_dir}/base_lgbm.pkl"
+    model = joblib.load(model_path)
+    preds = model.predict_proba(X)[:, 1]
+    return preds
 
 def evaluate_model(y_test, y_pred, model, x_test):
     y_test = y_test.astype(float)
@@ -198,6 +204,7 @@ def evaluate_model(y_test, y_pred, model, x_test):
     buf.seek(0)
     image_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
     buf.close()
+    plt.close()
 
     result['roc'] = image_base64
     return result

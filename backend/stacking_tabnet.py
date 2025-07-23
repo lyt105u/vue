@@ -107,6 +107,15 @@ def retrain(X, y, feature_names, task_dir, split_value=1.0, save_model=True, mod
             tabnet.save_model(f"{task_dir}/{model_role}_tabnet")
     return results
 
+def predict_full_meta(X, task_dir):
+    model_path = f"{task_dir}/base_tabnet.zip"
+    model = TabNetClassifier()
+    model.load_model(model_path)
+    # ✅ 確保 X 是 float32 的 numpy array
+    X_np = np.array(X, dtype=np.float32)
+    preds = model.predict_proba(X_np)[:, 1]
+    return preds
+
 def evaluate_model(y_test, y_pred, model, x_test):
     y_test = y_test.astype(float)
     y_pred = y_pred.astype(float)
@@ -228,6 +237,7 @@ def evaluate_model(y_test, y_pred, model, x_test):
     buf.seek(0)
     image_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
     buf.close()
+    plt.close()
 
     result['roc'] = image_base64
     return result

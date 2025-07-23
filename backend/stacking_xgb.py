@@ -27,18 +27,8 @@ except Exception:
 # 顯示負號正常
 matplotlib.rcParams['axes.unicode_minus'] = False
 
+# Train XGBClassifier on a given fold and return validation predictions and the model.
 def train_fold(X_train, y_train, X_val, n_estimators=100, learning_rate=0.300000012, max_depth=6):
-    # Train XGBClassifier on a given fold and return validation predictions and the model.
-
-    # Args:
-    #   X_train: np.ndarray of training features for this fold
-    #   y_train: np.ndarray of training labels for this fold
-    #   X_val: np.ndarray of validation features for this fold
-    #   params: dict of XGBClassifier parameters
-
-    # Returns:
-    #   val_preds: np.ndarray of predicted probabilities for class 1 on X_val
-    #   model: trained XGBClassifier instance
     xgb = XGBClassifier(base_score=0.5, booster='gbtree', colsample_bylevel=1,
                         colsample_bynode=1, colsample_bytree=1, enable_categorical=False,
                         gamma=0, device='cuda', importance_type=None,
@@ -89,6 +79,13 @@ def retrain(X, y, feature_names, task_dir, split_value=1.0, save_model=True, mod
         os.makedirs(task_dir, exist_ok=True)
         xgb.save_model(f"{task_dir}/{model_role}_xgb.json")
     return results
+
+def predict_full_meta(X, task_dir):
+    model_path = f"{task_dir}/base_xgb.json"
+    model = XGBClassifier()
+    model.load_model(model_path)
+    preds = model.predict_proba(X)[:, 1]
+    return preds
 
 def evaluate_model(y_test, y_pred, model, x_test):
     y_test = y_test.astype(float)
@@ -210,6 +207,7 @@ def evaluate_model(y_test, y_pred, model, x_test):
     buf.seek(0)
     image_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
     buf.close()
+    plt.close()
 
     result['roc'] = image_base64
     return result

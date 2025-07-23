@@ -63,6 +63,12 @@ def retrain(X, y, feature_names, task_dir, split_value=1.0, save_model=True, mod
         joblib.dump(rf, f"{task_dir}/{model_role}_rf.pkl")
     return results
 
+def predict_full_meta(X, task_dir):
+    model_path = f"{task_dir}/base_rf.pkl"
+    model = joblib.load(model_path)
+    preds = model.predict_proba(X)[:, 1]
+    return preds
+
 def evaluate_model(y_test, y_pred, model, x_test):
     y_test = y_test.astype(float)
     y_pred = y_pred.astype(float)
@@ -184,6 +190,7 @@ def evaluate_model(y_test, y_pred, model, x_test):
     buf.seek(0)
     image_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
     buf.close()
+    plt.close()
 
     result['roc'] = image_base64
     return result

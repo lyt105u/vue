@@ -96,6 +96,12 @@ def retrain(X, y, feature_names, task_dir, split_value=1.0, save_model=True, mod
         joblib.dump(logistic_reg, f"{task_dir}/{model_role}_lr.pkl")
     return results
 
+def predict_full_meta(X, task_dir):
+    model_path = f"{task_dir}/base_lr.pkl"
+    model = joblib.load(model_path)
+    preds = model.predict_proba(X)[:, 1]
+    return preds
+
 def should_use_class_weight(y):
     counts = Counter(y)
     total = sum(counts.values())
@@ -223,6 +229,7 @@ def evaluate_model(y_test, y_pred, model, x_test):
     buf.seek(0)
     image_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
     buf.close()
+    plt.close()
 
     result['roc'] = image_base64
     return result

@@ -1544,6 +1544,13 @@ def run_train_stacking():
             json.dump(status, f, indent=4, ensure_ascii=False)
         # 任務完成後移除該 process 記錄
         process_pool.pop(task_id, None)
+        # stacking_config.json
+        stacking_config = {
+            "base_models": base_models,
+            "meta_model": meta_model,
+        }
+        with open(os.path.join(task_dir, "stacking_config.json"), "w", encoding="utf-8") as f:
+            json.dump(stacking_config, f, indent=4, ensure_ascii=False)
         return jsonify(json.loads(stdout))
     
     except Exception as e:

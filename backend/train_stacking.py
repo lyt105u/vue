@@ -14,7 +14,7 @@ import pandas as pd
 from tool_train import prepare_data, NumpyEncoder, extract_base64_images_and_clean_json
 import argparse
 
-def save_oof_csv(meta_X, y, base_models, task_dir, filename='oof.csv'):
+def save_meta_features_csv(meta_X, y, base_models, task_dir, filename):
     os.makedirs(task_dir, exist_ok=True)
     df = pd.DataFrame(meta_X, columns=base_models)
     df['y'] = y
@@ -60,7 +60,7 @@ def main(file_path, base_models, label_column, meta_model, task_dir):
             meta_features[name][val_idx] = preds
     # 組成 meta_X，真實標籤用 y
     meta_X = np.column_stack([meta_features[name] for name in base_models])
-    save_oof_csv(meta_X, y, base_models, task_dir)
+    save_meta_features_csv(meta_X, y, base_models, task_dir, 'oof.csv')
 
     # 4. 訓練 meta model (OOF 階段)
     meta_module = import_module(f"stacking_{meta_model}")
@@ -73,21 +73,19 @@ def main(file_path, base_models, label_column, meta_model, task_dir):
         base_result = module.retrain(X, y, feature_names, task_dir, '0.8', True, 'base')
         results["base_results"][f"{name}"] = base_result
 
+    # 6. Retrain meta model on full data
+    X_full_meta = []
+    for name in base_models:
+        module = import_module(f"stacking_{name}")
+        preds = module.predict_full_meta(X, task_dir)
+        X_full_meta.append(preds)
+    X_full_meta = np.column_stack(X_full_meta)
+    save_meta_features_csv(X_full_meta, y, base_models, task_dir, 'X_full_meta.csv')
+
+    # 使用 retrain 函數訓練 meta model，儲存為 final 版本
+    meta_module = import_module(f"stacking_{meta_model}")
+    final_meta_result = meta_module.retrain(X_full_meta, y, base_models, task_dir, '1.0', True, 'meta')
     print(json.dumps(results, indent=4, cls=NumpyEncoder))
-
-    # # 6. Retrain meta model on full data
-    # full_preds = []
-    # for name in model_names:
-    #     models = base_models_per_fold[name]
-    #     # 平均所有 folds retrain 還原之預測 (此處使用 X 的所有樣本)
-    #     fold_probs = np.stack([m.predict_proba(X)[:, 1] for m in models], axis=1)
-    #     avg_probs = fold_probs.mean(axis=1)
-    #     full_preds.append(avg_probs)
-
-    # full_meta_X = np.column_stack(full_preds)
-    # meta_full_model = LogisticRegression(**meta_params)
-    # meta_full_model.fit(full_meta_X, y)
-    # joblib.dump(meta_full_model, os.path.join(output_dir, 'meta_model_full.pkl'))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
