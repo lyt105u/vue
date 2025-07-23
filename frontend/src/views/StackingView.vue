@@ -152,7 +152,7 @@
 
     <!-- Base Model -->
     <div class="row mb-3">
-      <label for="inputEmail3" class="col-sm-3 col-form-label">{{ $t('lblBaseModels') }}</label>
+      <label for="inputEmail3" class="col-sm-3 col-form-label">{{ $t('lblBaseModel') }}</label>
       <div class="col-sm-8">
         <div v-for="model in modelOptions" :key="model.value" class="form-check form-check-inline">
           <input
@@ -192,7 +192,7 @@
   </form>
 
   <!-- hr -->
-  <div v-if="output" class="bd-example-snippet bd-code-snippet">
+  <div class="bd-example-snippet bd-code-snippet">
     <div class="bd-example m-0 border-0">
       <hr>
     </div>
@@ -212,12 +212,12 @@
   <!-- output -->
   <div v-if="output" class="accordion" id="accordionExample">
     <div class="accordion-item">
-      <h2 class="accordion-header" @click="toggleCollapseResult('collapse_0_9')">
+      <h2 class="accordion-header" @click="toggleCollapseResult('meta')">
         <button class="accordion-button collapsed" type="button">
-          {{ $t('lblMetaModel') }}
+          {{ $t('lblMetaModel') }} ( {{ $t(modelOptions.find(opt => opt.value === output.meta_model)?.label || '') }} )
         </button>
       </h2>
-      <div class="accordion-collapse collapse" ref="collapse_0_9">
+      <div class="accordion-collapse collapse" ref="meta">
         <div class="accordion-body">
           <div class="row row-cols-1 row-cols-md-3 mb-3 text-center">
             <div class="col">
@@ -343,6 +343,145 @@
                   <h4 class="my-0 fw-normal">{{ $t('lblLime') }}</h4>
                 </div>
                 <img :src="`data:image/png;base64,${output.meta_results.lime_plot}`" :alt="$t('lblLime')" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-for="base_model in output.base_models" :key="base_model" class="accordion-item">
+      <h2 class="accordion-header" @click="toggleCollapseResult(`collapse-${base_model}`)">
+        <button class="accordion-button collapsed" type="button">
+          {{ $t('lblBaseModel') }} ( {{ $t(modelOptions.find(opt => opt.value === base_model)?.label || '') }} )
+        </button>
+      </h2>
+      <div class="accordion-collapse collapse" :ref="`collapse-${base_model}`">
+        <div class="accordion-body">
+          <div class="row row-cols-1 row-cols-md-3 mb-3 text-center">
+            <div class="col">
+              <div class="card mb-4 rounded-3 shadow-sm">
+                <div class="card-header py-3">
+                  <h4 class="my-0 fw-normal">{{ $t('lblTrainingResult') }}</h4>
+                </div>
+                <div class="card-body">
+                  <ul class="list-unstyled mt-3 mb-4">
+                    <div class="bd-example-snippet bd-code-snippet">
+                      <div class="bd-example m-0 border-0">
+                        <table class="table table-sm table-bordered">
+                          <thead>
+                            <tr>
+                              <th scope="col" colspan="2">{{ $t('lblConfusionMatrix') }}</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <td>{{ output.base_results[base_model]?.confusion_matrix.true_positive }}</td>
+                              <td>{{ output.base_results[base_model]?.confusion_matrix.false_negative }}</td>
+                            </tr>
+                            <tr>
+                              <td>{{ output.base_results[base_model]?.confusion_matrix.false_positive }}</td>
+                              <td>{{ output.base_results[base_model]?.confusion_matrix.true_negative }}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                    <li>Accuracy : {{ output.base_results[base_model]?.metrics.accuracy.toFixed(2) }}%</li>
+                    <li>Recall : {{ output.base_results[base_model]?.metrics.recall.toFixed(2) }}%</li>
+                    <li>Precision : {{ output.base_results[base_model]?.metrics.precision.toFixed(2) }}%</li>
+                    <li>F1_score : {{ output.base_results[base_model]?.metrics.f1_score.toFixed(2) }}%</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <!-- recall 列表 -->
+            <div class="col" v-for="recall in recallLevels" :key="recall.level">
+              <div class="card mb-4 rounded-3 shadow-sm">
+                <div class="card-header py-3">
+                  <h4 class="my-0 fw-normal">Recall > {{ recall.level }}%</h4>
+                </div>
+                <div class="card-body">
+                  <ul class="list-unstyled mt-3 mb-4">
+                    <div class="bd-example-snippet bd-code-snippet">
+                      <div class="bd-example m-0 border-0">
+                        <table class="table table-sm table-bordered">
+                          <thead>
+                            <tr>
+                              <th scope="col" colspan="2">{{ $t('lblConfusionMatrix') }}</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <td>{{ output.base_results[base_model][recall.key].true_positive }}</td>
+                              <td>{{ output.base_results[base_model][recall.key].false_negative }}</td>
+                            </tr>
+                            <tr>
+                              <td>{{ output.base_results[base_model][recall.key].false_positive }}</td>
+                              <td>{{ output.base_results[base_model][recall.key].true_negative }}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                    <li>Recall: {{ output.base_results[base_model][recall.key].recall.toFixed(2) }}%</li>
+                    <li>Specificity: {{ output.base_results[base_model][recall.key].specificity.toFixed(2) }}%</li>
+                    <li>Precision: {{ output.base_results[base_model][recall.key].precision.toFixed(2) }}%</li>
+                    <li>NPV: {{ output.base_results[base_model][recall.key].npv.toFixed(2) }}%</li>
+                    <li>F1 Score: {{ output.base_results[base_model][recall.key].f1_score.toFixed(2) }}%</li>
+                    <li>F2 Score: {{ output.base_results[base_model][recall.key].f2_score.toFixed(2) }}%</li>
+                    <li>Accuracy: {{ output.base_results[base_model][recall.key].accuracy.toFixed(2) }}%</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <!-- ROC 曲線 -->
+            <div class="col">
+              <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalImage($t('lblRocCurve'), `data:image/png;base64,${output.base_results[base_model]?.roc}`)" style="cursor: pointer;">
+                <div class="card-header py-3">
+                  <h4 class="my-0 fw-normal">{{ $t('lblRocCurve') }}</h4>
+                </div>
+                <img :src="`data:image/png;base64,${output.base_results[base_model]?.roc}`" :alt="$t('lblRocCurve')" />
+              </div>
+            </div>
+
+            <!-- Loss 曲線 -->
+            <div v-if="output.base_results[base_model]?.loss_plot" class="col">
+              <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalImage('Loss', `data:image/png;base64,${output.base_results[base_model]?.loss_plot}`)" style="cursor: pointer;">
+                <div class="card-header py-3">
+                  <h4 class="my-0 fw-normal">Loss</h4>
+                </div>
+                <img :src="`data:image/png;base64,${output.base_results[base_model]?.loss_plot}`" alt="Loss" />
+              </div>
+            </div>
+
+            <!-- Accuracy 曲線 -->
+            <div v-if="output.base_results[base_model]?.accuracy_plot" class="col">
+              <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalImage('Accuracy', `data:image/png;base64,${output.base_results[base_model]?.accuracy_plot}`)" style="cursor: pointer;">
+                <div class="card-header py-3">
+                  <h4 class="my-0 fw-normal">Accuracy</h4>
+                </div>
+                <img :src="`data:image/png;base64,${output.base_results[base_model]?.accuracy_plot}`" alt="Accuracy" />
+              </div>
+            </div>
+
+            <!-- SHAP -->
+            <div v-if="!output.base_results[base_model]?.shap_error" class="col">
+              <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalShap(`data:image/png;base64,${output.base_results[base_model]?.shap_plot}`, output.base_results[base_model]?.shap_importance)" style="cursor: pointer;">
+                <div class="card-header py-3">
+                  <h4 class="my-0 fw-normal">{{ $t('lblShap') }}</h4>
+                </div>
+                <img :src="`data:image/png;base64,${output.base_results[base_model]?.shap_plot}`" :alt="$t('lblShap')" />
+              </div>
+            </div>
+
+            <!-- LIME -->
+            <div v-if="!output.base_results[base_model]?.lime_error" class="col">
+              <div class="card mb-4 rounded-3 shadow-sm"  @click="openModalLime(`data:image/png;base64,${output.base_results[base_model]?.lime_plot}`, output.base_results[base_model]?.lime_example_0)" style="cursor: pointer;">
+                <div class="card-header py-3">
+                  <h4 class="my-0 fw-normal">{{ $t('lblLime') }}</h4>
+                </div>
+                <img :src="`data:image/png;base64,${output.base_results[base_model]?.lime_plot}`" :alt="$t('lblLime')" />
               </div>
             </div>
           </div>
@@ -589,8 +728,13 @@ export default {
     },
 
     toggleCollapseResult(refName) {
-      const collapseEl = this.$refs[refName]
-      const buttonEl = collapseEl.previousElementSibling.querySelector('.accordion-button')
+      const refRaw = this.$refs[refName]
+      const collapseEl = Array.isArray(refRaw) ? refRaw[0] : refRaw
+
+      if (!collapseEl) return
+
+      const buttonEl = collapseEl.previousElementSibling?.querySelector('.accordion-button')
+      if (!buttonEl) return
 
       let instance = Collapse.getInstance(collapseEl)
       if (!instance) {

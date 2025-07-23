@@ -1,4 +1,4 @@
-# usage: python train_stacking.py upload/bob/高醫訓練xlsx.xlsx "[\"xgb\", \"lgbm\"]" label xgb model/bob/20250721112233
+# usage: python train_stacking.py upload/alice/長庚csv有答案.csv "[\"xgb\", \"lgbm\"]" label lgbm model/alice/20250721112233
 
 import numpy as np
 import pandas as pd
@@ -24,6 +24,12 @@ def save_oof_csv(meta_X, y, base_models, task_dir, filename='oof.csv'):
 
 
 def main(file_path, base_models, label_column, meta_model, task_dir):
+    results = {
+        "status": "success",
+        "base_results": {},
+        "base_models": base_models,
+        "meta_model": meta_model
+    }
     # 1. 讀取資料
     try:
         X, y, feature_names = prepare_data(file_path, label_column)
@@ -58,23 +64,16 @@ def main(file_path, base_models, label_column, meta_model, task_dir):
 
     # 4. 訓練 meta model (OOF 階段)
     meta_module = import_module(f"stacking_{meta_model}")
-    meta_results =  meta_module.retrain(meta_X, y, feature_names, task_dir, '0.8', False, 'meta')
-    # meta_model = LogisticRegression(**meta_params)
-    # meta_model.fit(meta_X, y)
-    # joblib.dump(meta_model, os.path.join(output_dir, 'meta_model_oof.pkl'))
-    # joblib.dump(base_models_per_fold, os.path.join(output_dir, 'base_models_per_fold.pkl'))
-    print(json.dumps({
-            "status": "success",
-            "meta_results": meta_results,
-        }, indent=4, cls=NumpyEncoder))
+    meta_results =  meta_module.retrain(meta_X, y, base_models, task_dir, '0.8', False, 'meta')
+    results["meta_results"] = meta_results
 
-    # # 5. Retrain base models on full data
-    # for name in model_names:
-    #     module = import_module(f"stacking_{name}")
-    #     model_path = os.path.join(output_dir, f"{name}_final_model.pkl")
-    #     xai_dir = os.path.join(output_dir, f"{name}_xai")
-    #     os.makedirs(xai_dir, exist_ok=True)
-    #     module.retrain(X, y, model_params[name], model_path, xai_dir)
+    # 5. Retrain base models on full data
+    for name in base_models:
+        module = import_module(f"stacking_{name}")
+        base_result = module.retrain(X, y, feature_names, task_dir, '0.8', True, 'base')
+        results["base_results"][f"{name}"] = base_result
+
+    print(json.dumps(results, indent=4, cls=NumpyEncoder))
 
     # # 6. Retrain meta model on full data
     # full_preds = []

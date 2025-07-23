@@ -86,7 +86,7 @@
   "lblZero": "補 0",
   "lblPreprocess": "前處理",
   "lblStacking": "堆疊法",
-  "lblBaseModels": "基礎模型",
+  "lblBaseModel": "基礎模型",
   "lblMetaModel": "後設模型",
   
   "msgPreviewCaption": "顯示前 10 筆資料（總共：{count} 筆），和全體統計",

@@ -12,7 +12,20 @@ from sklearn import metrics
 import matplotlib.pyplot as plt
 import base64
 import io
-from tool_train import NumpyEncoder, extract_base64_images_and_clean_json
+import matplotlib
+from matplotlib import font_manager
+try:
+    # 嘗試使用 Docker 中的 NotoSansCJK 字型
+    font_path = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
+    font_prop = font_manager.FontProperties(fname=font_path)
+    matplotlib.rcParams['font.family'] = font_prop.get_name()
+
+except Exception:
+    # Fallback：改用本機字型清單
+    matplotlib.rcParams['font.sans-serif'] = ['Microsoft JhengHei', 'SimHei', 'Arial Unicode MS']
+
+# 顯示負號正常
+matplotlib.rcParams['axes.unicode_minus'] = False
 
 def train_fold(X_train, y_train, X_val, n_estimators=100, learning_rate=0.300000012, max_depth=6):
     # Train XGBClassifier on a given fold and return validation predictions and the model.

@@ -86,7 +86,7 @@
   "lblZero": "Fill 0",
   "lblPreprocess": "Preprocess",
   "lblStacking": "Stacking",
-  "lblBaseModels": "Base Models",
+  "lblBaseModel": "Base Model",
   "lblMetaModel": "Meta Model",
   
   "msgPreviewCaption": "Showing first 10 rows (total:{count} rows), and overall statistics",
