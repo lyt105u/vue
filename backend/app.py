@@ -1219,7 +1219,7 @@ def download_stacking_models():
             if meta_name == "xgb":
                 filename = f"meta_{meta_name}.json"
             elif meta_name == "tabnet":
-                filename = f"meta_{base_name}.zip"
+                filename = f"meta_{meta_name}.zip"
             else:
                 filename = f"meta_{meta_name}.pkl"
             full_path = os.path.join(task_dir, filename)
