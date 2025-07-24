@@ -196,7 +196,7 @@
   </form>
 
   <!-- hr -->
-  <div class="bd-example-snippet bd-code-snippet">
+  <div v-if="output" class="bd-example-snippet bd-code-snippet">
     <div class="bd-example m-0 border-0">
       <hr>
     </div>
@@ -204,9 +204,20 @@
 
   <!-- Results 標題 -->
   <div v-if="output" class="about d-flex align-items-center gap-2" style="padding-bottom:12px;">
-    <h3 class="mb-0 d-flex align-items-center">{{ $t('lblPredictionResult') }}</h3>
+    <h3 class="mb-0 d-flex align-items-center">
+      {{ $t('lblTrainingResult') }}
+      <button style="border: none; background: none; cursor: pointer;" @click="openFormulaExplainModal"  :disabled="loading">
+        <i class="fa fa-question-circle" style="font-size:24px;color:lightblue"></i>
+      </button>
+    </h3>
     <button v-if="!loading" @click="downloadReport" type="button" class="btn btn-outline-primary">
-      <i class="fa fa-download me-1"></i>{{ $t('lblDownload') }}
+      <i class="fa fa-download me-1"></i>{{ $t('lblDownloadResult') }}
+    </button>
+    <button v-if="loading" class="btn btn-outline-primary" type="button" disabled>
+      <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+    </button>
+    <button v-if="!loading" @click="downloadModel" type="button" class="btn btn-outline-primary">
+      <i class="fa fa-download me-1"></i>{{ $t('lblDownloadModel') }}
     </button>
     <button v-if="loading" class="btn btn-outline-primary" type="button" disabled>
       <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
@@ -496,6 +507,12 @@
     </div>
   </div>
 
+  <div class="bd-example-snippet bd-code-snippet">
+    <div class="bd-example m-0 border-0">
+      <hr>
+    </div>
+  </div>
+
   <!-- Note -->
   <div class="about text-body-secondary">
     <h6>{{ $t('lblNote') }}</h6>
@@ -515,6 +532,7 @@
   <ModalImage ref="modalImageRef" :title="modal.title" :imageSrc="modal.content"/>
   <ModalShap ref="modalShapRef" :imageSrc="modal.content" :shapImportance="modal.shap_importance" :columns="preview_data.columns"/>
   <ModalLime ref="modalLimeRef" :imageSrc="modal.content" :lime_example_0="modal.lime_example_0" :columns="preview_data.columns"/>
+  <ModalFormulaExplain ref="formulaExplainModal" />
 </template>
 
 <script>
@@ -919,12 +937,49 @@ export default {
     async downloadReport() {
       this.loading = true
       try {
-        const response = await axios.post(`${process.env.VUE_APP_API_URL}/download-report`, this.output, {
-          responseType: 'blob' // 關鍵：支援二進位檔案格式
+        const response = await axios.post(`${process.env.VUE_APP_API_URL}/download-report`, {
+          task_dir: this.output.task_dir,
+        }, {
+          responseType: 'blob'
         })
 
         // 從 Content-Disposition 擷取檔案名稱
         let filename = 'report.zip' // 預設檔名
+        const disposition = response.headers['content-disposition']
+        if (disposition && disposition.includes('filename=')) {
+          const match = disposition.match(/filename="?([^"]+)"?/)
+          if (match) {
+            filename = decodeURIComponent(match[1]) // 使用後端提供的檔名（如：report_20250627_160500.zip）
+          }
+        }
+
+        const blob = response.data
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = filename
+        a.click()
+        URL.revokeObjectURL(url)
+      } catch (err) {
+        this.modal.title = this.$t('lblError')
+        this.modal.content = err
+        this.modal.icon = 'error'
+        this.openModalNotification()
+      }
+      this.loading = false
+    },
+
+    async downloadModel() {
+      this.loading = true
+      try {
+        const response = await axios.post(`${process.env.VUE_APP_API_URL}/download-stacking-models`, {
+          task_dir: this.output.task_dir,
+        }, {
+          responseType: 'blob'
+        })
+
+        // 從 Content-Disposition 擷取檔案名稱
+        let filename = 'stacking_models.zip' // 預設檔名
         const disposition = response.headers['content-disposition']
         if (disposition && disposition.includes('filename=')) {
           const match = disposition.match(/filename="?([^"]+)"?/)

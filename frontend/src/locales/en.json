@@ -88,6 +88,8 @@
   "lblStacking": "Stacking",
   "lblBaseModel": "Base Model",
   "lblMetaModel": "Meta Model",
+  "lblDownloadResult": "Download Result",
+  "lblDownloadModel": "Download Model",
   
   "msgPreviewCaption": "Showing first 10 rows (total:{count} rows), and overall statistics",
   "msgUploadSuccess": "Upload `{filename}` successfully.",

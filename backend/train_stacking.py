@@ -1,4 +1,10 @@
 # usage: python train_stacking.py upload/alice/長庚csv有答案.csv "[\"xgb\", \"lgbm\"]" label lgbm model/alice/20250721112233
+# step 2: 每個 base model 在各 fold 上進行訓練與驗證
+# step 3: 對驗證集產生預測，這些預測會組成 meta model 的輸入特徵（稱為 OOF 特徵）
+# step 4: meta model 使用 OOF 特徵進行訓練，輸出結果（準確率等）記錄在 results["meta_results"] 中
+# step 5: 每個 base model 重新使用全體資料進行訓練，並儲存模型，輸出結果（準確率等）記錄在 results["base_results"]["<model>"] 中
+#           retrain 版本 base models 對全資料產生的 meta 特徵，儲存為 X_full_meta.csv
+# step 6: 使用 X_full_meta 訓練 meta model，儲存為最終預測模型
 
 import numpy as np
 import pandas as pd
@@ -85,6 +91,13 @@ def main(file_path, base_models, label_column, meta_model, task_dir):
     # 使用 retrain 函數訓練 meta model，儲存為 final 版本
     meta_module = import_module(f"stacking_{meta_model}")
     final_meta_result = meta_module.retrain(X_full_meta, y, base_models, task_dir, '1.0', True, 'meta')
+
+    results["task_dir"] = task_dir
+    result_json_path = os.path.join(task_dir, "metrics.json")
+    with open(result_json_path, "w", encoding="utf-8") as f:
+        json.dump(results, f, indent=4, cls=NumpyEncoder, ensure_ascii=False)
+    extract_base64_images_and_clean_json(task_dir, "metrics.json")
+    
     print(json.dumps(results, indent=4, cls=NumpyEncoder))
 
 if __name__ == "__main__":

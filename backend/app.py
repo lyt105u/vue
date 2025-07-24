@@ -1148,63 +1148,6 @@ def copy_local_file():
         "status": "success",
     })
 
-
-# def build_zip_in_memory(data):
-#     # 建立 ZIP 並將 metrics.json + base64 圖片一起寫入記憶體
-#     zip_buffer = io.BytesIO()
-#     zipf = zipfile.ZipFile(zip_buffer, mode='w', compression=zipfile.ZIP_DEFLATED)
-
-#     def process(obj, parent_key=""):
-#         keys_to_remove = []
-
-#         for key, value in obj.items():
-#             current_key = f"{parent_key}_{key}" if parent_key else key
-
-#             if isinstance(value, str) and value[:20].startswith("iVBORw0KGgo"):
-#                 try:
-#                     image_bytes = base64.b64decode(value)
-#                     zipf.writestr(f"{current_key}.png", image_bytes)
-#                     # 刪除 metrics.json 裡的圖片plot
-#                     keys_to_remove.append(key)
-#                 except Exception as e:
-#                     print(f"[decode error] {current_key}: {e}")
-
-#             elif isinstance(value, dict):
-#                 process(value, current_key)
-
-#             elif isinstance(value, list):
-#                 for i, item in enumerate(value):
-#                     if isinstance(item, dict):
-#                         process(item, f"{current_key}_{i}")
-
-#         for key in keys_to_remove:
-#             del obj[key]
-
-#     # 深複製並處理圖片
-#     data_copy = json.loads(json.dumps(data))
-#     process(data_copy)
-
-#     # 將 JSON 字串格式化為漂亮排版
-#     json_string = json.dumps(data_copy, indent=4, ensure_ascii=False)
-
-#     # 加入 metrics.json 檔
-#     zipf.writestr("metrics.json", json_string)
-
-#     # 建立 Word 檔並放入整段 JSON
-#     document = Document()
-#     document.add_heading("Metrics Report", level=1)
-#     document.add_paragraph(json_string)
-
-#     word_buffer = io.BytesIO()
-#     document.save(word_buffer)
-#     word_buffer.seek(0)
-
-#     zipf.writestr("metrics.docx", word_buffer.read())
-#     zipf.close()
-
-#     zip_buffer.seek(0)
-#     return zip_buffer
-
 @app.route('/download-report', methods=['POST'])
 def download_report():
     try:
@@ -1232,6 +1175,75 @@ def download_report():
             download_name=os.path.basename(task_dir) + ".zip"
         )
 
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        })
+    
+@app.route('/download-stacking-models', methods=['POST'])
+def download_stacking_models():
+    try:
+        data = request.get_json()
+        task_dir = data.get("task_dir")
+
+        if not task_dir or not os.path.exists(task_dir):
+            return jsonify({"status": "error", "message": "task_dir not found"})
+
+        config_path = os.path.join(task_dir, "stacking_config.json")
+        if not os.path.exists(config_path):
+            return jsonify({"status": "error", "message": "stacking_config.json not found"})
+
+        with open(config_path, "r", encoding="utf-8") as f:
+            config = json.load(f)
+
+        files_to_include = [config_path]
+
+        # 處理 base model 檔名
+        for base_name in config.get("base_models", []):
+            if base_name == "xgb":
+                filename = f"base_{base_name}.json"
+            elif base_name == "tabnet":
+                filename = f"base_{base_name}.zip"
+            else:
+                filename = f"base_{base_name}.pkl"
+            full_path = os.path.join(task_dir, filename)
+            if os.path.exists(full_path):
+                files_to_include.append(full_path)
+            else:
+                return jsonify({"status": "error", "message": f"{filename} not found"})
+
+        # 處理 meta model 檔名
+        meta_name = config.get("meta_model")
+        if meta_name:
+            if meta_name == "xgb":
+                filename = f"meta_{meta_name}.json"
+            elif meta_name == "tabnet":
+                filename = f"meta_{base_name}.zip"
+            else:
+                filename = f"meta_{meta_name}.pkl"
+            full_path = os.path.join(task_dir, filename)
+            if os.path.exists(full_path):
+                files_to_include.append(full_path)
+            else:
+                return jsonify({"status": "error", "message": f"{filename} not found"})
+
+        # 打包成 ZIP 檔
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for full_path in files_to_include:
+                arcname = os.path.basename(full_path)
+                zipf.write(full_path, arcname)
+
+        zip_buffer.seek(0)
+        zip_filename = os.path.basename(task_dir) + "_stacking_models.zip"
+
+        return send_file(
+            zip_buffer,
+            mimetype='application/zip',
+            as_attachment=True,
+            download_name=zip_filename
+        )
     except Exception as e:
         return jsonify({
             "status": "error",
