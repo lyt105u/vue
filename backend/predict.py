@@ -46,6 +46,9 @@ from lime.lime_tabular import LimeTabularExplainer
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import SGDClassifier
 from sklearn.neural_network import MLPClassifier
+import zipfile
+import tempfile
+import shutil
 
 def load_model(model_path):
     if model_path.lower().endswith(".json"):  # .json 結尾
@@ -270,18 +273,12 @@ def predict_input(model, model_path, input_values, task_dir):
     result = {
         "status": "success",
         "prediction": prediction,
-        "task_dir": task_dir
     }
-    result_json_path = os.path.join(task_dir, "metrics.json")
-    with open(result_json_path, "w", encoding="utf-8") as f:
-        json.dump(result, f, indent=4, cls=NumpyEncoder, ensure_ascii=False)
-    extract_base64_images_and_clean_json(task_dir, "metrics.json")
-    print(json.dumps(result))
+    return result
 
-def main(model_path, mode, task_dir, data_path=None, output_name=None, input_values=None, label_column="label"):
+def predict_single_model(model_path, mode, task_dir, data_path=None, label_column=None, output_name=None, input_values=None):
+    model = load_model(model_path)
     try:
-        model = load_model(model_path)
-
         if mode == "file":
             data = load_data(data_path)
             data_with_predictions, explanations = predict_labels(model, model_path, data, label_column)
@@ -300,15 +297,157 @@ def main(model_path, mode, task_dir, data_path=None, output_name=None, input_val
                 result["lime_plot"] = lime_result["lime_plot"]
             if lime_result.get("lime_example_0"):
                 result["lime_example_0"] = lime_result["lime_example_0"]
-            result["task_dir"] = task_dir
-            result_json_path = os.path.join(task_dir, "metrics.json")
-            with open(result_json_path, "w", encoding="utf-8") as f:
-                json.dump(result, f, indent=4, cls=NumpyEncoder, ensure_ascii=False)
-            extract_base64_images_and_clean_json(task_dir, "metrics.json")
-            print(json.dumps(result))
-            
         elif mode == "input":
-            predict_input(model, model_path, input_values, task_dir)
+            result = predict_input(model, model_path, input_values, task_dir)
+        return result
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"{e}"
+        }
+
+def predict_stacking(model_path, mode, task_dir, data_path=None, label_column=None, output_name=None, input_values=None):
+    result = {
+        "status": "success",
+    }
+    temp_dir = tempfile.mkdtemp()
+    try:
+        # 解壓 ZIP 到 temp 目錄
+        with zipfile.ZipFile(model_path, 'r') as zip_ref:
+            zip_ref.extractall(temp_dir)
+        config_path = os.path.join(temp_dir, "stacking_config.json")
+        with open(config_path, "r", encoding="utf-8") as f:
+            config = json.load(f)
+        # 載入 base models
+        base_models = []
+        for base_name in config.get("base_models", []):
+            if base_name == "xgb":
+                filename = f"base_{base_name}.json"
+            elif base_name == "tabnet":
+                filename = f"base_{base_name}.zip"
+            else:
+                filename = f"base_{base_name}.pkl"
+            base_model_path = os.path.join(temp_dir, filename)
+            model = load_model(base_model_path)
+            base_models.append(model)
+        # 載入 meta model
+        meta_name = config.get("meta_model")
+        if meta_name == "xgb":
+            meta_file = f"meta_{meta_name}.json"
+        elif meta_name == "tabnet":
+            meta_file = f"meta_{meta_name}.zip"
+        else:
+            meta_file = f"meta_{meta_name}.pkl"
+        meta_model_path = os.path.join(temp_dir, meta_file)
+        meta_model = load_model(meta_model_path)
+        # 檔案預測模式
+        if mode == "file":
+            data = load_data(data_path)
+            feature_names = data.columns.tolist()
+            x_test = data.copy()
+            # 轉換成 meta features：每個 base model 的 predict_proba[:,1]
+            base_preds = []
+            for model in base_models:
+                if isinstance(model, TabNetClassifier):
+                    proba = model.predict_proba(x_test.to_numpy(dtype=np.float32))[:, 1]
+                else:
+                    proba = model.predict_proba(x_test.values)[:, 1]
+                base_preds.append(proba)
+            X_meta = np.column_stack(base_preds)
+            meta_feature_df = pd.DataFrame(X_meta, columns=[config.get("base_models", [])])
+            save_predictions(meta_feature_df, data_path, "meta_feature", task_dir)
+            # 最終預測
+            y_pred = meta_model.predict(X_meta)
+            data[label_column] = y_pred
+            # 儲存預測結果
+            save_predictions(data, data_path, output_name, task_dir)
+            # 評估
+            explanations = {}
+            try:
+                explanations["shap"] = explain_with_shap(meta_model, X_meta, config.get("base_models", []))
+                explanations["lime"] = explain_with_lime(meta_model, X_meta, y_pred, config.get("base_models", []))
+            except Exception as e:
+                explanations["explain_error"] = str(e)
+            shap_result = explanations.get("shap", {})
+            if shap_result.get("shap_plot"):
+                result["shap_plot"] = shap_result["shap_plot"]
+            if shap_result.get("shap_importance"):
+                result["shap_importance"] = shap_result["shap_importance"]
+            lime_result = explanations.get("lime", {})
+            if lime_result.get("lime_plot"):
+                result["lime_plot"] = lime_result["lime_plot"]
+            if lime_result.get("lime_example_0"):
+                result["lime_example_0"] = lime_result["lime_example_0"]
+        # 手動輸入預測模式
+        else:
+            # 將輸入值解析為適當的型態
+            parsed_values = []
+            for value in input_values:
+                if isinstance(value, str):
+                    if value.upper() == "TRUE":
+                        parsed_values.append(1)
+                    elif value.upper() == "FALSE":
+                        parsed_values.append(0)
+                    else:
+                        try:
+                            parsed_values.append(float(value))
+                        except ValueError:
+                            raise ValueError(f"無法解析輸入值：{value}，請確認格式正確！")
+                else:
+                    parsed_values.append(float(value))
+            # 轉換成 meta features：每個 base model 的 predict_proba[:,1]
+            base_preds = []
+            for model in base_models:
+                if isinstance(model, TabNetClassifier):
+                    proba = model.predict_proba(np.array([parsed_values], dtype=np.float32))[:, 1]
+                else:
+                    proba = model.predict_proba([parsed_values])[:, 1]
+                base_preds.append(proba)
+            X_meta = np.column_stack(base_preds)
+            meta_feature_df = pd.DataFrame(X_meta, columns=[config.get("base_models", [])])
+            save_predictions(meta_feature_df, ".csv", "meta_feature", task_dir)
+            # 最終預測
+            prediction = meta_model.predict(X_meta)
+            if isinstance(prediction, np.ndarray):
+                prediction = prediction.tolist()
+            result = {
+                "status": "success",
+                "prediction": prediction,
+            }
+        return result
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"{e}"
+        }
+    finally:
+        shutil.rmtree(temp_dir)  # 清除暫存資料夾
+
+def main(model_path, mode, task_dir, data_path=None, output_name=None, input_values=None, label_column="label"):
+    try:
+        if model_path.endswith("zip"):
+            try:
+                with zipfile.ZipFile(model_path, 'r') as zip_ref:
+                    if "stacking_config.json" in zip_ref.namelist():
+                        # 是 stacking zip
+                        results = predict_stacking(model_path, mode, task_dir, data_path, label_column, output_name, input_values)
+                    else:
+                        # 是 tabnet 模型
+                        results = predict_single_model(model_path, mode, task_dir, data_path, label_column, output_name, input_values)
+            except zipfile.BadZipFile:
+                print(json.dumps({
+                    "status": "error",
+                    "message": f"Invalid zip file: {model_path}",
+                }))
+        else:
+            results = predict_single_model(model_path, mode, task_dir, data_path, label_column, output_name, input_values)
+        results["task_dir"] = task_dir
+        result_json_path = os.path.join(task_dir, "metrics.json")
+        with open(result_json_path, "w", encoding="utf-8") as f:
+            json.dump(results, f, indent=4, cls=NumpyEncoder, ensure_ascii=False)
+        extract_base64_images_and_clean_json(task_dir, "metrics.json")
+        print(json.dumps(results))
+            
     except Exception as e:
         print(json.dumps({
             "status": "error",
