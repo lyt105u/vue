@@ -6,6 +6,12 @@ import os
 import joblib
 import numpy as np
 import pandas as pd
+import subprocess
+import sys
+subprocess.check_call(
+    [sys.executable, "-m", "pip", "install", "catboost==1.2.8"],
+    stdout=subprocess.DEVNULL
+)
 from catboost import CatBoostClassifier
 from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.metrics import (
