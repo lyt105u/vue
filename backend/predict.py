@@ -49,6 +49,7 @@ from sklearn.neural_network import MLPClassifier
 import zipfile
 import tempfile
 import shutil
+from sklearn.ensemble import AdaBoostClassifier
 
 def load_model(model_path):
     if model_path.lower().endswith(".json"):  # .json 結尾
@@ -121,7 +122,7 @@ def explain_with_shap(model, x_test, feature_names):
             else:
                 shap_values_for_plot = shap_values
 
-        elif isinstance(model, MLPClassifier):
+        elif isinstance(model, (MLPClassifier, AdaBoostClassifier)):
             # 使用 lambda 包裝 MLPClassifier，避免 KernelExplainer 報錯
             background = x_test[:20]
             explain_data = x_test[:5]

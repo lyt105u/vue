@@ -348,6 +348,43 @@
       </div>
     </template>
 
+    <!-- AdaBoost 參數 -->
+    <template v-if="selected.model_type=='adaboost'">
+      <div class="row mb-3">
+        <label class="col-sm-3 col-form-label"> {{ $t('lblParameter') }} </label>
+        <div class="col-sm-2 form-floating">
+          <input v-model="selected.adaboost.n_estimators"
+            type="text" 
+            class="form-control" 
+            id="floatingAdaBoostEstimators" 
+            :disabled="loading"
+          />
+          <label for="floatingAdaBoostEstimators" style="margin-left:9px;"> n_estimators </label>
+          <div v-if="errors.n_estimators" class="text-danger small">{{ errors.n_estimators }}</div>
+        </div>
+        <div class="col-sm-2 form-floating">
+          <input v-model="selected.adaboost.learning_rate"
+            type="text" 
+            class="form-control" 
+            id="floatingAdaBoostLearningRate" 
+            :disabled="loading"
+          />
+          <label for="floatingAdaBoostLearningRate" style="margin-left:9px;"> learning_rate </label>
+          <div v-if="errors.learning_rate" class="text-danger small">{{ errors.learning_rate }}</div>
+        </div>
+        <div class="col-sm-2 form-floating">
+          <input v-model="selected.adaboost.depth"
+            type="text" 
+            class="form-control" 
+            id="floatingAdaBoostDepth" 
+            :disabled="loading"
+          />
+          <label for="floatingAdaBoostDepth" style="margin-left:9px;"> depth </label>
+          <div v-if="errors.depth" class="text-danger small">{{ errors.depth }}</div>
+        </div>
+      </div>
+    </template>
+
     <!-- 表格式資料 -->
     <div class="row mb-3">
       <label class="col-sm-3 col-form-label">{{ $t('lblTabularData') }}</label>
@@ -1047,7 +1084,12 @@ export default {
           iterations: '500',
           learning_rate: '0.009',
           depth: '6',
-        }
+        },
+        adaboost: {
+          n_estimators: '100',
+          learning_rate: '1.0',
+          depth: '3',
+        },
       },
       watched: {
         test_size: '',
@@ -1409,6 +1451,19 @@ export default {
           this.errors.depth = this.$t('msgValIntOnly')
           isValid = false
         }
+      } else if (this.selected.model_type === "adaboost") {
+        if (!this.selected.adaboost.n_estimators || !this.isInt(this.selected.adaboost.n_estimators)) {
+          this.errors.n_estimators = this.$t('msgValIntOnly')
+          isValid = false
+        }
+        if (!this.selected.adaboost.learning_rate || !this.isFloat(this.selected.adaboost.learning_rate)) {
+          this.errors.learning_rate = this.$t('msgValFloatOnly')
+          isValid = false
+        }
+        if (!this.selected.adaboost.depth || !this.isInt(this.selected.adaboost.depth)) {
+          this.errors.depth = this.$t('msgValIntOnly')
+          isValid = false
+        }
       }
 
       // File Selection (data)
@@ -1567,6 +1622,11 @@ export default {
           payload["iterations"] = this.selected.catboost.iterations
           payload["learning_rate"] = this.selected.catboost.learning_rate
           payload["depth"] = this.selected.catboost.depth
+        } else if (this.selected.model_type == "adaboost") {
+          api = "run-train-adaboost"
+          payload["n_estimators"] = this.selected.adaboost.n_estimators
+          payload["learning_rate"] = this.selected.adaboost.learning_rate
+          payload["depth"] = this.selected.adaboost.depth
         } else {
           this.output = {
             "status": "error",
