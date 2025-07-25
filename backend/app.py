@@ -155,6 +155,9 @@ def get_field_number():
             text=True
         )
         stdout, stderr = p.communicate()
+        # --- DEBUG 輸出（如需印出，請取消註解） ---
+        # print("STDOUT:", stdout, flush=True)
+        # print("STDERR:", stderr, flush=True)
         if p.returncode != 0:
             return jsonify({
                 "status": "error",
