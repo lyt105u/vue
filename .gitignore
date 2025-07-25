@@ -5,6 +5,7 @@ backend/myenv/
 backend/model/
 backend/data/
 backend/upload/
+backend/catboost_info
 
 
 # local env files

@@ -87,3 +87,4 @@ shap==0.47.1
 smbprotocol==1.15.0
 gunicorn==23.0.0
 python-docx==1.2.0
+catboost==1.2.8

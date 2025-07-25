@@ -311,6 +311,43 @@
       </div>
     </template>
 
+    <!-- CatBoost 參數 -->
+    <template v-if="selected.model_type=='catboost'">
+      <div class="row mb-3">
+        <label class="col-sm-3 col-form-label"> {{ $t('lblParameter') }} </label>
+        <div class="col-sm-2 form-floating">
+          <input v-model="selected.catboost.iterations"
+            type="text" 
+            class="form-control" 
+            id="floatingCatBoostIterations" 
+            :disabled="loading"
+          />
+          <label for="floatingCatBoostIterations" style="margin-left:9px;"> iterations </label>
+          <div v-if="errors.iterations" class="text-danger small">{{ errors.iterations }}</div>
+        </div>
+        <div class="col-sm-2 form-floating">
+          <input v-model="selected.catboost.learning_rate"
+            type="text" 
+            class="form-control" 
+            id="floatingCatBoostLearningRate" 
+            :disabled="loading"
+          />
+          <label for="floatingCatBoostLearningRate" style="margin-left:9px;"> learning_rate </label>
+          <div v-if="errors.learning_rate" class="text-danger small">{{ errors.learning_rate }}</div>
+        </div>
+        <div class="col-sm-2 form-floating">
+          <input v-model="selected.catboost.depth"
+            type="text" 
+            class="form-control" 
+            id="floatingCatBoostDepth" 
+            :disabled="loading"
+          />
+          <label for="floatingCatBoostDepth" style="margin-left:9px;"> depth </label>
+          <div v-if="errors.depth" class="text-danger small">{{ errors.depth }}</div>
+        </div>
+      </div>
+    </template>
+
     <!-- 表格式資料 -->
     <div class="row mb-3">
       <label class="col-sm-3 col-form-label">{{ $t('lblTabularData') }}</label>
@@ -930,6 +967,8 @@ export default {
         logistic_regression: this.$t('lblLogisticRegression'),
         tabnet: this.$t('lblTabNet'),
         mlp: this.$t('lblMultiLayerPerceptron'),
+        catboost: this.$t('lblCatBoost'),
+        adaboost: this.$t('lblAdaBoost'),
       },
       preview_data: {
         columns: [],
@@ -1003,6 +1042,11 @@ export default {
           learning_rate_init: '0.001',
           max_iter: '300',
           n_iter_no_change: '50'
+        },
+        catboost: {
+          iterations: '500',
+          learning_rate: '0.009',
+          depth: '6',
         }
       },
       watched: {
@@ -1352,6 +1396,19 @@ export default {
           this.errors.n_iter_no_change = this.$t('msgValIntOnly')
           isValid = false
         }
+      } else if (this.selected.model_type === "catboost") {
+        if (!this.selected.catboost.iterations || !this.isInt(this.selected.catboost.iterations)) {
+          this.errors.iterations = this.$t('msgValIntOnly')
+          isValid = false
+        }
+        if (!this.selected.catboost.learning_rate || !this.isFloat(this.selected.catboost.learning_rate)) {
+          this.errors.learning_rate = this.$t('msgValFloatOnly')
+          isValid = false
+        }
+        if (!this.selected.catboost.depth || !this.isInt(this.selected.catboost.depth)) {
+          this.errors.depth = this.$t('msgValIntOnly')
+          isValid = false
+        }
       }
 
       // File Selection (data)
@@ -1505,6 +1562,11 @@ export default {
           payload["learning_rate_init"] = this.selected.mlp.learning_rate_init
           payload["max_iter"] = this.selected.mlp.max_iter
           payload["n_iter_no_change"] = this.selected.mlp.n_iter_no_change
+        } else if (this.selected.model_type == "catboost") {
+          api = "run-train-catboost"
+          payload["iterations"] = this.selected.catboost.iterations
+          payload["learning_rate"] = this.selected.catboost.learning_rate
+          payload["depth"] = this.selected.catboost.depth
         } else {
           this.output = {
             "status": "error",

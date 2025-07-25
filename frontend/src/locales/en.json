@@ -90,6 +90,8 @@
   "lblMetaModel": "Meta Model",
   "lblDownloadResult": "Download Result",
   "lblDownloadModel": "Download Model",
+  "lblCatBoost": "CatBoost",
+  "lblAdaBoost": "AdaBoost",
   
   "msgPreviewCaption": "Showing first 10 rows (total:{count} rows), and overall statistics",
   "msgUploadSuccess": "Upload `{filename}` successfully.",

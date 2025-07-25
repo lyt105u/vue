@@ -90,6 +90,8 @@
   "lblMetaModel": "後設模型",
   "lblDownloadResult": "下載結果",
   "lblDownloadModel": "下載模型",
+  "lblCatBoost": "CatBoost",
+  "lblAdaBoost": "AdaBoost",
   
   "msgPreviewCaption": "顯示前 10 筆資料（總共：{count} 筆），和全體統計",
   "msgUploadSuccess": "成功上傳 `{filename}`。",
