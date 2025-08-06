@@ -23,40 +23,71 @@ def load_file(file_path):
         }))
         sys.exit(1)
 
-def apply_fill_strategy(df: pd.DataFrame, missing_methods: dict):
-    try:
-        for column, method in missing_methods.items():
-            if column not in df.columns:
+def apply_rules(df: pd.DataFrame, rules_json):
+    modified_columns = set()
+    rows_affected = set()
+
+    for rule in rules_json:
+        col = rule.get("column")
+        expect_type = rule.get("expect_type")
+        fallback_type = rule.get("fallback_type")
+
+        if col not in df.columns:
+            continue
+
+        # 找出不符合的列
+        if expect_type == "not_missing":
+            condition = df[col].isna()
+        elif expect_type == "condition":
+            cond = rule.get("expect_condition")
+            val = rule.get("expect_value")
+            try:
+                val = float(val)
+            except:
                 continue
-            if method == 'mean':
-                df[column].fillna(df[column].mean(), inplace=True)
-            elif method == 'median':
-                df[column].fillna(df[column].median(), inplace=True)
-            elif method == 'mode':
-                mode_series = df[column].mode()
-                if not mode_series.empty:
-                    df[column].fillna(mode_series[0], inplace=True)
-            elif method == 'max':
-                df[column].fillna(df[column].max(), inplace=True)
-            elif method == 'min':
-                df[column].fillna(df[column].min(), inplace=True)
-            elif method == 'zero':
-                df[column].fillna(0, inplace=True)
-            elif method == 'skip':
-                continue
+
+            if cond == ">=":
+                condition = ~(df[col] >= val)
+            elif cond == "<=":
+                condition = ~(df[col] <= val)
+            elif cond == "!=":
+                condition = ~(df[col] != val)
             else:
-                print(json.dumps({
-                    "status": "error",
-                    "message": f"Unknown method: {method}",
-                }))
-                sys.exit(1)
-        return df
-    except Exception as e:
-        print(json.dumps({
-            "status": "error",
-            "message": f"Failed to apply fill strategy: {e}",
-        }))
-        sys.exit(1)
+                continue
+        else:
+            continue
+
+        # 處理 fallback
+        if fallback_type == "drop":
+            drop_indices = condition[condition].index
+            df.drop(index=drop_indices, inplace=True)
+            rows_affected.update(drop_indices.tolist())
+        elif fallback_type == "skip":
+            continue
+        else:
+            if fallback_type == "custom":
+                fallback_value = rule.get("fallback_value")
+            elif fallback_type == "min":
+                fallback_value = df[col].min()
+            elif fallback_type == "max":
+                fallback_value = df[col].max()
+            elif fallback_type == "mean":
+                fallback_value = df[col].mean()
+            elif fallback_type == "median":
+                fallback_value = df[col].median()
+            elif fallback_type == "mode":
+                fallback_value = df[col].mode().iloc[0] if not df[col].mode().empty else None
+            else:
+                continue
+
+            if fallback_value is not None:
+                affected_rows = condition[condition].index.tolist()
+                if affected_rows:
+                    df.loc[condition, col] = fallback_value
+                    modified_columns.add(col)
+                    rows_affected.update(affected_rows)
+
+    return list(modified_columns), len(rows_affected)
 
 def save_file(df: pd.DataFrame, file_path: str):
     try:
@@ -76,7 +107,7 @@ def save_file(df: pd.DataFrame, file_path: str):
 def main():
     # 讀取參數
     file_path = sys.argv[1]
-    missing_methods = json.loads(sys.argv[2])
+    rules_json = json.loads(sys.argv[2])
 
     # 讀取資料
     df = load_file(file_path)
@@ -84,14 +115,16 @@ def main():
     df.replace({"": np.nan, "NA": np.nan, "NaN": np.nan, "nan": np.nan}, inplace=True)
 
     # 補值邏輯
-    apply_fill_strategy(df, missing_methods)  # 不回傳
+    modified_columns, affected_count = apply_rules(df, rules_json)
     save_file(df, file_path)
 
     print(json.dumps({
         "status": "success",
-        "message": f"Filled. Remaining missing: {df.isna().sum().to_dict()}",
+        "modified_columns": modified_columns,
+        "rows_affected": affected_count,
+        "message": f"Modified {len(modified_columns)} columns across {affected_count} rows.",
         "file_path": file_path
-    }))
+    }, ensure_ascii=False))
 
 if __name__ == '__main__':
     main()

@@ -1091,20 +1091,15 @@ def preview():
 def handle_missing():
     data = request.get_json()
     file_path = data.get('file_path')
-    missing_methods = data.get('missing_methods')
+    rules = data.get("rules")
     if not os.path.exists(file_path):
         return jsonify({
             "status": "error",
             "message": "File not found."
         })
-    if not isinstance(missing_methods, dict):
-        return jsonify({
-            "status": "error",
-            "message": "missing_methods must be a dict."
-        })
     try:
         fetch_result = subprocess.run(
-            ['python', 'preprocess.py', file_path, json.dumps(missing_methods)],
+            ['python', 'preprocess.py', file_path, json.dumps(rules)],
             # capture_output=True,  # 捕獲標準輸出和標準錯誤
             stdout=subprocess.PIPE,     # 只捕獲標準輸出
             stderr=subprocess.DEVNULL,  # 忽略標準錯誤
