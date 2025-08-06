@@ -599,6 +599,7 @@ export default {
         { value: 'tabnet', label: 'lblTabNet' },
         { value: 'mlp', label: 'lblMultiLayerPerceptron' },
         { value: 'catboost', label: 'lblCatBoost' },
+        { value: 'adaboost', label: 'lblAdaBoost' },
       ],
       fileOptions: [],
       isUnmounted: false, // 防止跳轉後，API執行完仍繼續執行js，造成錯誤

@@ -1,4 +1,4 @@
-# train_catboost.py
+# train_adaboost.py
 
 import json
 import argparse
@@ -6,13 +6,8 @@ import os
 import joblib
 import numpy as np
 import pandas as pd
-import subprocess
-import sys
-subprocess.check_call(
-    [sys.executable, "-m", "pip", "install", "catboost==1.2.8"],
-    stdout=subprocess.DEVNULL
-)
-from catboost import CatBoostClassifier
+from sklearn.ensemble import AdaBoostClassifier
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.metrics import (
     confusion_matrix, accuracy_score, precision_score,
@@ -38,6 +33,7 @@ import base64
 import shap
 from lime.lime_tabular import LimeTabularExplainer
 from tool_train import prepare_data, NumpyEncoder, extract_base64_images_and_clean_json
+from sklearn.metrics import log_loss
 
 # 字型設置
 try:
@@ -48,22 +44,25 @@ except Exception:
     matplotlib.rcParams['font.sans-serif'] = ['Microsoft JhengHei', 'SimHei', 'Arial Unicode MS']
 matplotlib.rcParams['axes.unicode_minus'] = False
 
-def train_catboost(x_train, y_train, x_val, y_val, model_name, iterations, learning_rate, depth, task_dir):
-    model = CatBoostClassifier(
-        iterations=iterations,
+def train_adaboost(x_train, y_train, x_val, y_val, model_name, n_estimators, learning_rate, depth, task_dir):
+    model = AdaBoostClassifier(
+        estimator=DecisionTreeClassifier(max_depth=depth),
+        n_estimators=n_estimators,
         learning_rate=learning_rate,
-        depth=depth,
-        eval_metric="Logloss",
-        verbose=0,
-        use_best_model=True,
-        custom_metric=["Accuracy"],
+        algorithm="SAMME.R",
+        random_state=42
     )
-    model.fit(
-        x_train, y_train,
-        eval_set=(x_val, y_val),
-        plot=False
-    )
-    evals_result = model.get_evals_result()
+    model.fit(x_train, y_train)
+    evals_result = {
+        "train": {"Logloss": [], "Accuracy": []},
+        "validation": {"Logloss": [], "Accuracy": []}
+    }
+    for y_proba_train, y_proba_val in zip(model.staged_predict_proba(x_train), model.staged_predict_proba(x_val)):
+        evals_result["train"]["Logloss"].append(log_loss(y_train, y_proba_train))
+        evals_result["validation"]["Logloss"].append(log_loss(y_val, y_proba_val))
+    for y_pred_train, y_pred_val in zip(model.staged_predict(x_train), model.staged_predict(x_val)):
+        evals_result["train"]["Accuracy"].append(accuracy_score(y_train, y_pred_train))
+        evals_result["validation"]["Accuracy"].append(accuracy_score(y_val, y_pred_val))
     if model_name:
         os.makedirs(task_dir, exist_ok=True)
         joblib.dump(model, f"{task_dir}/{model_name}.pkl")
@@ -175,16 +174,32 @@ def evaluate_model(y_test, y_pred, model, x_test):
 def explain_with_shap(model, x_test, feature_names):
     result = {}
     try:
-        explainer = shap.Explainer(model)
-        shap_values = explainer(x_test)
+        x_sample = np.array(x_test[:20])  # 20 samples
 
-        shap_importance = np.abs(shap_values.values).mean(axis=0)
+        explainer = shap.KernelExplainer(model.predict_proba, x_sample)
+        shap_values = explainer.shap_values(x_sample, nsamples=100)
+
+        # 如果結果是 3D array: (samples, features, classes)，則選取 class 1
+        if isinstance(shap_values, np.ndarray) and shap_values.ndim == 3:
+            shap_matrix = shap_values[:, :, 1]  # 選 class 1 的 SHAP 值
+        elif isinstance(shap_values, list) and len(shap_values) == 2:
+            shap_matrix = shap_values[1]
+        else:
+            shap_matrix = shap_values  # 回歸 or 已是 2D array
+
+        # 驗證形狀
+        if shap_matrix.shape != x_sample.shape:
+            raise ValueError(f"SHAP values shape {shap_matrix.shape} != x_sample shape {x_sample.shape}")
+
+        # 特徵重要度計算
+        shap_importance = np.abs(shap_matrix).mean(axis=0)
         result["shap_importance"] = {
             feature_names[i]: float(val) for i, val in enumerate(shap_importance)
         }
 
+        # Summary Plot
         plt.figure(figsize=(10, 6))
-        shap.summary_plot(shap_values.values, x_test, feature_names=feature_names, show=False)
+        shap.summary_plot(shap_matrix, x_sample, feature_names=feature_names, show=False)
         plt.tight_layout()
         buf = io.BytesIO()
         plt.savefig(buf, format='png')
@@ -227,7 +242,7 @@ def explain_with_lime(model, x_test, y_test, feature_names):
     return result
 
 def plot_loss(evals_result):
-    logloss_train = evals_result['learn']['Logloss']
+    logloss_train = evals_result['train']['Logloss']
     logloss_val = evals_result['validation']['Logloss']
     epochs = range(1, len(logloss_train) + 1)
 
@@ -250,7 +265,7 @@ def plot_loss(evals_result):
     return image_base64
 
 def plot_accuracy(evals_result):
-    acc_train = evals_result['learn']['Accuracy']
+    acc_train = evals_result['train']['Accuracy']
     acc_val = evals_result['validation']['Accuracy']
     epochs = range(1, len(acc_train) + 1)
 
@@ -272,7 +287,7 @@ def plot_accuracy(evals_result):
 
     return image_base64
 
-def kfold_evaluation(x, y, cv_folds, model_name, iterations, learning_rate, depth, feature_names, task_dir):
+def kfold_evaluation(x, y, cv_folds, model_name, n_estimators, learning_rate, depth, feature_names, task_dir):
     skf = StratifiedKFold(n_splits=cv_folds, shuffle=True, random_state=30)
     folds_result = []
     total_tn = total_fp = total_fn = total_tp = 0
@@ -281,7 +296,7 @@ def kfold_evaluation(x, y, cv_folds, model_name, iterations, learning_rate, dept
     for fold_index, (train_idx, val_idx) in enumerate(skf.split(x, y), 1):
         x_train, x_val = x[train_idx], x[val_idx]
         y_train, y_val = y[train_idx], y[val_idx]
-        model, evals_result = train_catboost(x_train, y_train, x_val, y_val, f"{model_name}_fold_{fold_index}", iterations, learning_rate, depth, task_dir)
+        model, evals_result = train_adaboost(x_train, y_train, x_val, y_val, f"{model_name}_fold_{fold_index}", n_estimators, learning_rate, depth, task_dir)
         y_pred_proba = model.predict_proba(x_val)[:, 1]
         y_pred = (y_pred_proba >= 0.5).astype(int)
         tn, fp, fn, tp = confusion_matrix(y_val, y_pred).ravel()
@@ -367,33 +382,32 @@ def kfold_evaluation(x, y, cv_folds, model_name, iterations, learning_rate, dept
     }
     return {"status": "success", "folds": folds_result, "average": avg_result}
 
-def main(file_path, label_column, split_strategy, split_value, model_name, iterations, learning_rate, depth, task_dir):
+def main(file_path, label_column, split_strategy, split_value, model_name, n_estimators, learning_rate, depth, task_dir):
     try:
         x, y, feature_names = prepare_data(file_path, label_column)
+        if split_strategy == "train_test_split":
+            x_train, x_test, y_train, y_test = train_test_split(x, y, train_size=float(split_value), stratify=y, random_state=30)
+            model, evals_result = train_adaboost(x_train, y_train, x_test, y_test, model_name, n_estimators, learning_rate, depth, task_dir)
+            y_pred = model.predict(x_test)
+            result = evaluate_model(y_test, y_pred, model, x_test)
+            result["loss_plot"] = plot_loss(evals_result)
+            result["accuracy_plot"] = plot_accuracy(evals_result)
+            result.update(explain_with_shap(model, x_test, feature_names))
+            result.update(explain_with_lime(model, x_test, y_test, feature_names))
+        elif split_strategy == "k_fold":
+            result = kfold_evaluation(x, y, int(split_value), model_name, n_estimators, learning_rate, depth, feature_names, task_dir)
+        else:
+            print(json.dumps({"status": "error", "message": "Unsupported split strategy"}))
+            return
+
+        result["task_dir"] = task_dir
+        with open(os.path.join(task_dir, "metrics.json"), "w", encoding="utf-8") as f:
+            json.dump(result, f, indent=4, cls=NumpyEncoder, ensure_ascii=False)
+        extract_base64_images_and_clean_json(task_dir, "metrics.json")
+        print(json.dumps(result, indent=4, cls=NumpyEncoder))
     except ValueError as e:
         print(json.dumps({"status": "error", "message": str(e)}))
         return
-
-    if split_strategy == "train_test_split":
-        x_train, x_test, y_train, y_test = train_test_split(x, y, train_size=float(split_value), stratify=y, random_state=30)
-        model, evals_result = train_catboost(x_train, y_train, x_test, y_test, model_name, iterations, learning_rate, depth, task_dir)
-        y_pred = model.predict(x_test)
-        result = evaluate_model(y_test, y_pred, model, x_test)
-        result["loss_plot"] = plot_loss(evals_result)
-        result["accuracy_plot"] = plot_accuracy(evals_result)
-        result.update(explain_with_shap(model, x_test, feature_names))
-        result.update(explain_with_lime(model, x_test, y_test, feature_names))
-    elif split_strategy == "k_fold":
-        result = kfold_evaluation(x, y, int(split_value), model_name, iterations, learning_rate, depth, feature_names, task_dir)
-    else:
-        print(json.dumps({"status": "error", "message": "Unsupported split strategy"}))
-        return
-
-    result["task_dir"] = task_dir
-    with open(os.path.join(task_dir, "metrics.json"), "w", encoding="utf-8") as f:
-        json.dump(result, f, indent=4, cls=NumpyEncoder, ensure_ascii=False)
-    extract_base64_images_and_clean_json(task_dir, "metrics.json")
-    print(json.dumps(result, indent=4, cls=NumpyEncoder))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -402,9 +416,9 @@ if __name__ == "__main__":
     parser.add_argument("split_strategy", type=str)
     parser.add_argument("split_value", type=str)
     parser.add_argument("model_name", type=str)
-    parser.add_argument("iterations", type=int)
+    parser.add_argument("n_estimators", type=int)
     parser.add_argument("learning_rate", type=float)
     parser.add_argument("depth", type=int)
     parser.add_argument("task_dir", type=str)
     args = parser.parse_args()
-    main(args.file_path, args.label_column, args.split_strategy, args.split_value, args.model_name, args.iterations, args.learning_rate, args.depth, args.task_dir)
+    main(args.file_path, args.label_column, args.split_strategy, args.split_value, args.model_name, args.n_estimators, args.learning_rate, args.depth, args.task_dir)
