@@ -101,7 +101,7 @@
     </div>
 
     <!-- 缺失值處理 -->
-    <template v-if="missing_cords && missing_cords.length > 0">
+    <!-- <template v-if="missing_cords && missing_cords.length > 0">
       <div class="row mb-3" v-for="(row, rowIndex) in rows" :key="rowIndex">
         <label class="col-sm-3 col-form-label">
           {{ rowIndex === 0 ? $t('lblMissingValueHandling') : "" }}
@@ -126,7 +126,6 @@
           </div>
           <div v-if="errors_preprocess[header]" class="text-danger small"> {{ errors_preprocess[header] }} </div>
         </div>
-        <!-- ✅ 只有第一列顯示按鈕 -->
         <div v-if="rowIndex === 0" class="col-sm-1 d-flex align-items-center">
           <button
             class="btn btn-outline-primary"
@@ -139,7 +138,21 @@
           </button>
         </div>
       </div>
-    </template>
+    </template> -->
+
+    <div v-if="preview_data.total_rows != 0" class="row mb-3">
+      <label class="col-sm-3 col-form-label">{{ $t('lblDataPreprocessing') }}</label>
+      <div class="col-sm-8">
+        <DataPreprocessing
+          ref="preprocessor"
+          :columns="preview_data.columns"
+          :missing-columns="missing_header"
+          :loading="loading"
+          @update:rules="handleRuleUpdate"
+          @update:unhandled="onUnhandledMissingUpdate"
+        />
+      </div>
+    </div>
 
     <!-- Label Column -->
     <div class="row mb-3">
@@ -545,6 +558,7 @@ import ModalShap from "@/components/ModalShap.vue"
 import ModalLime from "@/components/ModalLime.vue"
 import { Collapse } from 'bootstrap'
 import { toRaw } from 'vue'
+import DataPreprocessing from '@/components/DataPreprocessing.vue'
 
 export default {
   components: {
@@ -553,6 +567,7 @@ export default {
     ModalImage,
     ModalShap,
     ModalLime,
+    DataPreprocessing,
   },
   data() {
     return {
@@ -588,7 +603,7 @@ export default {
         { value: 'median', label: 'lblMedian' },
         { value: 'mean', label: 'lblMean' },
         { value: 'mode', label: 'lblMode' },
-        { value: 'skip', label: 'lblSkip' },
+        { value: 'skip', label: 'lblFillSkip' },
         { value: 'zero', label: 'lblZero'},
       ],
       modelOptions: [
@@ -609,6 +624,8 @@ export default {
         { level: 90, key: 'recall_90' },
         { level: 95, key: 'recall_95' }
       ],
+      rules: [], // 預處理用
+      unhandledMissingColumns: []
     }
   },
   created() {
@@ -866,6 +883,46 @@ export default {
       this.loading = true
       this.output = null
 
+      // preprocessing
+      if (this.unhandledMissingColumns.length > 0) {
+        this.modal.title = this.$t('lblError')
+        this.modal.content = this.$t('msgMissingNotHandled') + this.unhandledMissingColumns.join(', ')
+        this.modal.icon = 'error'
+        this.openModalNotification()
+        this.loading = false
+        return
+      } else if(this.rules.length != 0) {
+        try {
+          const response = await axios.post(`${process.env.VUE_APP_API_URL}/preprocess`, {
+            file_path: `upload/${sessionStorage.getItem('username')}/${this.selected.data_name}`, // upload/
+            rules: this.rules
+          })
+          if (response.data.status == "success") {
+            this.modal.title = this.$t('lblDataPreprocessing')
+            this.modal.content = response.data.message
+            this.modal.icon = 'info'
+            this.openModalNotification()
+            await this.previewTab(false)
+            // this.$refs.preprocessor.resetExceptSkip()
+            this.loading = true // previewTab() 會取消 loading = =
+          } else if (response.data.status == "error") {
+            this.modal.title = this.$t('lblError')
+            this.modal.content = response.data.message
+            this.modal.icon = 'error'
+            this.openModalNotification()
+            this.loading = false
+            return
+          }
+        } catch (error) {
+          this.modal.title = this.$t('lblError')
+          this.modal.content = error
+          this.modal.icon = 'error'
+          this.openModalNotification()
+          this.loading = false
+          return
+        }
+      }
+
       try {
         const response = await axios.post(`${process.env.VUE_APP_API_URL}/run-train-stacking`,
           {
@@ -1081,6 +1138,14 @@ export default {
         this.$refs.modalImageRef.openModal()
       }
     },
+
+    handleRuleUpdate(newRules) {
+      this.rules = newRules
+    },
+
+    onUnhandledMissingUpdate(cols) {
+      this.unhandledMissingColumns = cols
+    }
   },
 }
 </script>
