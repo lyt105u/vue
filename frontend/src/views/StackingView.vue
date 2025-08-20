@@ -1,7 +1,7 @@
 <template>
   <div class="about">
     <h1>{{ $t('lblStacking') }}</h1>
-    <h6 class="text-body-secondary">{{ $t('msgPredictDescription') }}</h6>
+    <h6 class="text-body-secondary">{{ $t('msgStackingDescription') }}</h6>
   </div>
 
   <div class="bd-example-snippet bd-code-snippet">
@@ -527,7 +527,7 @@
   </div>
 
   <!-- Note -->
-  <div class="about text-body-secondary">
+  <!-- <div class="about text-body-secondary">
     <h6>{{ $t('lblNote') }}</h6>
     <ol class="h6">
       <li>{{ $t('msgPredictNote1') }}</li>
@@ -536,7 +536,7 @@
       <li>{{ $t('msgPredictNote3') }}</li>
       <li>{{ $t('msgPredictNote4') }}</li>
     </ol>
-  </div>
+  </div> -->
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
   <ModalNotification ref="modalNotification" :title="modal.title" :content="modal.content" :icon="modal.icon" />

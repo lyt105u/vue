@@ -193,6 +193,7 @@
   "msgCustomValueEx": "e.g., 0 or 15.0",
   "msgMissingNotHandled": "The following columns contain missing values and are not yet handled: ",
   "msgExpectFallback": "If the expectation rule fails, the fallback value will be applied.",
+  "msgStackingDescription": "This page provides Stacking model training, allowing users to select a dataset, configure base and meta models, and view detailed training results with explanations.",
 
   "msgValRequired": "This field is required.",
   "msgValIntOnly": "Integer only.",

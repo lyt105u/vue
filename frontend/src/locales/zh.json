@@ -193,6 +193,7 @@
   "msgCustomValueEx": "例如：0 或 15.0",
   "msgMissingNotHandled": "以下欄位含缺失值，尚未設定處理方式：",
   "msgExpectFallback": "若資料不符合期待條件，將會以取代值替換原值",
+  "msgStackingDescription": "此頁面提供堆疊模型訓練，使用者可選擇資料集、設定基礎與中繼模型，並查看完整的訓練結果與解釋。",
 
   "msgValRequired": "此為必填欄位",
   "msgValIntOnly": "僅允許整數",
