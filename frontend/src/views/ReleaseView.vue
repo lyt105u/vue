@@ -12,6 +12,39 @@
   </div>
 
   <div class="accordion" id="accordionExample">
+    <!-- v0.10 -->
+    <div class="accordion-item">
+      <h2 class="accordion-header" @click="toggleCollapse('collapse_0_10')">
+        <button class="accordion-button collapsed" type="button">
+          v0.10
+        </button>
+      </h2>
+      <div class="accordion-collapse collapse" ref="collapse_0_10">
+        <div class="accordion-body">
+          <div>
+            <span class="badge rounded-pill text-bg-success">Feature</span>
+            Preprocessing component
+          </div>
+          <div>
+            <span class="badge rounded-pill text-bg-success">Feature</span>
+            Stacking page
+          </div>
+          <div>
+            <span class="badge rounded-pill text-bg-success">Feature</span>
+            AdaBoost
+          </div>
+          <div>
+            <span class="badge rounded-pill text-bg-success">Feature</span>
+            CatBoost
+          </div>
+          <div>
+            <span class="badge rounded-pill text-bg-info">Enhance</span>
+            Add statistical info in Preview section
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- v0.9 -->
     <div class="accordion-item">
       <h2 class="accordion-header" @click="toggleCollapse('collapse_0_9')">
