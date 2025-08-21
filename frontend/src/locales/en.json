@@ -122,6 +122,7 @@
   "lblHasValue": "Has Value",
   "lblFallback": "Fallback",
   "lblExpectation": "Expectation",
+  "lblSvm": "SVM",
   
   "msgPreviewCaption": "Showing first 10 rows (total:{count} rows), and overall statistics",
   "msgUploadSuccess": "Upload `{filename}` successfully.",

@@ -385,6 +385,32 @@
       </div>
     </template>
 
+    <!-- SVM 參數 -->
+    <template v-if="selected.model_type=='svm'">
+      <div class="row mb-3">
+        <label class="col-sm-3 col-form-label"> {{ $t('lblParameter') }} </label>
+        <div class="col-sm-2 form-floating">
+          <input v-model="selected.svm.C"
+            type="text" 
+            class="form-control" 
+            id="floatingSvmC" 
+            :disabled="loading"
+          />
+          <label for="floatingSvmC" style="margin-left:9px;"> C </label>
+          <div v-if="errors.C" class="text-danger small">{{ errors.C }}</div>
+        </div>
+        <div class="col-sm-2 form-floating">
+          <select v-model="selected.svm.kernel" class="form-select" id="floatingSvmKernel" :disabled="loading">
+            <option v-for="(label, value) in svmKernelOptions" :key="value" :value="value">
+              {{ label }}
+            </option>
+          </select>
+          <label for="floatingSvmKernel" style="margin-left:9px;"> kernel </label>
+          <div v-if="errors.kernel" class="text-danger small">{{ errors.kernel }}</div>
+        </div>
+      </div>
+    </template>
+
     <!-- 表格式資料 -->
     <div class="row mb-3">
       <label class="col-sm-3 col-form-label">{{ $t('lblTabularData') }}</label>
@@ -514,6 +540,7 @@
       </div>
     </template> -->
 
+    <!-- 資料前處理 -->
     <div v-if="preview_data.total_rows != 0" class="row mb-3">
       <label class="col-sm-3 col-form-label">{{ $t('lblDataPreprocessing') }}</label>
       <div class="col-sm-8">
@@ -1021,6 +1048,7 @@ export default {
         mlp: this.$t('lblMultiLayerPerceptron'),
         catboost: this.$t('lblCatBoost'),
         adaboost: this.$t('lblAdaBoost'),
+        svm: this.$t('lblSvm'),
       },
       preview_data: {
         columns: [],
@@ -1051,6 +1079,13 @@ export default {
         relu: 'relu',
         tanh: 'tanh',
         logistic: 'logistic'
+      },
+      svmKernelOptions:{
+        linear: 'linear',
+        poly: 'poly',
+        rbf: 'rbf',
+        sigmoid: 'sigmoid',
+        precomputed: 'precomputed'
       },
       selected: {
         model_type: '',
@@ -1104,6 +1139,10 @@ export default {
           n_estimators: '100',
           learning_rate: '1.0',
           depth: '3',
+        },
+        svm: {
+          C: '1.0',
+          kernel: 'rbf'
         },
       },
       watched: {
@@ -1481,6 +1520,15 @@ export default {
           this.errors.depth = this.$t('msgValIntOnly')
           isValid = false
         }
+      } else if (this.selected.model_type === "svm") {
+        if (!this.selected.svm.C || !this.isFloat(this.selected.svm.C)) {
+          this.errors.C = this.$t('msgValFloatOnly')
+          isValid = false
+        }
+        if (!this.selected.svm.kernel) {
+          this.errors.kernel = this.$t('msgValRequired')
+          isValid = false
+        }
       }
 
       // File Selection (data)
@@ -1685,6 +1733,10 @@ export default {
           payload["n_estimators"] = this.selected.adaboost.n_estimators
           payload["learning_rate"] = this.selected.adaboost.learning_rate
           payload["depth"] = this.selected.adaboost.depth
+        } else if (this.selected.model_type == "svm") {
+          api = "run-train-svm"
+          payload["C"] = this.selected.svm.C
+          payload["kernel"] = this.selected.svm.kernel
         } else {
           this.output = {
             "status": "error",

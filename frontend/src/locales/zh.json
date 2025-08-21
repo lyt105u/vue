@@ -122,6 +122,7 @@
   "lblHasValue": "有值",
   "lblFallback": "取代值",
   "lblExpectation": "期望條件",
+  "lblSvm": "SVM",
   
   "msgPreviewCaption": "顯示前 10 筆資料（總共：{count} 筆），和全體統計",
   "msgUploadSuccess": "成功上傳 `{filename}`。",
