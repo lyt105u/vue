@@ -51,6 +51,7 @@ import zipfile
 import tempfile
 import shutil
 from sklearn.ensemble import AdaBoostClassifier
+from sklearn.svm import SVC
 
 def load_model(model_path):
     if model_path.lower().endswith(".json"):  # .json 結尾
@@ -294,6 +295,23 @@ def explain_with_shap(model, x_test, feature_names):
 
             if shap_values_for_plot.ndim != 2:
                 raise ValueError(f"shap_values shape is invalid: {shap_values_for_plot.shape}")
+            
+        # SVM
+        if isinstance(model, SVC):
+            background = x_test[:20]
+            x_explain = x_test[:5]
+
+            if hasattr(model, "predict_proba"):
+                f = lambda X: model.predict_proba(np.asarray(X, dtype=float))[:, 1]
+                explainer = shap.KernelExplainer(f, background, link="logit")
+                shap_values = explainer.shap_values(x_explain, nsamples=100)
+            else:
+                f = lambda X: model.predict(np.asarray(X, dtype=float)).astype(float)
+                explainer = shap.KernelExplainer(f, background, link="identity")
+                shap_values = explainer.shap_values(x_explain, nsamples=100)
+
+            shap_values_for_plot = shap_values
+            shap_data = x_explain
 
         else:
             # 其他模型使用 shap.Explainer（TreeExplainer, etc.）
