@@ -140,6 +140,7 @@
       </div>
     </template> -->
 
+    <!-- 資料前處理 -->
     <div v-if="preview_data.total_rows != 0" class="row mb-3">
       <label class="col-sm-3 col-form-label">{{ $t('lblDataPreprocessing') }}</label>
       <div class="col-sm-8">
@@ -615,6 +616,7 @@ export default {
         { value: 'mlp', label: 'lblMultiLayerPerceptron' },
         { value: 'catboost', label: 'lblCatBoost' },
         { value: 'adaboost', label: 'lblAdaBoost' },
+        { value: 'svm', label: 'lblSvm' },
       ],
       fileOptions: [],
       isUnmounted: false, // 防止跳轉後，API執行完仍繼續執行js，造成錯誤
