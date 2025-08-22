@@ -186,35 +186,34 @@ def explain_with_shap(model, x_test, feature_names):
         # 轉成 numpy，避免物件型造成 SHAP/LIME 出錯
         x_test = np.asarray(x_test, dtype=float)
 
-        # 使用少量背景樣本降低計算成本
-        bg_size = min(50, len(x_test))
-        background = x_test[:bg_size]
+        # 僅取前 20 筆當背景
+        background = x_test[:20]
+
+        # 僅解釋前 5 筆
+        x_explain = x_test[:5]
 
         # 若模型有 predict_proba 且為二分類，僅回傳正類機率 (scalar output)
         if hasattr(model, "predict_proba"):
             # 以正類機率作為 f(x)；這樣 link='logit' 就能作用在標量上
             f = lambda X: model.predict_proba(np.asarray(X, dtype=float))[:, 1]
             explainer = shap.KernelExplainer(f, background, link="logit")
-            shap_values = explainer.shap_values(x_test, nsamples=100)  # shape: (n_samples, n_features)
-            shap_values_for_plot = shap_values  # 已是 2D
-            shap_data = x_test
+            shap_values = explainer.shap_values(x_explain, nsamples=100)  # shape: (n_samples, n_features)
+
         else:
             # 沒有 predict_proba 時，退而求其次用 predict + identity 連結
             f = lambda X: model.predict(np.asarray(X, dtype=float)).astype(float)
             explainer = shap.KernelExplainer(f, background, link="identity")
-            shap_values = explainer.shap_values(x_test, nsamples=100)
-            shap_values_for_plot = shap_values
-            shap_data = x_test
+            shap_values = explainer.shap_values(x_explain, nsamples=100)
 
         # 平均重要度
-        shap_importance = np.abs(shap_values_for_plot).mean(axis=0)
+        shap_importance = np.abs(shap_values).mean(axis=0)
         result["shap_importance"] = {
             feature_names[i]: float(val) for i, val in enumerate(shap_importance)
         }
 
         # beeswarm plot
         plt.figure(figsize=(10, 6))
-        shap.summary_plot(shap_values_for_plot, shap_data, feature_names=feature_names, show=False)
+        shap.summary_plot(shap_values, x_explain, feature_names=feature_names, show=False)
         plt.tight_layout()
         buf = io.BytesIO()
         plt.savefig(buf, format='png')
@@ -227,8 +226,6 @@ def explain_with_shap(model, x_test, feature_names):
         result["shap_error"] = str(e)
 
     return result
-
-
 
 def explain_with_lime(model, x_test, y_test, feature_names):
     result = {}
@@ -287,7 +284,7 @@ def kfold_evaluation(x, y, cv_folds, model_name, C, kernel, feature_names, task_
         y_train, y_val = y[train_index], y[val_index]
 
         model_fold_name = f"{model_name}_fold_{fold_index}"
-        model, evals_result = train_svm(x_train, y_train, x_val, y_val, model_fold_name, C, kernel, task_dir)
+        model = train_svm(x_train, y_train, x_val, y_val, model_fold_name, C, kernel, task_dir)
         y_pred_proba = model.predict_proba(x_val)[:, 1]
         y_pred = (y_pred_proba >= 0.5).astype(int)
 
