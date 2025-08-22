@@ -119,7 +119,7 @@
   "lblMissingValueRules": "Missing Value Handling",
   "lblExpectationType": "Expectation Type",
   "lblConditionValidation": "Condition Validation",
-  "lblHasValue": "Has Value",
+  "lblHasValue": "Not Missing",
   "lblFallback": "Fallback",
   "lblExpectation": "Expectation",
   "lblSvm": "SVM",

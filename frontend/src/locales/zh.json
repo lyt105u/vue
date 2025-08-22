@@ -119,7 +119,7 @@
   "lblMissingValueRules": "缺失值處理方式",
   "lblExpectationType": "期望條件",
   "lblConditionValidation": "條件驗證",
-  "lblHasValue": "有值",
+  "lblHasValue": "無缺漏",
   "lblFallback": "取代值",
   "lblExpectation": "期望條件",
   "lblSvm": "SVM",
