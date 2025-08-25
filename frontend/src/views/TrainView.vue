@@ -493,6 +493,18 @@
                     {{ summary[col] ? summary[col].std.toFixed(2) : '-' }}
                   </td>
                 </tr>
+                <tr>
+                  <td style="white-space: nowrap"><strong>{{ $t('lblMaxZscore') }}</strong></td>
+                  <td v-for="col in preview_data.columns" :key="'zscore_max-' + col">
+                    {{ summary[col] ? summary[col].zscore_max.toFixed(2) : '-' }}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="white-space: nowrap"><strong>{{ $t('lblMinZscore') }}</strong></td>
+                  <td v-for="col in preview_data.columns" :key="'zscore_min-' + col">
+                    {{ summary[col] ? summary[col].zscore_min.toFixed(2) : '-' }}
+                  </td>
+                </tr>
               </tfoot>
             </table>
           </div>

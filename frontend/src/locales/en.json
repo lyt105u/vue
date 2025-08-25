@@ -123,6 +123,8 @@
   "lblFallback": "Fallback",
   "lblExpectation": "Expectation",
   "lblSvm": "SVM",
+  "lblMaxZscore": "Max Z-Score",
+  "lblMinZscore": "Min Z-Score",
   
   "msgPreviewCaption": "Showing first 10 rows (total:{count} rows), and overall statistics",
   "msgUploadSuccess": "Upload `{filename}` successfully.",

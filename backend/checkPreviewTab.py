@@ -70,13 +70,17 @@ def get_summary(df):
         col_data = numeric_df[col].dropna()
         mode_values = col_data.mode()
         mode = float(mode_values[0]) if not mode_values.empty else None  # 只取第一個眾數
+        mean_val = col_data.mean() if not col_data.empty else None
+        std_val = col_data.std() if not col_data.empty else None
         summary_data[col] = {
-            "mean": float(col_data.mean()) if not col_data.empty else None,
+            "mean": float(mean_val) if mean_val is not None else None,
             "median": float(col_data.median()) if not col_data.empty else None,
             "min": float(col_data.min()) if not col_data.empty else None,
             "max": float(col_data.max()) if not col_data.empty else None,
-            "std": float(col_data.std()) if not col_data.empty else None,
-            "mode": mode
+            "std": float(std_val) if std_val is not None else None,
+            "mode": mode,
+            "zscore_min": float(((col_data - mean_val) / std_val).min()) if std_val not in (None, 0) else None,
+            "zscore_max": float(((col_data - mean_val) / std_val).max()) if std_val not in (None, 0) else None,
         }
     return summary_data
 
