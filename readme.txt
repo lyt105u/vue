@@ -10,7 +10,10 @@ MLAS 是一個全面的網頁式平台，提供端到端的機器學習功能，
 - 儲存：使用者專屬目錄組織，用於資料和模型管理  
   
 ## 安裝與部署  
-參考 deploy_docker.txt 或 deploy.py，會在本地端 mount 起來 bacnked/upload/、bacnked/model/、bacnked/listWhite.txt
+參考 deploy_docker.txt 或執行 deploy.py，本地端會 mount bacnked/upload/、bacnked/model/、bacnked/listWhite.txt
+
+## 開發
+使用 start.bat，會在 localhost:8080 開啟
   
 ## 檔案結構  
 - backend/upload/{username}/：使用者資料檔案  
