@@ -12,6 +12,27 @@
   </div>
 
   <div class="accordion" id="accordionExample">
+    <!-- v0.11 -->
+    <div class="accordion-item">
+      <h2 class="accordion-header" @click="toggleCollapse('collapse_0_11')">
+        <button class="accordion-button collapsed" type="button">
+          v0.11
+        </button>
+      </h2>
+      <div class="accordion-collapse collapse" ref="collapse_0_11">
+        <div class="accordion-body">
+          <div>
+            <span class="badge rounded-pill text-bg-success">Feature</span>
+            SVM
+          </div>
+          <div>
+            <span class="badge rounded-pill text-bg-success">Feature</span>
+            Max Z-Score and Min Z-Score in Preview
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- v0.10 -->
     <div class="accordion-item">
       <h2 class="accordion-header" @click="toggleCollapse('collapse_0_10')">
