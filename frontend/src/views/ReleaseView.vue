@@ -12,6 +12,23 @@
   </div>
 
   <div class="accordion" id="accordionExample">
+    <!-- v0.12 -->
+    <div class="accordion-item">
+      <h2 class="accordion-header" @click="toggleCollapse('collapse_0_12')">
+        <button class="accordion-button collapsed" type="button">
+          v0.12
+        </button>
+      </h2>
+      <div class="accordion-collapse collapse" ref="collapse_0_12">
+        <div class="accordion-body">
+          <div>
+            <span class="badge rounded-pill text-bg-success">Feature</span>
+            Drop feature in data preprocessing
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- v0.11 -->
     <div class="accordion-item">
       <h2 class="accordion-header" @click="toggleCollapse('collapse_0_11')">
