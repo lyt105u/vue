@@ -19,39 +19,42 @@
         <select v-model="expectType" class="form-select" :disabled="loading">
           <option value="condition">{{ $t('lblConditionValidation') }}</option>
           <option value="not_missing">{{ $t('lblHasValue') }}</option>
+          <option value="drop_feature">{{ $t('lblDropFeature') }}</option>
         </select>
       </div>
 
-      <!-- 條件運算與值（僅限 condition） -->
-      <div v-if="expectType === 'condition'" class="mb-2">
-        <label class="form-label">{{ $t('lblCondition') }}</label>
-        <div class="input-group">
-          <select v-model="expectCondition" class="form-select" style="max-width: 120px;" :disabled="loading">
-            <option value=">=">&ge;</option>
-            <option value="<=">&le;</option>
-            <option value="!=">&ne;</option>
-          </select>
-          <input v-model="expectValue" class="form-control" :placeholder="$t('msgCustomValueEx')" :disabled="loading" />
+      <div v-if="expectType==='condition' || expectType==='not_missing'">
+        <!-- 條件運算與值（僅限 condition） -->
+        <div v-if="expectType === 'condition'" class="mb-2">
+          <label class="form-label">{{ $t('lblCondition') }}</label>
+          <div class="input-group">
+            <select v-model="expectCondition" class="form-select" style="max-width: 120px;" :disabled="loading">
+              <option value=">=">&ge;</option>
+              <option value="<=">&le;</option>
+              <option value="!=">&ne;</option>
+            </select>
+            <input v-model="expectValue" class="form-control" :placeholder="$t('msgCustomValueEx')" :disabled="loading" />
+          </div>
+          <div v-if="errors.expectValue" class="text-danger small">{{ errors.expectValue }}</div>
         </div>
-        <div v-if="errors.expectValue" class="text-danger small">{{ errors.expectValue }}</div>
-      </div>
 
-      <!-- fallback 設定 -->
-      <div class="mb-2">
-        <label class="form-label">{{ $t('lblFallback') }}</label>
-        <select v-model="fallbackType" class="form-select mb-2" :disabled="loading">
-          <option v-for="opt in fallbackOptions" :key="opt.value" :value="opt.value">
-            {{ $t(opt.label) }}
-          </option>
-        </select>
-        <input
-          v-if="fallbackType === 'custom'"
-          v-model="fallbackValue"
-          class="form-control"
-          :placeholder="$t('msgCustomValueEx')"
-          :disabled="loading"
-        />
-        <div v-if="errors.fallbackValue" class="text-danger small">{{ errors.fallbackValue }}</div>
+        <!-- fallback 設定 -->
+        <div class="mb-2">
+          <label class="form-label">{{ $t('lblFallback') }}</label>
+          <select v-model="fallbackType" class="form-select mb-2" :disabled="loading">
+            <option v-for="opt in fallbackOptions" :key="opt.value" :value="opt.value">
+              {{ $t(opt.label) }}
+            </option>
+          </select>
+          <input
+            v-if="fallbackType === 'custom'"
+            v-model="fallbackValue"
+            class="form-control"
+            :placeholder="$t('msgCustomValueEx')"
+            :disabled="loading"
+          />
+          <div v-if="errors.fallbackValue" class="text-danger small">{{ errors.fallbackValue }}</div>
+        </div>
       </div>
 
       <!-- 按鈕 -->
@@ -69,7 +72,7 @@
     <div v-if="rules.length > 0">
       <h5>{{ $t('lblConfigValRules') }}</h5>
       <div class="table-responsive card card-body">
-        <table class="table caption">
+        <table class="table caption-top">
           <caption>{{ $t('msgExpectFallback') }}</caption>
           <thead>
             <tr>
@@ -86,13 +89,19 @@
                 <template v-if="rule.expect_type === 'condition'">
                   {{ rule.expect_condition }} {{ rule.expect_value }}
                 </template>
-                <template v-else>
+                <template v-if="rule.expect_type === 'not_missing'">
                   {{ $t('lblHasValue') }}
+                </template>
+                <template v-if="rule.expect_type === 'drop_feature'">
+                  {{ $t('lblDropFeature') }}
                 </template>
               </td>
               <td>
                 <template v-if="rule.fallback_type === 'custom'">
                   {{ rule.fallback_value }}
+                </template>
+                <template v-if="rule.expect_type === 'drop_feature'">
+                  -
                 </template>
                 <template v-else>
                   {{ $t('lblFill' + capitalize(rule.fallback_type)) }}
@@ -101,6 +110,16 @@
               <td>
                 <button class="btn btn-sm btn-outline-danger" @click="removeRule(index)" type="button" :disabled="loading">
                   <i class="fa fa-trash me-1"></i> {{ $t('lblDelete') }}
+                </button>
+              </td>
+            </tr>
+            <tr>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td>
+                <button class="btn btn-sm btn-outline-primary" @click="preprocess" type="button" :disabled="loading">
+                  {{ $t('lblPreprocess') }}
                 </button>
               </td>
             </tr>
@@ -114,11 +133,19 @@
       {{ $t('msgMissingNotHandled') }} <strong>{{ unhandledMissingColumns.join(', ') }}</strong>
     </div>
   </div>
+
+  <ModalNotification ref="modalNotification" :title="modal.title" :content="modal.content" :icon="modal.icon" />
 </template>
 
 <script>
+import ModalNotification from "@/components/ModalNotification.vue"
+import axios from 'axios'
+
 export default {
   name: 'DataPreprocessing',
+  components: {
+    ModalNotification,
+  },
   props: {
     columns: Array,
     missingColumns: Array,
@@ -126,6 +153,8 @@ export default {
       type: Boolean,
       default: false
     },
+    previewTab: Function,
+    data: String,
   },
   data() {
     return {
@@ -146,7 +175,12 @@ export default {
         { value: 'custom', label: 'lblFillCustom' },
         { value: 'drop', label: 'lblFillDrop' },
         { value: 'skip', label: 'lblFillSkip' },
-      ]
+      ],
+      modal: {
+        title: '',
+        content: '',
+        icon: 'info',
+      },
     }
   },
   computed: {
@@ -157,7 +191,7 @@ export default {
     },
     unhandledMissingColumns() {
       const handled = this.rules
-        .filter(r => r.expect_type === 'not_missing')
+        .filter(r => r.expect_type === 'not_missing' || r.expect_type === 'drop_feature')
         .map(r => r.column)
       return this.missingColumns.filter(c => !handled.includes(c))
     }
@@ -184,7 +218,7 @@ export default {
         this.errors.expectValue = this.$t('msgValRequired')
         isValid = false
       }
-      if (!this.fallbackType) {
+      if (!this.fallbackType && (this.expectType==='condition'||this.expectType==='not_missing')) {
         this.errors.fallbackValue = this.$t('msgValRequired')
         isValid = false
       }
@@ -271,6 +305,42 @@ export default {
       )
       this.$emit('update:rules', this.rules)
       this.$emit('update:unhandled', this.unhandledMissingColumns)
+    },
+
+    async preprocess() {
+      try {
+        const response = await axios.post(`${process.env.VUE_APP_API_URL}/preprocess`, {
+          file_path: `upload/${sessionStorage.getItem('username')}/${this.data}`, // upload/
+          rules: this.rules
+        })
+        if (response.data.status == "success") {
+          this.modal.title = this.$t('lblDataPreprocessing')
+          this.modal.content = response.data.message
+          this.modal.icon = 'info'
+          this.openModalNotification()
+          await this.previewTab(false)
+        } else if (response.data.status == "error") {
+          this.modal.title = this.$t('lblError')
+          this.modal.content = response.data.message
+          this.modal.icon = 'error'
+          this.openModalNotification()
+          return
+        }
+      } catch (error) {
+        this.modal.title = this.$t('lblError')
+        this.modal.content = error
+        this.modal.icon = 'error'
+        this.openModalNotification()
+        return
+      }
+    },
+
+    openModalNotification() {
+      if (this.$refs.modalNotification) {
+        this.$refs.modalNotification.openModal()
+      } else {
+        console.error("ModalNotification component not found.")
+      }
     },
   }
 }

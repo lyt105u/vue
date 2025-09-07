@@ -35,8 +35,14 @@ def apply_rules(df: pd.DataFrame, rules_json):
         if col not in df.columns:
             continue
 
+        # 處理整欄刪除
+        if expect_type == "drop_feature":
+            # 直接刪欄；後續若還有指到同欄位的規則，會因為已不在 df.columns 而被略過
+            df.drop(columns=[col], inplace=True, errors="ignore")
+            modified_columns.add(col)  # 視為已「變動」的欄位
+            continue
         # 找出不符合的列
-        if expect_type == "not_missing":
+        elif expect_type == "not_missing":
             condition = df[col].isna()
         elif expect_type == "condition":
             cond = rule.get("expect_condition")

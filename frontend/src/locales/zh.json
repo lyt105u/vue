@@ -125,6 +125,7 @@
   "lblSvm": "SVM",
   "lblMaxZscore": "最大 Z-Score",
   "lblMinZscore": "最小 Z-Score",
+  "lblDropFeature": "移除該特徵欄位",
   
   "msgPreviewCaption": "顯示前 10 筆資料（總共：{count} 筆），和全體統計",
   "msgUploadSuccess": "成功上傳 `{filename}`。",

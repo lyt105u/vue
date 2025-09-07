@@ -563,6 +563,8 @@
           :loading="loading"
           @update:rules="handleRuleUpdate"
           @update:unhandled="onUnhandledMissingUpdate"
+          :previewTab = "previewTab"
+          :data = "selected.data"
         />
       </div>
     </div>
