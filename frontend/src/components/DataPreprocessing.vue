@@ -134,17 +134,14 @@
     </div>
   </div>
 
-  <ModalNotification ref="modalNotification" :title="modal.title" :content="modal.content" :icon="modal.icon" />
 </template>
 
 <script>
-import ModalNotification from "@/components/ModalNotification.vue"
 import axios from 'axios'
 
 export default {
   name: 'DataPreprocessing',
   components: {
-    ModalNotification,
   },
   props: {
     columns: Array,
@@ -176,11 +173,6 @@ export default {
         { value: 'drop', label: 'lblFillDrop' },
         { value: 'skip', label: 'lblFillSkip' },
       ],
-      modal: {
-        title: '',
-        content: '',
-        icon: 'info',
-      },
     }
   },
   computed: {
@@ -314,32 +306,14 @@ export default {
           rules: this.rules
         })
         if (response.data.status == "success") {
-          this.modal.title = this.$t('lblDataPreprocessing')
-          this.modal.content = response.data.message
-          this.modal.icon = 'info'
-          this.openModalNotification()
           await this.previewTab(false)
         } else if (response.data.status == "error") {
-          this.modal.title = this.$t('lblError')
-          this.modal.content = response.data.message
-          this.modal.icon = 'error'
-          this.openModalNotification()
+          alert(response.data.message)
           return
         }
       } catch (error) {
-        this.modal.title = this.$t('lblError')
-        this.modal.content = error
-        this.modal.icon = 'error'
-        this.openModalNotification()
+        alert(error)
         return
-      }
-    },
-
-    openModalNotification() {
-      if (this.$refs.modalNotification) {
-        this.$refs.modalNotification.openModal()
-      } else {
-        console.error("ModalNotification component not found.")
       }
     },
   }
