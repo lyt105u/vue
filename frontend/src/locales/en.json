@@ -187,7 +187,7 @@
   "msgFooter2": "Advisor: Prof. Chun-Hung Richard Lin",
   "msgSysRunning": "The system is still running. Are you sure you want to leave?",
   "msgTrainLonger": "The training process will take much longer than other models.",
-  "msgLabelColumnClass": "The True Label Column must be binary (containing only 0 and 1).",
+  "msgLabelColumnClass": "The ground truth column must contain integer class labels. Both binary classification (0 / 1) and multi-class classification (0, 1, 2, ...) are supported.",
   "msgNotOnList": "is not on the list.",
   "msgItemsDeleted": "The following items have been deleted:",
   "msgTerminated": "has been terminated.",

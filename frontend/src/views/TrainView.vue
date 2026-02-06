@@ -852,7 +852,7 @@
                 <li>Recall : {{ fold.metrics.recall.toFixed(2) }}%</li>
                 <li>Precision : {{ fold.metrics.precision.toFixed(2) }}%</li>
                 <li>F1_score : {{ fold.metrics.f1_score.toFixed(2) }}%</li>
-                <li>AUC : {{ fold.metrics.auc.toFixed(2) }}%</li>
+                <!-- <li>AUC : {{ fold.metrics.auc.toFixed(2) }}%</li> -->
               </ul>
             </div>
           </div>
@@ -942,7 +942,7 @@
               <li>Recall : {{ output.average.recall.toFixed(2) }}%</li>
               <li>Precision : {{ output.average.precision.toFixed(2) }}%</li>
               <li>F1_score : {{ output.average.f1_score.toFixed(2) }}%</li>
-              <li>AUC : {{ output.average.auc.toFixed(2) }}%</li>
+              <!-- <li>AUC : {{ output.average.auc.toFixed(2) }}%</li> -->
             </ul>
           </div>
         </div>
