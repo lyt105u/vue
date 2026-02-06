@@ -60,9 +60,7 @@ def main(file_path, base_models, label_column, meta_model, task_dir):
         X_val = X[val_idx]
         for name in base_models:
             module = import_module(f"stacking_{name}")
-            preds = module.train_fold(
-                X_train, y_train, X_val
-            )
+            preds = module.train_fold(X_train, y_train, X_val, focus_class=1)
             meta_features[name][val_idx] = preds
     # 組成 meta_X，真實標籤用 y
     meta_X = np.column_stack([meta_features[name] for name in base_models])
@@ -70,27 +68,27 @@ def main(file_path, base_models, label_column, meta_model, task_dir):
 
     # 4. 訓練 meta model (OOF 階段)
     meta_module = import_module(f"stacking_{meta_model}")
-    meta_results =  meta_module.retrain(meta_X, y, base_models, task_dir, '0.8', False, 'meta')
+    meta_results = meta_module.retrain(meta_X, y, base_models, task_dir, '0.8', False, 'meta', focus_class=1)
     results["meta_results"] = meta_results
 
     # 5. Retrain base models on full data
     for name in base_models:
         module = import_module(f"stacking_{name}")
-        base_result = module.retrain(X, y, feature_names, task_dir, '0.8', True, 'base')
+        base_result = module.retrain(X, y, feature_names, task_dir, '0.8', True, 'base', focus_class=1)
         results["base_results"][f"{name}"] = base_result
 
     # 6. Retrain meta model on full data
     X_full_meta = []
     for name in base_models:
         module = import_module(f"stacking_{name}")
-        preds = module.predict_full_meta(X, task_dir)
+        preds = module.predict_full_meta(X, task_dir, focus_class=1)
         X_full_meta.append(preds)
     X_full_meta = np.column_stack(X_full_meta)
     save_meta_features_csv(X_full_meta, y, base_models, task_dir, 'X_full_meta.csv')
 
     # 使用 retrain 函數訓練 meta model，儲存為 final 版本
     meta_module = import_module(f"stacking_{meta_model}")
-    final_meta_result = meta_module.retrain(X_full_meta, y, base_models, task_dir, '1.0', True, 'meta')
+    final_meta_result = meta_module.retrain(X_full_meta, y, base_models, task_dir, '1.0', True, 'meta', focus_class=1)
 
     results["task_dir"] = task_dir
     result_json_path = os.path.join(task_dir, "metrics.json")
